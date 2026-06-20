@@ -21,73 +21,7 @@
             overflow: hidden;
         }
         
-        /* 加载动画 */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
-        }
         
-        .loading-overlay.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-        
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(102, 126, 234, 0.2);
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .loading-text {
-            color: white;
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        
-        .loading-subtext {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-        }
-        
-        .loading-progress {
-            margin-top: 20px;
-            width: 250px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        
-        .loading-progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #f093fb);
-            width: 0%;
-            transition: width 0.3s ease;
-            animation: progressPulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes progressPulse {
-            0%, 100% { opacity: 0.8; }
             50% { opacity: 1; }
         }
         .container {
@@ -781,15 +715,7 @@
     </style>
 </head>
 <body>
-    <!-- 加载动画 -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">正在初始化系统...</div>
-        <div class="loading-subtext" id="loadingStatus">正在连接数据库</div>
-        <div class="loading-progress">
-            <div class="loading-progress-bar" id="loadingProgressBar"></div>
-        </div>
-    </div>
+
     
     <div class="container">
         <div class="header">
@@ -1913,7 +1839,6 @@
             } catch(e) {
                 console.error('☁️ 云端加载失败:', e);
             }
-            initApp();
         }
         
         async function smartSaveProductsIndexedDB() {
@@ -7404,56 +7329,13 @@ ABCD001,商品D,15,100,15`;
             } catch(e) { liveHistory = []; }
         }
         
-        // 更新加载进度
-        function updateLoadingProgress(status, progress) {
-            const loadingStatus = document.getElementById('loadingStatus');
-            const loadingProgressBar = document.getElementById('loadingProgressBar');
-            if (loadingStatus) loadingStatus.textContent = status;
-            if (loadingProgressBar) loadingProgressBar.style.width = progress + '%';
-        }
-        
-        // 隐藏加载动画
-        function hideLoadingOverlay() {
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            if (loadingOverlay) {
-                loadingOverlay.classList.add('hidden');
-            }
-        }
+        // 加载进度（空函数，兼容旧调用）
+        function updateLoadingProgress(status, progress) {}
         
         async function initApp() {
-            // 超时保护：15秒后强制隐藏加载动画
-            const forceHideTimer = setTimeout(() => {
-                console.warn('⚠️ 加载超时，强制显示页面');
-                hideLoadingOverlay();
-            }, 15000);
-            
+            // 一次性从云端加载所有数据（migrateFromLocalStorage会调用云端API）
             try {
-                updateLoadingProgress('正在连接云端数据库', 10);
-                
-                updateLoadingProgress('正在加载数据', 20);
                 await migrateFromLocalStorage();
-                
-                updateLoadingProgress('正在加载商品数据', 35);
-                products = await loadFromIndexedDB('products');
-                
-                updateLoadingProgress('正在加载订单数据', 45);
-                orders = await loadFromIndexedDB('orders');
-                
-                updateLoadingProgress('正在加载组合SKU', 55);
-                comboSkus = await loadFromIndexedDB('comboSkus');
-                
-                updateLoadingProgress('正在加载历史记录', 65);
-                liveHistory = await loadFromIndexedDB('liveHistory') || [];
-                
-                updateLoadingProgress('正在加载图片资源', 80);
-                productImagesCache = await loadAllImages();
-                
-                console.log('☁️ 从云端加载商品: ' + products.length + ' 个');
-                console.log('☁️ 从云端加载订单: ' + orders.length + ' 个');
-                console.log('☁️ 从云端加载组合SKU: ' + comboSkus.length + ' 个');
-                console.log('☁️ 从云端加载历史记录: ' + liveHistory.length + ' 个');
-                
-                updateLoadingProgress('正在准备界面', 90);
             } catch (error) {
                 console.error('☁️ 云端加载失败:', error);
                 products = [];
@@ -7461,25 +7343,9 @@ ABCD001,商品D,15,100,15`;
                 comboSkus = [];
                 liveHistory = [];
                 productImagesCache = {};
-                clearTimeout(forceHideTimer);
-                updateLoadingProgress('加载完成', 100);
             }
             
-            // 从云端加载标题轮次映射
-            try {
-                const mRes = await client.db.from('title_round_map').list();
-                if (mRes.success) {
-                    mRes.data.forEach(m => { titleRoundMap[m.title] = m.round_value; });
-                }
-            } catch(e) {}
-            
-            // 从云端加载标题历史
-            try {
-                const tRes = await client.db.from('title_history').list();
-                if (tRes.success) titleHistory = tRes.data.map(t => t.title).filter(Boolean);
-            } catch(e) {}
-            
-            console.log('☁️ 初始化完成');
+            console.log('☁️ 加载完成: 商品 ' + products.length + ', 订单 ' + orders.length + ', 组合 ' + comboSkus.length + ', 直播 ' + liveHistory.length);
             
             updateProductStats();
             updateProductList();
@@ -7491,10 +7357,6 @@ ABCD001,商品D,15,100,15`;
             updateComboListDisplay();
             updateRealTimeOrderList();
             updateTitleHistorySelect();
-            
-            updateLoadingProgress('初始化完成', 100);
-            clearTimeout(forceHideTimer);
-            setTimeout(hideLoadingOverlay, 300);
         }
         
         // 更新数据统计
