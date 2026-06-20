@@ -1821,7 +1821,7 @@
         
         // ===== AiPexBase 云端配置 =====
         const CLOUD_BASE_URL = 'https://baas.kuafuai.net/baas-api';
-        const CLOUD_API_KEY = 'baas_LonxYi6W';
+        const CLOUD_API_KEY = 'baas_CJbcgwuf';
         const CLOUD_UPLOAD_URL = CLOUD_BASE_URL + '/common/upload';
         const client = aipexbase.createClient({ baseUrl: CLOUD_BASE_URL, apiKey: CLOUD_API_KEY });
 
@@ -7421,6 +7421,12 @@ ABCD001,商品D,15,100,15`;
         }
         
         async function initApp() {
+            // 超时保护：15秒后强制隐藏加载动画
+            const forceHideTimer = setTimeout(() => {
+                console.warn('⚠️ 加载超时，强制显示页面');
+                hideLoadingOverlay();
+            }, 15000);
+            
             try {
                 updateLoadingProgress('正在连接云端数据库', 10);
                 
@@ -7455,6 +7461,7 @@ ABCD001,商品D,15,100,15`;
                 comboSkus = [];
                 liveHistory = [];
                 productImagesCache = {};
+                clearTimeout(forceHideTimer);
                 updateLoadingProgress('加载完成', 100);
             }
             
@@ -7486,6 +7493,7 @@ ABCD001,商品D,15,100,15`;
             updateTitleHistorySelect();
             
             updateLoadingProgress('初始化完成', 100);
+            clearTimeout(forceHideTimer);
             setTimeout(hideLoadingOverlay, 300);
         }
         
