@@ -796,6 +796,8 @@
                     <button class="btn btn-primary" onclick="importProducts()">批量导入</button>
                     <button class="btn btn-info" onclick="document.getElementById('xlsxFile').click()" id="xlsxImportBtn">📊 导入Excel(含图片)</button>
                     <input type="file" id="xlsxFile" accept="*" style="display:none;" onchange="importXlsxWithImages()">
+                    <button class="btn btn-warning" onclick="cloudImportXlsx()" id="cloudImportBtn">☁️ 云端导入(支持超大文件)</button>
+                    <input type="file" id="cloudXlsxFile" accept=".xlsx,.xls" style="display:none;" onchange="cloudImportFileSelected(event)">
                     <button class="btn btn-warning" onclick="downloadTemplate()">📥 下载模板</button>
                     <button class="btn btn-secondary" onclick="showImageImportTips()">💡 图片导入说明</button>
                     <button class="btn btn-secondary" onclick="checkXlsxLibrary()">🔧 诊断XLSX</button>
@@ -5902,7 +5904,155 @@ ABCD001,商品D,15,100,15`;
             console.log('=== 诊断完成 ===');
         }
         
-        function checkJSZipLibrary() {
+        
+        // 云端导入（超大文件绕过浏览器解析，直接上传到云存储后服务端处理）
+        let cloudImportFile = null;
+        
+        function cloudImportXlsx() {
+            document.getElementById('cloudXlsxFile').click();
+        }
+        
+        async function cloudImportFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+            if (!confirm(`⚠️ 文件大小: ${sizeMB}MB\n\n将上传到云端进行服务端处理，请确认继续？`)) return;
+            
+            const progressDiv = document.getElementById('importProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const progressMessage = document.getElementById('progressMessage');
+            const importBtn = document.getElementById('cloudImportBtn');
+            
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+            progressMessage.textContent = '正在上传文件到云端...';
+            importBtn.disabled = true;
+            
+            try {
+                // 直接把文件上传到云存储
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const resp = await fetch(CLOUD_UPLOAD_URL, {
+                    method: 'POST',
+                    headers: { 'CODE_FLYING': CLOUD_API_KEY },
+                    body: formData
+                });
+                const result = await resp.json();
+                
+                if (!result.success || !result.data || !result.data.url) {
+                    throw new Error('上传失败: ' + JSON.stringify(result));
+                }
+                
+                const fileUrl = result.data.url;
+                progressBar.style.width = '100%';
+                progressText.textContent = '✅';
+                progressMessage.textContent = `✅ 文件上传成功! (${sizeMB}MB)\n\n正在通知服务端后台处理，请稍后刷新查看...`;
+                progressMessage.style.whiteSpace = 'pre-line';
+                
+                // 通知后台处理
+                const notifyResp = await fetch(CLOUD_BASE_URL + '/common/upload', {
+                    method: 'POST',
+                    headers: { 'CODE_FLYING': CLOUD_API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'process_xlsx_import',
+                        fileUrl: fileUrl,
+                        apiKey: CLOUD_API_KEY
+                    })
+                });
+                
+                console.log('云端导入文件URL:', fileUrl);
+                
+                showToast('文件已上传，服务端正在处理中，请稍后刷新页面查看结果');
+                importBtn.disabled = false;
+            } catch (e) {
+                console.error('云端导入失败:', e);
+                progressMessage.textContent = '❌ 上传失败: ' + e.message;
+                progressMessage.style.color = '#ef4444';
+                importBtn.disabled = false;
+            }
+        }
+
+        // 云端导入（超大文件绕过浏览器解析，直接上传到云存储）
+        function cloudImportXlsx() {
+            document.getElementById('cloudXlsxFile').click();
+        }
+        
+        async function cloudImportFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+            if (!confirm(`⚠️ 文件大小: ${sizeMB}MB\n\n将上传到云端进行服务端处理，请确认继续？`)) return;
+            
+            const progressDiv = document.getElementById('importProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const progressMessage = document.getElementById('progressMessage');
+            const importBtn = document.getElementById('cloudImportBtn');
+            
+            progressDiv.style.display = 'block';
+            progressBar.style.width = '5%';
+            progressText.textContent = '0%';
+            progressMessage.textContent = '正在上传文件到云存储...';
+            importBtn.disabled = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const resp = await fetch(CLOUD_UPLOAD_URL, {
+                    method: 'POST',
+                    headers: { 'CODE_FLYING': CLOUD_API_KEY },
+                    body: formData
+                });
+                const result = await resp.json();
+                
+                if (!result.success || !result.data || !result.data.url) {
+                    throw new Error('上传失败: ' + JSON.stringify(result));
+                }
+                
+                const fileUrl = result.data.url;
+                progressBar.style.width = '40%';
+                progressText.textContent = '40%';
+                progressMessage.textContent = '已上传到云端，正在提交后台处理请求...';
+                
+                // 调用后台处理接口
+                const processResp = await fetch(CLOUD_BASE_URL + '/common/custom', {
+                    method: 'POST',
+                    headers: { 'CODE_FLYING': CLOUD_API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'process_xlsx_import',
+                        fileUrl: fileUrl
+                    })
+                });
+                const processResult = await processResp.json();
+                
+                progressBar.style.width = '100%';
+                progressText.textContent = '✅';
+                
+                if (processResult.success) {
+                    progressMessage.innerHTML = '✅ 导入完成! 已处理 ' + (processResult.data?.count || '') + ' 个商品，请刷新页面查看。';
+                    showToast('导入完成，请刷新页面');
+                } else {
+                    progressMessage.innerHTML = '✅ 文件已上传到云端!<br>把下面这行字发给小艺，我帮你继续处理：<br><code style="background:rgba(0,0,0,0.3);padding:4px 8px;border-radius:4px;font-size:12px;">导入Excel: ' + fileUrl + '</code>';
+                    showToast('文件已上传，告诉小艺继续处理');
+                    // 复制文件URL到剪贴板方便粘贴
+                    navigator.clipboard.writeText('导入Excel: ' + fileUrl).catch(()=>{});
+                }
+                
+                importBtn.disabled = false;
+            } catch (e) {
+                console.error('云端导入失败:', e);
+                progressMessage.textContent = '❌ 上传失败: ' + e.message;
+                progressMessage.style.color = '#ef4444';
+                importBtn.disabled = false;
+            }
+        }
+function checkJSZipLibrary() {
             console.log('=== JSZip库诊断 ===');
             console.log('typeof JSZip:', typeof JSZip);
             console.log('JSZip对象:', JSZip);
