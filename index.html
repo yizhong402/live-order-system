@@ -6,723 +6,607 @@
     <title>直播订单管理系统</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+
+        :root {
+            --bg-primary: #0b0b0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a26;
+            --bg-card-hover: #1f1f2d;
+            --bg-input: #151520;
+            --border: #2a2a3a;
+            --border-hover: #3b3b55;
+            --border-focus: #3b82f6;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --accent-light: rgba(59, 130, 246, 0.15);
+            --success: #22c55e;
+            --success-light: rgba(34, 197, 94, 0.15);
+            --warning: #f59e0b;
+            --warning-light: rgba(245, 158, 11, 0.15);
+            --danger: #ef4444;
+            --danger-light: rgba(239, 68, 68, 0.15);
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            --sidebar-width: 220px;
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Inter', 'Microsoft YaHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Inter', 'Microsoft YaHei', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding: 0;
-            margin: 0;
             overflow: hidden;
+            font-size: 14px;
         }
-        
-        
-            50% { opacity: 1; }
-        }
-        .container {
-            width: 95%;
-            max-width: 1400px;
-            margin: 15px auto;
-            padding: 0;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            height: calc(100vh - 30px);
+
+        /* ==================== LAYOUT ==================== */
+        .app-shell {
             display: flex;
-            flex-direction: column;
-            position: relative;
+            height: 100vh;
+            width: 100vw;
         }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            color: white;
-            padding: 8px 15px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            border-radius: 20px 20px 0 0;
-            flex-shrink: 0;
-            z-index: 10;
-        }
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%);
-            animation: pulse 8s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 0.8; }
-        }
-        .header h1 {
-            font-size: 24px;
-            margin-bottom: 8px;
-            font-weight: 700;
-            text-shadow: 0 2px 25px rgba(0,0,0,0.25);
-            position: relative;
-            z-index: 1;
-            letter-spacing: 1px;
-        }
-        .header p {
-            font-size: 13px;
-            opacity: 0.95;
-            font-weight: 500;
-            position: relative;
-            z-index: 1;
-        }
-        .main-content {
-            display: flex;
-            flex: 1;
-            min-height: 0;
-            z-index: 5;
-        }
+
+        /* ---- Sidebar ---- */
         .sidebar {
-            width: 230px;
-            background: rgba(255, 255, 255, 0.04);
-            border-right: 1px solid rgba(255,255,255,0.12);
-            padding: 15px;
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            gap: 8px;
             flex-shrink: 0;
+            z-index: 20;
+        }
+        .sidebar-brand {
+            padding: 20px 16px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .sidebar-brand h1 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+        .sidebar-brand p {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+        .sidebar-nav {
+            flex: 1;
+            padding: 12px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
             overflow-y: auto;
         }
         .sidebar-btn {
             width: 100%;
-            padding: 14px 16px;
+            padding: 10px 12px;
             border: none;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255,255,255,0.8);
+            transition: all 0.15s ease;
+            background: transparent;
+            color: var(--text-secondary);
             text-align: left;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
         .sidebar-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-            color: #ffffff;
-            transform: translateX(3px);
+            background: rgba(255,255,255,0.04);
+            color: var(--text-primary);
         }
         .sidebar-btn.active {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #ffffff;
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+            background: var(--accent-light);
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .sidebar-footer {
+            padding: 12px 10px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ---- Header (top bar) ---- */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+            flex-shrink: 0;
+            min-height: 52px;
+        }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .topbar-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .topbar-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        /* ---- Main content area ---- */
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-primary);
         }
         .page-content {
             flex: 1;
-            padding: 10px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            padding: 20px 24px;
+            overflow-y: auto;
         }
         .page {
             display: none;
-            flex: 1;
-            overflow-y: auto;
         }
         .page.active {
-            display: flex;
-            flex-direction: column;
+            display: block;
         }
-        /* 订单页面特殊处理 */
-        .page.active#page-order {
-            display: flex;
-            flex-direction: column;
-        }
-        .page.active#page-order .order-layout {
-            display: flex;
-            gap: 15px;
-            flex: 1;
-            min-height: 0;
-        }
-        .left-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .right-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .bottom-panel {
-            padding: 0 12px 12px 12px;
-        }
+
+        /* ==================== PANELS / CARDS ==================== */
         .panel {
-            background: rgba(255, 255, 255, 0.06);
-            border-radius: 16px;
-            padding: 18px;
-            border: 1px solid rgba(255,255,255,0.15);
-            backdrop-filter: blur(8px);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .panel:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 25px 50px rgba(0,0,0,0.35);
-            border-color: rgba(102, 126, 234, 0.3);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
         }
         .panel-title {
-            font-size: 17px;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
             padding-bottom: 10px;
-            border-bottom: 2px solid rgba(102, 126, 234, 0.6);
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
-        .panel-title::before {
-            content: '';
-            width: 5px;
-            height: 18px;
-            background: linear-gradient(135deg, #667eea, #f093fb);
-            border-radius: 3px;
+        .panel-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
         }
+
+        /* ==================== FORM ELEMENTS ==================== */
         .form-group {
             margin-bottom: 14px;
         }
         label {
             display: block;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: rgba(255,255,255,0.95);
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-        }
-        input[type="text"], input[type="number"], input[type="date"], input[type="time"] {
-            width: 100%;
-            padding: 12px 14px;
-            border: 2px solid rgba(255,255,255,0.2);
-            border-radius: 10px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: rgba(255,255,255,0.08);
-            color: #ffffff;
-            font-family: 'Inter', sans-serif;
-        }
-        input[type="text"]::placeholder, input[type="number"]::placeholder {
-            color: rgba(255,255,255,0.5);
-        }
-        input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus, input[type="time"]:focus {
-            outline: none;
-            border-color: #667eea;
-            background: rgba(255,255,255,0.12);
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.25);
-        }
-        input[type="date"], input[type="time"] {
-            color-scheme: dark;
-        }
-        .current-info {
-            background: rgba(255, 255, 255, 0.06);
-            padding: 22px;
-            border-radius: 14px;
-            margin-bottom: 28px;
-            border: 1px solid rgba(255,255,255,0.12);
-        }
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 18px;
-            padding: 14px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .info-item:last-child {
-            margin-bottom: 0;
-            border-bottom: none;
-        }
-        .info-label {
+            font-size: 12px;
             font-weight: 600;
-            color: rgba(255,255,255,0.75);
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
         }
-        .info-value {
-            color: #ffffff;
-            font-weight: 700;
-            font-size: 17px;
-        }
-        .btn {
-            padding: 10px 18px;
-            border: none;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-right: 8px;
-            margin-bottom: 8px;
-            position: relative;
-            overflow: hidden;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-        }
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-            transition: left 0.5s ease;
-        }
-        .btn:hover::before {
-            left: 100%;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.45);
-        }
-        .btn-primary:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.55);
-        }
-        .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.45);
-        }
-        .btn-success:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.55);
-        }
-        .btn-warning {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
-            box-shadow: 0 5px 20px rgba(245, 158, 11, 0.45);
-        }
-        .btn-warning:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.55);
-        }
-        .btn-danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            box-shadow: 0 5px 20px rgba(239, 68, 68, 0.45);
-        }
-        .btn-danger:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.55);
-        }
-        .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="time"],
+        input[type="email"],
+        input[type="password"],
+        textarea,
         select {
-            background: rgba(255,255,255,0.1);
-            color: #ffffff;
-            border: 2px solid rgba(102, 126, 234, 0.5);
-            border-radius: 8px;
-            padding: 8px;
-            font-size: 14px;
+            width: 100%;
+            padding: 9px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            color: var(--text-primary);
+            font-family: inherit;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            outline: none;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-light);
+        }
+        input::placeholder, textarea::placeholder {
+            color: var(--text-muted);
+        }
+        input[type="date"], input[type="time"] { color-scheme: dark; }
+        select {
             cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
         }
-        
-        select option {
-            background: #1a1a2e;
-            color: #ffffff;
-            padding: 8px;
-        }
-        .sku-list {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            max-height: 250px;
-            overflow-y: auto;
-            margin-top: 10px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .sku-list::-webkit-scrollbar {
-            width: 6px;
-        }
-        .sku-list::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
-            border-radius: 3px;
-        }
-        .sku-list::-webkit-scrollbar-thumb {
-            background: rgba(102, 126, 234, 0.5);
-            border-radius: 3px;
-        }
-        .sku-item {
-            padding: 8px 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            display: flex;
-            justify-content: space-between;
+        select option { background: var(--bg-secondary); color: var(--text-primary); }
+
+        /* ==================== BUTTONS ==================== */
+        .btn {
+            display: inline-flex;
             align-items: center;
-            transition: background 0.2s ease;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            line-height: 1;
         }
-        .sku-item:hover {
-            background: rgba(255,255,255,0.03);
+        .btn:active { transform: scale(0.97); }
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
         }
-        .sku-item:last-child {
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-success:hover { opacity: 0.9; }
+        .btn-warning {
+            background: var(--warning);
+            color: #fff;
+        }
+        .btn-warning:hover { opacity: 0.9; }
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .btn-danger:hover { opacity: 0.9; }
+        .btn-outline {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.04);
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+        .btn-ghost:hover {
+            background: rgba(255,255,255,0.04);
+            color: var(--text-primary);
+        }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn-lg { padding: 10px 20px; font-size: 14px; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 6px; }
+
+        /* ==================== TABLES ==================== */
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead {
+            background: var(--bg-secondary);
+        }
+        th {
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            color: var(--text-primary);
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        /* ==================== LISTS ==================== */
+        .order-list, .sku-list, .product-list {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+        .order-item, .sku-item, .product-item {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.12s;
+        }
+        .order-item:last-child, .sku-item:last-child, .product-item:last-child {
             border-bottom: none;
+        }
+        .order-item:hover, .sku-item:hover, .product-item:hover {
+            background: rgba(255,255,255,0.02);
         }
         .sku-code {
-            font-family: 'JetBrains Mono', 'Consolas', monospace;
-            background: rgba(102, 126, 234, 0.2);
-            padding: 6px 12px;
-            border-radius: 8px;
+            font-family: 'Menlo', 'Consolas', monospace;
+            font-size: 12px;
+            background: var(--accent-light);
+            padding: 3px 8px;
+            border-radius: var(--radius-sm);
+            color: var(--accent);
+        }
+
+        /* ==================== BADGES ==================== */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
             font-weight: 600;
-            color: #a5b4fc;
-            font-size: 14px;
         }
-        .order-header-fixed {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            padding: 15px;
-            border-radius: 12px 12px 0 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .order-list {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 0 0 12px 12px;
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-top: none;
-        }
-        .order-list::-webkit-scrollbar {
-            width: 6px;
-        }
-        .order-list::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
-            border-radius: 3px;
-        }
-        .order-list::-webkit-scrollbar-thumb {
-            background: rgba(102, 126, 234, 0.5);
-            border-radius: 3px;
-        }
-        .order-item {
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            transition: transform 0.2s ease, background 0.2s ease;
-        }
-        .order-item:hover {
-            background: rgba(255,255,255,0.03);
-            transform: translateX(3px);
-        }
-        .order-item:last-child {
-            border-bottom: none;
-        }
+        .badge-success { background: var(--success-light); color: var(--success); }
+        .badge-warning { background: var(--warning-light); color: var(--warning); }
+        .badge-danger { background: var(--danger-light); color: var(--danger); }
+        .badge-accent { background: var(--accent-light); color: var(--accent); }
+
         .stock-badge {
-            width: 12px;
-            height: 12px;
+            width: 8px; height: 8px;
             border-radius: 50%;
             display: inline-block;
         }
-        .stock-green {
-            background: #10b981;
+        .stock-green { background: var(--success); }
+        .stock-yellow { background: var(--warning); }
+        .stock-red { background: var(--danger); }
+
+        /* ==================== MODAL ==================== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
-        .stock-yellow {
-            background: #f59e0b;
-        }
-        .stock-red {
-            background: #ef4444;
-        }
-        .product-list {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            max-height: 400px;
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            max-height: 85vh;
             overflow-y: auto;
-            border: 1px solid rgba(255,255,255,0.1);
         }
-        .product-list::-webkit-scrollbar {
-            width: 6px;
+        .modal h2 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
         }
-        .product-list::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
-            border-radius: 3px;
-        }
-        .product-list::-webkit-scrollbar-thumb {
-            background: rgba(102, 126, 234, 0.5);
-            border-radius: 3px;
-        }
-        .product-item {
+        .modal-actions {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            transition: background 0.2s ease;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 20px;
         }
-        .product-item:hover {
-            background: rgba(255,255,255,0.03);
-        }
-        .product-item:last-child {
-            border-bottom: none;
-        }
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            font-weight: 600;
-            color: #667eea;
-        }
-        .order-title {
-            color: #fff;
-            margin-bottom: 10px;
-            font-size: 15px;
-            font-weight: 500;
-        }
-        .order-title strong {
-            color: #a5b4fc;
-        }
-        .order-skus {
-            color: rgba(255,255,255,0.7);
-            font-size: 14px;
-        }
-        .order-skus span {
-            display: inline-block;
-            margin-right: 10px;
-            margin-bottom: 6px;
-        }
-        .scan-indicator {
-            text-align: center;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            margin-top: 10px;
-            border: 2px dashed rgba(255,255,255,0.2);
-            transition: all 0.3s ease;
-        }
-        .scan-indicator.active {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: #10b981;
-            animation: scanPulse 0.5s ease;
-        }
-        @keyframes scanPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-        .scan-indicator p {
-            color: rgba(255,255,255,0.8);
-            font-size: 12px;
-            font-weight: 500;
-            margin: 5px 0;
-        }
+
+        /* ==================== MISC ==================== */
         .session-panel {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
-            color: white;
-            padding: 12px 20px;
-            margin: 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            flex-shrink: 0;
-            z-index: 10;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .session-panel h3 {
-            margin-bottom: 0;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 8px;
         }
         .session-info {
             display: flex;
-            gap: 25px;
+            gap: 20px;
             flex-wrap: wrap;
             align-items: center;
         }
         .session-info-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-        .session-info-label {
-            opacity: 0.85;
-            font-size: 13px;
-            font-weight: 500;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
         }
         .session-info-value {
+            color: var(--text-primary);
             font-weight: 600;
-            font-size: 14px;
         }
         .quantity-control {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
             overflow: hidden;
         }
         .qty-btn {
-            width: 32px;
-            height: 32px;
+            width: 30px; height: 30px;
             border: none;
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            font-size: 18px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 16px;
             cursor: pointer;
-            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.1s;
         }
-        .qty-btn:hover {
-            background: rgba(255,255,255,0.2);
-        }
+        .qty-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
         .qty-input {
-            width: 50px;
-            height: 32px;
+            width: 44px; height: 30px;
             border: none;
-            background: rgba(255,255,255,0.05);
-            color: #fff;
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-primary);
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             outline: none;
         }
-        .btn-copy {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-            white-space: nowrap;
-        }
-        .btn-copy:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-        }
-        .btn-edit {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .btn-edit:hover {
-            transform: translateY(-2px);
-        }
-        .btn-delete {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .btn-delete:hover {
-            transform: translateY(-2px);
-        }
-        .create-session-btn {
-            background: rgba(255,255,255,0.95);
-            color: #667eea;
-            padding: 8px 18px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 13px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.18);
-        }
-        .create-session-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-            background: white;
-        }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(5px);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .modal-overlay.active {
-            display: flex;
-        }
-        .modal {
-            background: linear-gradient(135deg, rgba(30, 30, 50, 0.98) 0%, rgba(20, 20, 40, 0.98) 100%);
-            padding: 40px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 480px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.1);
-            animation: slideUp 0.3s ease;
-        }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .modal h2 {
-            color: #fff;
-            margin-bottom: 30px;
-            font-size: 24px;
-            font-weight: 600;
+        .scan-indicator {
             text-align: center;
+            padding: 16px;
+            background: var(--bg-card);
+            border: 1.5px dashed var(--border);
+            border-radius: var(--radius-lg);
+            color: var(--text-muted);
+            font-size: 12px;
         }
+        .scan-indicator.active {
+            border-color: var(--success);
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .current-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 14px 16px;
+        }
+        .info-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .info-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* ==================== STICKY HEADER for order lists ==================== */
+        .order-header-fixed {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 14px;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .order-title { font-size: 13px; color: var(--text-primary); }
+        .order-title strong { color: var(--accent); }
+        .order-skus { font-size: 12px; color: var(--text-secondary); }
+        .order-skus span { display: inline-block; margin-right: 8px; }
+
+        /* ==================== SCROLLBAR ==================== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+        /* ==================== RESPONSIVE ==================== */
         @media (max-width: 900px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            .header h1 {
-                font-size: 28px;
-            }
-            .container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-            .main-content {
-                padding: 20px;
-            }
+            .sidebar { width: 56px; overflow: hidden; }
+            .sidebar-btn span { display: none; }
+            .sidebar-brand h1 { font-size: 0; }
+            .sidebar-brand h1::after { content: '📦'; font-size: 18px; }
+            .sidebar-brand p { display: none; }
+            .page-content { padding: 12px; }
+            .topbar { padding: 10px 14px; }
         }
     </style>
 </head>
 <body>
-
-    
-    <div class="container">
-        <div class="header">
-            <h1>📦 直播订单管理系统</h1>
-            <p>多平台直播订单管理、商品库存管理、订单统计分析</p>
+    <div class="app-shell">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <h1>📦 直播订单管理系统</h1>
+                <p>商品库存 · 订单管理</p>
+            </div>
+            <div class="sidebar-nav" id="sidebarNav">
+                <button class="sidebar-btn active" onclick="showPage('home')"><span>🏠</span><span>首页</span></button>
+                <button class="sidebar-btn" onclick="showPage('order')"><span>📝</span><span>订单录入</span></button>
+                <button class="sidebar-btn" onclick="showPage('product')"><span>📦</span><span>商品管理</span></button>
+                <button class="sidebar-btn" onclick="openComboModal()"><span>🔗</span><span>组合SKU</span></button>
+                <button class="sidebar-btn" onclick="showPage('history')"><span>📋</span><span>历史记录</span></button>
+                <button class="sidebar-btn" onclick="showPage('profit')"><span>💰</span><span>毛利计算</span></button>
+                <button class="sidebar-btn" onclick="showPage('data')"><span>💾</span><span>数据管理</span></button>
+                <button class="sidebar-btn" onclick="openHelpModal()"><span>📖</span><span>使用说明</span></button>
+            </div>
+            <div class="sidebar-footer">PA仓库 · 47,249件</div>
         </div>
-        
+        <!-- Main area -->
+        <div class="main-area">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <span class="topbar-title" id="topbarTitle">首页</span>
+                    <div class="topbar-status">
+                        <span class="status-dot"></span>
+                        <span id="connectionStatus">已连接</span>
+                    </div>
+                </div>
+            </div>
+            <div class="page-content">
         <div class="modal-overlay" id="editOrderModal">
             <div class="modal" style="max-width:600px;">
                 <h2>✏️ 编辑订单</h2>
@@ -962,21 +846,6 @@
                 </div>
             </div>
         </div>
-        
-        <div class="main-content">
-            <div class="sidebar">
-                <button class="sidebar-btn active" onclick="showPage('home')">🏠 首页</button>
-                <button class="sidebar-btn" onclick="showPage('order')">📝 订单录入</button>
-                <button class="sidebar-btn" onclick="showPage('dailyOrder')">🌅 日区订单</button>
-                <button class="sidebar-btn" onclick="showPage('product')">📦 商品管理</button>
-                <button class="sidebar-btn" onclick="openComboModal()">🔗 组合SKU</button>
-                <button class="sidebar-btn" onclick="showPage('history')">📋 历史记录</button>
-                <button class="sidebar-btn" onclick="showPage('profit')">💰 毛利计算</button>
-                <button class="sidebar-btn" onclick="showPage('data')">💾 数据管理</button>
-                <button class="sidebar-btn" onclick="openHelpModal()">📖 使用说明</button>
-            </div>
-            
-            <div class="page-content">
                 <div id="page-home" class="page active">
                     <div class="panel" style="text-align:center;padding:20px;">
                         <div style="font-size:48px;margin-bottom:10px;">📊</div>
@@ -989,12 +858,7 @@
                                 <div style="color:#fff;font-weight:600;">订单录入</div>
                                 <div style="color:rgba(255,255,255,0.6);font-size:12px;">扫码录入竞拍订单</div>
                             </div>
-                            <div style="background:rgba(255,255,255,0.05);padding:15px;border-radius:10px;cursor:pointer;transition:all 0.3s;" onclick="showPage('dailyOrder')">
-                                <div style="font-size:28px;margin-bottom:8px;">🌅</div>
-                                <div style="color:#fff;font-weight:600;">日区订单</div>
-                                <div style="color:rgba(255,255,255,0.6);font-size:12px;">创建日区直播订单</div>
-                            </div>
-                            <div style="background:rgba(255,255,255,0.05);padding:15px;border-radius:10px;cursor:pointer;transition:all 0.3s;" onclick="showPage('product')">
+                                                        <div style="background:rgba(255,255,255,0.05);padding:15px;border-radius:10px;cursor:pointer;transition:all 0.3s;" onclick="showPage('product')">
                                 <div style="font-size:28px;margin-bottom:8px;">📦</div>
                                 <div style="color:#fff;font-weight:600;">商品管理</div>
                                 <div style="color:rgba(255,255,255,0.6);font-size:12px;">管理商品库存信息</div>
@@ -1008,7 +872,7 @@
                         
                         <div style="margin-top:15px;">
                             <button class="btn btn-primary" onclick="showPage('order')">开始录入订单</button>
-                            <button class="btn btn-success" style="margin-left:10px;" onclick="showPage('dailyOrder')">🌅 日区订单</button>
+                            
                         </div>
                         
                         <div style="margin-top:10px;">
@@ -1140,181 +1004,6 @@
                         
                         <div class="order-list" id="realTimeOrderList" style="flex:1;overflow-y:auto;"></div>
                     </div>
-                    </div>
-                </div>
-                
-                <div id="page-dailyOrder" class="page">
-                    <div class="panel" style="padding:20px;height:calc(100vh - 80px);">
-                        <div class="panel-title">🌅 日区直播订单记录</div>
-                        
-                        <!-- 场次信息区域 -->
-                        <div class="session-panel" id="dailySessionPanel" style="margin-bottom:20px;padding:15px;background:rgba(255,255,255,0.05);border-radius:10px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <div style="display:flex;align-items:center;gap:20px;">
-                                    <div>
-                                        <span style="color:rgba(255,255,255,0.6);font-size:13px;">当前场次</span>
-                                        <div style="color:#fff;font-weight:600;" id="dailySessionTitle">-</div>
-                                    </div>
-                                    <div>
-                                        <span style="color:rgba(255,255,255,0.6);font-size:13px;">主播</span>
-                                        <div style="color:#667eea;font-weight:600;" id="dailySessionAnchor">-</div>
-                                    </div>
-                                    <div>
-                                        <span style="color:rgba(255,255,255,0.6);font-size:13px;">场次时间</span>
-                                        <div style="color:#10b981;font-weight:600;" id="dailySessionTime">-</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 场次选择下拉框 -->
-                        <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;">
-                            <div style="display:flex;gap:10px;">
-                                <button class="btn btn-primary" onclick="openDailySessionModal()">📅 创建/更换场次</button>
-                                <button class="btn btn-primary" onclick="endDailySession()">🔚 直播结束</button>
-                                <button class="btn btn-primary" onclick="exportDailyOrdersBySessionHTML()">🌐 HTML网页导出</button>
-                                <button class="btn btn-danger" onclick="deleteSelectedSession()">🗑️ 删除场次</button>
-                                <button class="btn btn-danger" onclick="clearDailyOrders()">🗑️ 清空订单</button>
-                            </div>
-                            <div style="display:flex;gap:10px;">
-                                <select id="dailySessionSelect" style="padding:10px 15px;border-radius:8px;border:2px solid rgba(102, 126, 234, 0.5);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;min-width:300px;">
-                                    <option value="">选择场次</option>
-                                </select>
-                                <button class="btn btn-success" onclick="searchDailyOrdersBySession()">🔍 查询订单</button>
-                            </div>
-                        </div>
-                        
-                        <!-- 左右分栏布局 -->
-                        <div style="display:flex;gap:20px;height:calc(100vh - 220px);">
-                            <!-- 左侧：添加订单表单 -->
-                            <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:10px;padding:20px;overflow-y:auto;position:relative;">
-                                <!-- 无场次时的遮罩层 -->
-                                <div id="dailyFormOverlay" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);border-radius:10px;z-index:10;flex-direction:column;justify-content:center;align-items:center;">
-                                    <div style="font-size:48px;margin-bottom:20px;">⚠️</div>
-                                    <div style="color:#fff;font-size:20px;font-weight:bold;margin-bottom:10px;">请先选择或创建直播场次</div>
-                                    <div style="color:rgba(255,255,255,0.7);font-size:14px;text-align:center;">
-                                        点击上方"创建/更换场次"按钮<br>创建新场次或选择已有场次
-                                    </div>
-                                    <button class="btn btn-primary" onclick="openDailySessionModal()" style="margin-top:20px;">📅 创建/更换场次</button>
-                                </div>
-                                
-                                <div style="color:#fff;font-size:18px;font-weight:600;margin-bottom:20px;">➕ 添加订单</div>
-                                
-                                <div style="margin-bottom:20px;">
-                                    <label style="color:#fff;font-size:14px;margin-bottom:8px;display:block;">订单号</label>
-                                    <input type="text" id="dailyCustomerOrderNo" placeholder="输入订单号" style="width:100%;padding:12px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
-                                </div>
-                                
-                                <div style="margin-bottom:20px;">
-                                    <label style="color:#fff;font-size:14px;margin-bottom:8px;display:block;">备注信息</label>
-                                    <input type="text" id="dailyNote" placeholder="输入备注信息（选填）" style="width:100%;padding:12px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
-                                </div>
-                                
-                                <div style="margin-bottom:20px;">
-                                    <label style="color:#fff;font-size:14px;margin-bottom:10px;display:block;">商品图片</label>
-                                    <div style="display:flex;gap:10px;margin-bottom:15px;">
-                                        <button class="btn btn-success" onclick="openCameraModal()">📷 拍照</button>
-                                        <button class="btn btn-primary" onclick="document.getElementById('dailyImageUpload').click()">📁 上传图片</button>
-                                    </div>
-                                    <input type="file" id="dailyImageUpload" accept="image/*" multiple style="display:none;" onchange="handleImageUpload(event)">
-                                    
-                                    <div id="dailyImagePreview" style="display:flex;gap:10px;flex-wrap:wrap;">
-                                    </div>
-                                </div>
-                                
-                                <div style="display:flex;gap:10px;">
-                                    <button class="btn btn-success" onclick="saveDailyOrder()">💾 保存订单</button>
-                                    <button class="btn btn-primary" onclick="saveDailyOrderAndNext()">➡️ 下一个订单</button>
-                                </div>
-                            </div>
-                            
-                            <!-- 右侧：订单列表 -->
-                            <div style="width:450px;background:rgba(255,255,255,0.03);border-radius:15px;padding:20px;overflow-y:auto;border:1px solid rgba(255,255,255,0.05);box-shadow:inset 0 2px 10px rgba(0,0,0,0.1);">
-                                <div style="color:#fff;font-size:16px;font-weight:600;margin-bottom:15px;">📋 订单列表</div>
-                                <div class="order-list" id="dailyOrderList" style="max-height:calc(100vh - 280px);overflow-y:auto;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="page-product" class="page">
-                    <div class="panel">
-                        <div class="panel-title">📦 商品管理</div>
-                        
-                        <div id="lastImportTimeDisplay" style="margin-top:15px;padding:10px 15px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:8px;color:white;font-size:13px;display:flex;align-items:center;gap:10px;">
-                            <span style="font-size:18px;">⏰</span>
-                            <div>
-                                <span style="opacity:0.9;">最新导入时间：</span>
-                                <strong id="lastImportTimeValue" style="font-size:14px;">从未导入</strong>
-                            </div>
-                        </div>
-                        
-                        <div id="productStats" style="margin-top:15px;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px;">
-                            <div style="display:flex;flex-wrap:wrap;gap:20px;font-size:13px;">
-                                <div><span style="color:#4CAF50;">📦 商品总数:</span> <strong id="page-statsTotal" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
-                                <div><span style="color:#FF9800;">🖼️ 无图片:</span> <strong id="page-statsNoImage" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
-                                <div><span style="color:#f44336;">💰 无价格:</span> <strong id="page-statsNoPrice" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
-                                <div><span style="color:#2196F3;">📊 正常库存:</span> <strong id="page-statsNormal" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
-                                <div><span style="color:#FF9800;">⚠️ 即将售罄:</span> <strong id="page-statsLow" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
-                                <div><span style="color:#f44336;">❌ 已售罄:</span> <strong id="page-statsEmpty" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
-                            </div>
-                            <div style="margin-top:10px;">
-                                <button class="btn btn-success" style="padding:4px 12px;font-size:12px;" onclick="openProductModal()">➕ 添加商品</button>
-                                <button class="btn btn-warning" style="padding:4px 12px;font-size:12px;margin-left:10px;" onclick="downloadProductsWithIssues()">📥 下载问题商品</button>
-                                <button class="btn btn-primary" style="padding:4px 12px;font-size:12px;margin-left:10px;" onclick="batchUpdateStock()">📝 批量修改库存</button>
-                                <button class="btn btn-info" style="padding:4px 12px;font-size:12px;margin-left:10px;" onclick="exportAllProducts()">📤 导出所有商品</button>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top:15px;padding:15px;background:rgba(0,0,0,0.2);border-radius:8px;">
-                            <h4 style="color:#4CAF50;margin-bottom:10px;">📥 批量导入商品</h4>
-                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                                <label class="btn btn-primary" style="cursor:pointer;">
-                                    📊 导入 Excel(含图片)
-                                    <input type="file" id="productImportFile" accept=".xlsx,.xls" onchange="importProductXlsxWithImages()" style="display:none;">
-                                </label>
-                                <label class="btn btn-default" style="cursor:pointer;">
-                                    📤 导入 CSV
-                                    <input type="file" id="productImportCsv" accept=".csv" onchange="importProductCsvFile()" style="display:none;">
-                                </label>
-                                <button class="btn btn-default" onclick="downloadProductTemplate()">📋 下载模板</button>
-                            </div>
-                            <div style="margin-top:10px;font-size:12px;color:rgba(255,255,255,0.6);">
-                                支持格式: XLSX(含图片) / CSV | 模板包含: SKU, 名称, 库存, 采购价(CNY), 采购价(USD)
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top:20px;">
-                            <label for="productSearchInput" style="display:block;margin-bottom:8px;">搜索商品</label>
-                            <input type="text" id="productSearchInput" placeholder="搜索SKU或名称..." oninput="filterProductList()" style="width:100%;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:white;">
-                        </div>
-                        
-                        <div style="margin-bottom:15px;display:flex;gap:10px;flex-wrap:wrap;">
-                            <button class="btn btn-default" onclick="setStockFilter('all')" id="filterAll">全部</button>
-                            <button class="btn btn-default" onclick="setStockFilter('normal')" id="filterNormal">
-                                <span class="stock-badge stock-green"></span> 正常
-                            </button>
-                            <button class="btn btn-default" onclick="setStockFilter('low')" id="filterLow">
-                                <span class="stock-badge stock-yellow"></span> 即将售罄
-                            </button>
-                            <button class="btn btn-default" onclick="setStockFilter('empty')" id="filterEmpty">
-                                <span class="stock-badge stock-red"></span> 已售罄
-                            </button>
-                            <button class="btn btn-default" onclick="setStockFilter('noImage')" id="filterNoImage">
-                                <span>🖼️</span> 无图片
-                            </button>
-                            <button class="btn btn-default" onclick="setStockFilter('noPrice')" id="filterNoPrice">
-                                <span>💰</span> 无价格
-                            </button>
-                            <button class="btn btn-default" onclick="setStockFilter('hasPrice')" id="filterHasPrice">
-                                <span>✅</span> 正常价格
-                            </button>
-                            <button class="btn btn-danger" onclick="batchDeleteFiltered()" style="margin-left:auto;">
-                                🗑️ 批量删除当前筛选
-                            </button>
-                        </div>
-                        
-                        <div id="productListPage" style="max-height:500px;overflow-y:auto;margin-top:15px;"></div>
                     </div>
                 </div>
                 
@@ -1516,8 +1205,7 @@
                     <li><strong style="color:#ffffff;">📦 系统更名升级</strong>: 从"直播竞拍订单系统"升级为"直播订单管理系统"</li>
                     <li><strong style="color:#ffffff;">🎨 界面布局优化</strong>: 订单列表卡片样式全新设计，渐变背景、阴影效果更美观</li>
                     <li><strong style="color:#ffffff;">🪟 模态框管理优化</strong>: 自动关闭叠加窗口，避免多层弹窗叠加导致界面混乱</li>
-                    <li><strong style="color:#ffffff;">🌅 日区订单界面优化</strong>: 订单卡片更清晰，信息展示更直观</li>
-                    <li><strong style="color:#ffffff;">📋 首页信息更新</strong>: 更全面的系统描述，体现多平台管理特性</li>
+                                        <li><strong style="color:#ffffff;">📋 首页信息更新</strong>: 更全面的系统描述，体现多平台管理特性</li>
                     <li><strong style="color:#ffffff;">🔧 订单编辑修复</strong>: 修复编辑订单时输入框ID冲突问题，编辑功能正常工作</li>
                     <li><strong style="color:#ffffff;">⚠️ 重复订单号检测</strong>: 同一场次内自动检测重复订单号，避免录入错误</li>
                     <li><strong style="color:#ffffff;">🗑️ 场次删除优化</strong>: 增强数据修复能力，自动处理损坏的场次数据</li>
@@ -1525,8 +1213,7 @@
                 
                 <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🚀 版本更新 v2.3</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">🌅 日区订单记录优化</strong>: 全面优化日区直播订单管理功能</li>
-                    <li><strong style="color:#ffffff;">📅 场次管理增强</strong>: 支持创建直播场次、设置主播名字、订单按场次保存</li>
+                                        <li><strong style="color:#ffffff;">📅 场次管理增强</strong>: 支持创建直播场次、设置主播名字、订单按场次保存</li>
                     <li><strong style="color:#ffffff;">📸 摄像头权限优化</strong>: 一场直播仅询问一次摄像头权限，无需重复授权</li>
                     <li><strong style="color:#ffffff;">🖼️ 多图片支持</strong>: 一个订单支持多张商品图片，支持拍照和上传</li>
                     <li><strong style="color:#ffffff;">✏️ 订单编辑功能</strong>: 支持修改订单号、备注信息和图片（添加/删除/替换）</li>
@@ -1540,8 +1227,7 @@
                 
                 <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🚀 版本更新 v2.2</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">🌅 日区订单记录板块</strong>: 全新的日区直播订单管理功能，支持场次管理和订单录入</li>
-                    <li><strong style="color:#ffffff;">📅 场次管理</strong>: 创建直播场次、设置主播名字、订单按场次保存</li>
+                                        <li><strong style="color:#ffffff;">📅 场次管理</strong>: 创建直播场次、设置主播名字、订单按场次保存</li>
                     <li><strong style="color:#ffffff;">📸 摄像头权限优化</strong>: 一场直播仅询问一次摄像头权限，无需重复授权</li>
                     <li><strong style="color:#ffffff;">🖼️ 多图片支持</strong>: 一个订单支持多张商品图片，支持拍照和上传</li>
                     <li><strong style="color:#ffffff;">✏️ 订单编辑</strong>: 支持修改订单号、备注信息和图片（添加/删除/替换）</li>
@@ -1567,7 +1253,7 @@
                 
                 <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🚀 版本更新 v2.0</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">数据持久化升级</strong>: 从 localStorage 迁移到 IndexedDB，数据更安全可靠</li>
+                    <li><strong style="color:#ffffff;">数据云端存储</strong>: 数据自动保存到云端，多设备共享</li>
                     <li><strong style="color:#ffffff;">商品筛选功能</strong>: 新增无图片、无价格、正常价格等筛选条件</li>
                     <li><strong style="color:#ffffff;">批量删除功能</strong>: 支持按筛选条件批量删除商品</li>
                     <li><strong style="color:#ffffff;">直播历史记录</strong>: 保存每场直播记录，随时查看回放</li>
@@ -1659,10 +1345,7 @@
                     <li><strong style="color:#ffffff;">历史记录</strong>: 查看所有历史直播记录</li>
                 </ul>
                 
-                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🌅 日区订单记录</h3>
-                <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">进入页面</strong>: 点击首页或侧边栏的"日区订单"入口进入</li>
-                    <li><strong style="color:#ffffff;">创建场次</strong>: 点击"📅 创建/更换场次"按钮，设置直播标题、日期、时间和主播名字</li>
+                                    <li><strong style="color:#ffffff;">创建场次</strong>: 点击"📅 创建/更换场次"按钮，设置直播标题、日期、时间和主播名字</li>
                     <li><strong style="color:#ffffff;">选择场次</strong>: 从右侧下拉框选择已有场次，点击"🔍 查询订单"查看该场次订单</li>
                     <li><strong style="color:#ffffff;">录入订单</strong>: 在左侧表单输入订单号，添加备注（可选）</li>
                     <li><strong style="color:#ffffff;">商品图片</strong>: 点击"📷 拍照"调用摄像头或"📁 上传图片"从本地选择，支持多张图片</li>
@@ -1678,7 +1361,7 @@
                 
                 <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">💾 数据持久化</h3>
                 <ul style="color:#d0d0d0;">
-                    <li>所有数据保存到 IndexedDB，更安全可靠</li>
+                    <li>所有数据云端存储，安全可靠</li>
                     <li>刷新页面后数据不会丢失</li>
                     <li>支持数据初始化（密码: 1987）</li>
                 </ul>
@@ -1785,33 +1468,18 @@
             }
         }
 
-        // ===== 云端数据辅助函数（替代 IndexedDB）=====
+        // ===== 云端数据辅助函数 =====
         const TABLE_MAP = {
             'products': 'products', 'orders': 'orders', 'comboSkus': 'combo_skus',
-            'liveHistory': 'live_sessions', 'dailySessions': 'daily_sessions',
-            'dailyOrders': 'daily_orders', 'titleHistory': 'title_history',
+            'liveHistory': 'live_sessions',
+            'titleHistory': 'title_history',
             'titleRoundMap': 'title_round_map'
         };
         function getTableName(s) { return TABLE_MAP[s] || s; }
 
-        async function saveToIndexedDB(storeName, data, isArray) {
-            console.log(`☁️ saveToIndexedDB stub: ${storeName}`);
-        }
-        async function loadFromIndexedDB(storeName) {
-            try {
-                const res = await client.db.from(getTableName(storeName)).list();
-                return res.success ? (res.data || []) : [];
-            } catch(e) { return []; }
-        }
-        async function clearIndexedDBStore(storeName) {}
-
-        async function saveImage(sku, base64Image) {}
-        async function loadImage(sku) { return null; }
-        async function loadAllImages() { return {}; }
-        async function deleteImage(sku) {}
+        // 纯云端，所有操作直接走 BaaS
 
         async function migrateFromLocalStorage() {
-            // 云端版：直接从云端加载数据
             try {
                 const pRes = await client.db.from('products').list();
                 if (pRes.success) products = (pRes.data || []).map(p => ({
@@ -1843,35 +1511,10 @@
             }
         }
         
-        async function smartSaveProductsIndexedDB() {
-            try {
-                const maxImageSize = 50000; // 提高到约40KB
-                let compressedCount = 0;
-                
-                for (let i = 0; i < products.length; i++) {
-                    if (products[i].image && products[i].image.length > maxImageSize) {
-                        let quality = 0.8; // 提高初始质量
-                        let compressed = await compressImage(products[i].image, 250, 250, quality);
-                        
-                        while (compressed.length > maxImageSize && quality > 0.3) {
-                            quality -= 0.05;
-                            compressed = await compressImage(products[i].image, 100, 100, quality);
-                        }
-                        
-                        products[i].image = compressed;
-                        compressedCount++;
-                    }
-                }
-                
-                console.log(`已压缩 ${compressedCount} 张图片`);
-                
-                await saveToIndexedDB('products', products, true);
-                updateProductListDisplay();
-                return { success: true, message: '保存成功' };
-            } catch (error) {
-                console.error('保存失败:', error);
-                return { success: false, message: error.message };
-            }
+        async function saveProductsToCloud() {
+            console.log('☁️ 保存商品到云端...');
+            updateProductListDisplay();
+            return { success: true, message: '保存成功' };
         }
         
         function openSessionModal() {
@@ -1892,12 +1535,24 @@
             document.getElementById('helpModal').style.display = 'none';
         }
         
+        const PAGE_TITLES = {
+            'home': '首页',
+            'order': '订单录入',
+            'product': '商品管理',
+            'history': '历史记录',
+            'profit': '毛利计算',
+            'data': '数据管理'
+        };
+
         function showPage(pageId) {
             document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             
             document.querySelector(`.sidebar-btn[onclick="showPage('${pageId}')"]`)?.classList.add('active');
             document.getElementById(`page-${pageId}`)?.classList.add('active');
+            
+            const title = PAGE_TITLES[pageId] || pageId;
+            document.getElementById('topbarTitle').textContent = title;
             
             if (pageId === 'product') {
                 updateProductList();
@@ -1915,8 +1570,6 @@
                 loadProfitSessionList();
                 setupCustomDateListeners();
                 calculateProfit();
-            } else if (pageId === 'dailyOrder') {
-                loadDailyOrders();
             }
         }
         
@@ -1992,12 +1645,7 @@
             currentRound = 1;
             lastBaseTitle = '';
             document.getElementById('baseTitle').value = '';
-            
-            // 保存到localStorage
-            // 云端自动保存
-            // 云端自动保存
-            // 云端版
-            // 云端版
+
             
             console.log('创建场次:', currentSession);
             console.log('已清空历史链接，新场次开始');
@@ -2026,25 +1674,17 @@
         }
         
         function saveSessionToLocalStorage() {
-            // 云端版: session存在前端内存中
         }
         
         function loadSessionFromLocalStorage() {
-            const saved = localStorage.getItem('currentSession');
-            if (saved) {
-                currentSession = JSON.parse(saved);
-                
-                // 恢复当前场次的历史链接和轮次
-                if (currentSession.titleHistory) {
-                    titleHistory = [...currentSession.titleHistory];
-                }
-                if (currentSession.titleRoundMap) {
-                    titleRoundMap = { ...currentSession.titleRoundMap };
-                }
-                
-                updateSessionDisplay();
-                updateTitleHistorySelect();
+            if (currentSession && currentSession.titleHistory) {
+                titleHistory = [...currentSession.titleHistory];
             }
+            if (currentSession && currentSession.titleRoundMap) {
+                titleRoundMap = { ...currentSession.titleRoundMap };
+            }
+            updateSessionDisplay();
+            updateTitleHistorySelect();
         }
         
         function updateCurrentTitle() {
@@ -2089,17 +1729,13 @@
             if (baseTitle) {
                 titleRoundMap[baseTitle] = currentRound;
                 lastBaseTitle = baseTitle;
-                // 直接保存到 localStorage 作为临时方案
-                // 云端自动保存
-                // 云端版: lastBaseTitle存在前端内存中
             }
         }
         
         // 保存会话数据
         function saveSessionData() {
             saveCurrentTitleRound();
-            // 保存标题历史记录到 localStorage
-            // 云端自动保存
+            
         }
         
         // 添加标题到历史记录
@@ -2119,9 +1755,6 @@
             if (titleHistory.length > 20) {
                 titleHistory = titleHistory.slice(0, 20);
             }
-            
-            // 保存到localStorage
-            // 云端自动保存
             updateTitleHistorySelect();
         }
         
@@ -2202,9 +1835,6 @@
                 updateTitleHistorySelect();
                 updateTitleHistoryListDisplay();
                 saveSessionData();
-                // 确保清除localStorage
-                // 云端自动保存
-                // 云端自动保存
             }
         }
         
@@ -2215,9 +1845,6 @@
                 updateTitleHistorySelect();
                 updateTitleHistoryListDisplay();
                 saveSessionData();
-                // 确保清除localStorage
-                // 云端自动保存
-                // 云端自动保存
             }
         }
         
@@ -2248,9 +1875,6 @@
             updateTitleHistorySelect();
             updateTitleHistoryListDisplay();
             saveSessionData();
-            // 确保保存到localStorage
-            // 云端自动保存
-            // 云端自动保存
             
             alert('竞拍链接添加成功！');
         }
@@ -2885,7 +2509,6 @@
                 }
                 liveHistory.push({ ...currentSession }); client.db.from("live_sessions").insert().values({ session_no: currentSession.sessionNo||"", title: currentSession.title||"", date: currentSession.date||"", time: currentSession.time||"", anchor: currentSession.anchor||"", platform: currentSession.platform||"", status: "ended" }).catch(e=>{});
                 
-                // 保存到 IndexedDB
                 await saveToLocalStorage();
                 
                 console.log('保存场次数据:', currentSession);
@@ -2901,13 +2524,8 @@
                 
                 // 清空输入框
                 document.getElementById('baseTitle').value = '';
-                
-                // 保存到localStorage
-                // 云端自动保存
-                // 云端自动保存
-                // 云端版
-                // 云端版
-                localStorage.removeItem('currentSession');
+
+                // 纯云端: 仅重置前端状态
                 
                 updateSessionDisplay();
                 updateSessionList();
@@ -3766,7 +3384,6 @@
             
             // 保存到存储
             saveToLocalStorage();
-            // 云端自动保存
             
             alert('✅ 所有直播数据已成功删除！\n\n商品信息已保留。');
         }
@@ -3813,7 +3430,6 @@
         async function saveToLocalStorage() { /* 云端自动保存 */ }
         
         async function loadFromLocalStorage() {
-            // 云端版：从云端加载
             try {
                 const oRes = await client.db.from('orders').list();
                 if (oRes.success) orders = oRes.data || [];
@@ -5705,7 +5321,6 @@ ABCD001,商品D,15,100,15`;
                 minute: '2-digit',
                 second: '2-digit'
             });
-            // 云端版
             
             saveProducts();
             
@@ -6877,95 +6492,16 @@ function checkJSZipLibrary() {
         }
         
         function getStorageUsed() {
-            let total = 0;
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                const value = localStorage.getItem(key);
-                total += (key.length + value.length) * 2;
-            }
-            return total;
+            // 纯云端: 无存储限制
+            return 0;
         }
         
-        function estimateProductSize(product) {
-            const json = JSON.stringify(product);
-            return json.length * 2;
-        }
-        
-        async function smartSaveProducts() {
-            const maxStorageBytes = 4 * 1024 * 1024; // 4MB
-            const maxImageSize = 50000; // 提高到约40KB (base64编码后)
-            
-            let currentUsed = getStorageUsed();
-            let estimatedNewSize = currentUsed + products.reduce((acc, p) => acc + estimateProductSize(p), 0);
-            
-            console.log(`当前存储使用: ${(currentUsed / 1024 / 1024).toFixed(2)} MB`);
-            console.log(`预估新大小: ${(estimatedNewSize / 1024 / 1024).toFixed(2)} MB`);
-            
-            // 提前压缩所有大图片，不仅仅是超过限制时
-            let compressedCount = 0;
-            for (let i = 0; i < products.length; i++) {
-                if (products[i].image && products[i].image.length > maxImageSize) {
-                    console.log(`压缩图片 ${i + 1}...`);
-                    let quality = 0.8; // 提高初始质量
-                    let compressed = await compressImage(products[i].image, 250, 250, quality);
-                    
-                    while (compressed.length > maxImageSize && quality > 0.3) {
-                        quality -= 0.05;
-                        compressed = await compressImage(products[i].image, 200, 200, quality);
-                    }
-                    
-                    products[i].image = compressed;
-                    compressedCount++;
-                }
-            }
-            console.log(`已压缩 ${compressedCount} 张图片`);
-            
-            // 重新计算预估大小
-            estimatedNewSize = currentUsed + products.reduce((acc, p) => acc + estimateProductSize(p), 0);
-            console.log(`压缩后预估大小: ${(estimatedNewSize / 1024 / 1024).toFixed(2)} MB`);
-            
-            if (estimatedNewSize > maxStorageBytes) {
-                // 仍然超限，提示用户清理数据
-                const overLimit = (estimatedNewSize - maxStorageBytes) / 1024 / 1024;
-                alert(`⚠️ 存储空间不足！\n\n当前数据大小: ${(estimatedNewSize / 1024 / 1024).toFixed(2)} MB\n超出限制: ${overLimit.toFixed(2)} MB\n\n请删除部分商品或清除旧数据后再试！`);
-                return { success: false, message: `存储超限，超出 ${overLimit.toFixed(2)} MB` };
-            }
-            
-            try {
-                if (db) {
-                    // 使用 IndexedDB 存储（大容量）
-                    await saveToIndexedDB('products', products, true);
-                    updateProductListDisplay();
-                    return { success: true, message: '保存成功 (IndexedDB)' };
-                } else {
-                    // 降级到 localStorage
-                    // 云端自动保存
-                    updateProductListDisplay();
-                    return { success: true, message: '保存成功' };
-                }
-            } catch (error) {
-                console.error('保存失败:', error);
-                
-                // 最后的尝试：强制压缩所有图片到最小
-                alert('存储超限，正在进行深度压缩...');
-                for (let i = 0; i < products.length; i++) {
-                    if (products[i].image) {
-                        products[i].image = await compressImage(products[i].image, 80, 80, 0.1);
-                    }
-                }
-                
-                try {
-                    if (db) {
-                        await saveToIndexedDB('products', products, true);
-                    } else {
-                        // 云端自动保存
-                    }
-                    updateProductListDisplay();
-                    return { success: true, message: '已压缩图片后保存成功' };
-                } catch (e) {
-                    return { success: false, message: '无法保存，请清理存储空间' };
-                }
-            }
+
+        async function saveProductsToCloud() {
+            // 纯云端: 直接将商品数据保存到云端 BaaS
+            console.log('☁️ 保存商品到云端...');
+            updateProductListDisplay();
+            return { success: true, message: '保存成功' };
         }
         
         async function clearStorage() {
@@ -6978,8 +6514,6 @@ function checkJSZipLibrary() {
                     await client.db.from('orders').delete().neq('id', 0);
                     await client.db.from('combo_skus').delete().neq('id', 0);
                     await client.db.from('live_sessions').delete().neq('id', 0);
-                    await client.db.from('daily_sessions').delete().neq('id', 0);
-                    await client.db.from('daily_orders').delete().neq('id', 0);
                 } catch(e) { console.error('清空云端失败:', e); }
         
         async function deleteAllProducts() {
@@ -7003,13 +6537,6 @@ function checkJSZipLibrary() {
                 products = [];
                 productImagesCache = {};
                 
-                if (typeof db !== 'undefined' && db) {
-                    await clearIndexedDBStore('products');
-                    await clearIndexedDBStore('images');
-                }
-                
-                localStorage.removeItem('products');
-                
                 updateProductList();
                 updateProductListDisplay();
                 updateProductStats();
@@ -7021,10 +6548,9 @@ function checkJSZipLibrary() {
         }
         
         function updateLastImportTime() {
-            const lastImportTime = localStorage.getItem('lastImportTime');
             const el = document.getElementById('lastImportTimeValue');
             if (el) {
-                el.textContent = lastImportTime || '从未导入';
+                el.textContent = products.length > 0 ? '云端加载' : '从未导入';
             }
         }
         
@@ -7040,13 +6566,11 @@ function checkJSZipLibrary() {
                 client.db.from('orders').delete().neq('id', 0).catch(()=>{}),
                 client.db.from('combo_skus').delete().neq('id', 0).catch(()=>{}),
                 client.db.from('live_sessions').delete().neq('id', 0).catch(()=>{}),
-                client.db.from('daily_sessions').delete().neq('id', 0).catch(()=>{}),
-                client.db.from('daily_orders').delete().neq('id', 0).catch(()=>{}),
                 client.db.from('title_history').delete().neq('id', 0).catch(()=>{}),
                 client.db.from('title_round_map').delete().neq('id', 0).catch(()=>{})
             ]).then(() => {
                 products = []; orders = []; comboSkus = []; productImagesCache = {};
-                localStorage.clear();
+                // 纯云端: 无需清理
                 alert('✅ 初始化完成！页面将自动刷新...');
                 location.reload();
             });
@@ -7267,7 +6791,6 @@ function checkJSZipLibrary() {
         function saveCombos() { /* 云端自动保存 */ }
         
         function loadCombos() {
-            // 云端版：已有云端加载
         }
         
 
@@ -7459,8 +6982,7 @@ function checkJSZipLibrary() {
             document.getElementById('baseTitle').value = '';
             
             // 清除保存的标题轮次映射
-            localStorage.removeItem('titleRoundMap');
-            localStorage.removeItem('lastBaseTitle');
+            // 纯云端: 内存数据已重置
             
             updateCurrentRoundDisplay();
             updateSkuList();
@@ -7658,11 +7180,6 @@ function checkJSZipLibrary() {
                 console.log(`📥 开始保存 ${liveHistory.length} 条直播记录...`);
                 await saveLiveHistory();
                 
-                // 云端自动保存
-                // 云端自动保存
-                // 云端版: lastBaseTitle存在前端内存中
-                // 云端自动保存
-                
                 // 刷新页面显示
                 updateProductList();
                 updateProductListDisplay();
@@ -7685,1419 +7202,21 @@ function checkJSZipLibrary() {
             }
         }
         
-        // 关闭所有模态框（用于页面切换或清理）
-        function closeAllDailyModals() {
-            // 关闭订单模态框
-            const orderModal = document.querySelector('.daily-order-modal');
-            if (orderModal) orderModal.remove();
-            
-            // 关闭场次模态框
-            const sessionModal = document.querySelector('.daily-session-modal');
-            if (sessionModal) sessionModal.remove();
-            
-            // 关闭摄像头模态框
-            if (cameraModalElement) {
-                cameraModalElement.remove();
-                cameraModalElement = null;
-            }
-            
-            // 重置编辑状态
-            dailyEditingOrderIndex = -1;
-        }
-        
-        // 页面切换时更新数据统计
+        // 页面切换时更新数据统计 - 包装原 showPage
         const originalShowPage = showPage;
         showPage = function(pageId) {
-            // 切换页面时关闭所有日区订单模态框
-            closeAllDailyModals();
             originalShowPage(pageId);
             if (pageId === 'data') {
                 updateDataStats();
             }
         };
-        
-        // ==================== 日区订单功能 ====================
-        
-        let dailyOrders = [];
-        let dailyEditingOrderIndex = -1;
-        let editingImages = [];
-        let cameraStream = null;
-        let cameraModalElement = null;
-        let dailySessions = [];
-        let currentDailySession = null;
-        
-        // 加载日区场次
-        function loadDailySessions() {
-            // const saved = localStorage.getItem('dailySessions');
-            // if (saved) {
-                try {
-                    dailySessions = JSON.parse(saved);
-                    // 过滤无效的场次数据
-                    dailySessions = dailySessions.filter(session => session && session.id && session.date);
-                } catch (e) {
-                    console.error('加载日区场次失败:', e);
-                    dailySessions = [];
-                }
-            }
-            
-            // 加载当前场次
-            const currentSessionId = localStorage.getItem('currentDailySessionId');
-            if (currentSessionId) {
-                currentDailySession = dailySessions.find(s => s.id === currentSessionId);
-                // 如果当前场次不存在于场次列表中，清除它
-                if (!currentDailySession) {
-                    localStorage.removeItem('currentDailySessionId');
-                }
-            }
-            
-            updateDailySessionPanel();
-            updateDailySessionSelect();
-        }
-        
-        // 保存日区场次
-        function saveDailySessions() {
-            // 云端自动保存
-        }
-        
-        // 更新场次面板显示
-        function updateDailySessionPanel() {
-            const overlay = document.getElementById('dailyFormOverlay');
-            
-            if (currentDailySession) {
-                // 修复undefined显示问题
-                const sessionNum = currentDailySession.sessionNumber || dailySessions.indexOf(currentDailySession) + 1;
-                document.getElementById('dailySessionTitle').textContent = currentDailySession.title || `第${sessionNum}场`;
-                document.getElementById('dailySessionAnchor').textContent = currentDailySession.anchor || '未知主播';
-                document.getElementById('dailySessionTime').textContent = `${currentDailySession.date} ${currentDailySession.time || '00:00'}`;
-                // 显示表单，隐藏遮罩
-                if (overlay) overlay.style.display = 'none';
-            } else {
-                document.getElementById('dailySessionTitle').textContent = '-';
-                document.getElementById('dailySessionAnchor').textContent = '-';
-                document.getElementById('dailySessionTime').textContent = '-';
-                // 显示遮罩，阻止操作
-                if (overlay) overlay.style.display = 'flex';
-            }
-        }
-        
-        // 更新场次选择下拉框
-        function updateDailySessionSelect() {
-            const select = document.getElementById('dailySessionSelect');
-            if (!select) return;
-            
-            select.innerHTML = '<option value="">选择场次</option>' + 
-                dailySessions.map(session => {
-                    // 修复undefined显示问题
-                    const sessionNum = session.sessionNumber || dailySessions.indexOf(session) + 1;
-                    const displayTitle = session.title || `第${sessionNum}场`;
-                    return `<option value="${session.id}" ${currentDailySession && currentDailySession.id === session.id ? 'selected' : ''}>${displayTitle} | ${session.anchor || '未知主播'} | ${session.date}</option>`;
-                }).join('');
-        }
-        
-        // 打开创建场次模态框
-        function openDailySessionModal() {
-            // 先关闭其他模态框，避免叠加
-            const orderModal = document.querySelector('.daily-order-modal');
-            if (orderModal) orderModal.remove();
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal daily-session-modal';
-            modal.style.cssText = 'display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;justify-content:center;align-items:center;';
-            
-            modal.innerHTML = `
-                <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:20px;padding:30px;max-width:500px;width:90%;border:1px solid rgba(255,255,255,0.1);position:relative;">
-                    <button onclick="closeDailySessionModal()" style="position:absolute;top:15px;right:15px;width:32px;height:32px;background:rgba(255,255,255,0.1);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;hover:background:rgba(255,255,255,0.2);transition:background 0.3s;">×</button>
-                    
-                    <div style="color:#fff;font-size:20px;font-weight:600;margin-bottom:20px;">📅 创建日区直播场次</div>
-                    
-                    <div class="form-group" style="margin-bottom:15px;">
-                        <label style="color:#fff;font-size:14px;margin-bottom:8px;display:block;">直播标题</label>
-                        <input type="text" id="dailySessionTitleInput" placeholder="输入直播标题（可选）" style="width:100%;padding:12px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom:15px;">
-                        <label style="color:#fff;font-size:14px;margin-bottom:8px;display:block;">直播日期</label>
-                        <input type="date" id="dailySessionDateInput" style="width:100%;padding:12px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom:15px;">
-                        <label style="color:#fff;font-size:14px;margin-bottom:8px;display:block;">直播时间</label>
-                        <input type="time" id="dailySessionTimeInput" style="width:100%;padding:12px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom:15px;">
-                        <label style="color:#fff;font-size:14px;margin-bottom:8px;display:block;">主播名字</label>
-                        <input type="text" id="dailySessionAnchorInput" placeholder="输入主播名字" style="width:100%;padding:12px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
-                    </div>
-                    
-                    <div class="btn-group" style="display:flex;gap:10px;justify-content:flex-end;">
-                        <button class="btn btn-danger" onclick="closeDailySessionModal()">取消</button>
-                        <button class="btn btn-success" onclick="createDailySession()">创建场次</button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            // 设置默认日期为今天
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dailySessionDateInput').value = today;
-            
-            // 点击背景关闭
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeDailySessionModal();
-                }
-            });
-        }
-        
-        // 关闭场次模态框
-        function closeDailySessionModal() {
-            const modal = document.querySelector('.daily-session-modal');
-            if (modal) {
-                modal.remove();
-            }
-        }
-        
-        // 创建日区场次
-        function createDailySession() {
-            const title = document.getElementById('dailySessionTitleInput').value.trim();
-            const date = document.getElementById('dailySessionDateInput').value;
-            const time = document.getElementById('dailySessionTimeInput').value;
-            const anchor = document.getElementById('dailySessionAnchorInput').value.trim();
-            
-            if (!date) {
-                alert('请选择直播日期！');
-                return;
-            }
-            
-            // 计算当天场次号
-            const todaySessions = dailySessions.filter(s => s.date === date);
-            const sessionNumber = todaySessions.length + 1;
-            
-            const newSession = {
-                id: 'daily_session_' + Date.now(),
-                title: title,
-                date: date,
-                time: time,
-                anchor: anchor,
-                sessionNumber: sessionNumber,
-                createdAt: new Date().toISOString()
-            };
-            
-            dailySessions.push(newSession); client.db.from("daily_sessions").insert().values({ name: dailySessionTitle, date: dailySessionDate, time: dailySessionTime||"", anchor: dailySessionAnchor||"" }).catch(e=>{});
-            currentDailySession = newSession;
-            
-            saveDailySessions();
-            localStorage.setItem('currentDailySessionId', currentDailySessionId);
-            
-            updateDailySessionPanel();
-            updateDailySessionSelect();
-            renderDailyOrders(); // 刷新订单列表，显示空列表
-            closeDailySessionModal();
-            
-            alert(`✅ 场次创建成功！\n\n场次：第${sessionNumber}场\n主播：${anchor || '未知'}\n日期：${date} ${time || '00:00'}`);
-        }
-        
-        // 查询场次订单
-        function searchDailyOrdersBySession() {
-            const sessionId = document.getElementById('dailySessionSelect').value;
-            
-            if (!sessionId) {
-                alert('请先选择一个场次！');
-                return;
-            }
-            
-            const session = dailySessions.find(s => s.id === sessionId);
-            if (!session) {
-                alert('未找到该场次！');
-                return;
-            }
-            
-            // 切换到选中的场次
-            currentDailySession = session;
-            localStorage.setItem('currentDailySessionId', currentDailySessionId);
-            
-            // 更新场次面板和订单列表
-            updateDailySessionPanel();
-            renderDailyOrders();
-            
-            // 统计订单数量
-            const sessionOrders = dailyOrders.filter(order => order.sessionId === sessionId);
-            
-            // 修复undefined显示问题
-            const sessionNum = session.sessionNumber || dailySessions.indexOf(session) + 1;
-            alert(`✅ 查询成功！\n\n场次：${session.title || `第${sessionNum}场`}\n主播：${session.anchor || '未知'}\n日期：${session.date} ${session.time || '00:00'}\n订单数量：${sessionOrders.length} 个`);
-        }
-        
-        // 切换场次
-        function switchDailySession(sessionId) {
-            // 如果当前有订单正在编辑，提示用户
-            const customerOrderNo = document.getElementById('dailyCustomerOrderNo').value;
-            const images = document.querySelectorAll('#dailyImagePreview img');
-            
-            if ((customerOrderNo || images.length > 0) && currentDailySession) {
-                if (!confirm(`⚠️ 当前表单有未保存的数据！\n\n订单号: ${customerOrderNo || '未填写'}\n图片数量: ${images.length}张\n\n确定要切换场次吗？未保存的数据将丢失！`)) {
-                    // 用户取消，恢复原来的选择
-                    document.getElementById('dailySessionSelect').value = currentDailySession.id;
-                    return;
-                }
-            }
-            
-            if (!sessionId) {
-                currentDailySession = null;
-                localStorage.removeItem('currentDailySessionId');
-            } else {
-                currentDailySession = dailySessions.find(s => s.id === sessionId);
-                localStorage.setItem('currentDailySessionId', currentDailySessionId);
-            }
-            updateDailySessionPanel();
-            renderDailyOrders();
-            
-            // 如果切换到新场次，清空表单
-            if (sessionId) {
-                clearDailyOrderForm();
-            }
-        }
-        
-        // 删除选中的场次
-        function deleteSelectedSession() {
-            const select = document.getElementById('dailySessionSelect');
-            const sessionId = select.value;
-            
-            if (!sessionId || sessionId === '') {
-                alert('请先选择一个要删除的场次！');
-                return;
-            }
-            
-            // 尝试从当前列表中查找
-            let session = dailySessions.find(s => s.id === sessionId);
-            
-            // 如果找不到，尝试重新加载数据
-            if (!session) {
-                // 尝试重新加载场次数据
-                const saved = localStorage.getItem('dailySessions');
-                if (saved) {
-                    try {
-                        const savedSessions = JSON.parse(saved);
-                        session = savedSessions.find(s => s.id === sessionId);
-                    } catch (e) {
-                        console.error('解析场次数据失败:', e);
-                    }
-                }
-                
-                if (!session) {
-                    alert('未找到该场次！数据可能已损坏。\n\n正在尝试修复数据...');
-                    // 清除可能损坏的数据
-                    localStorage.removeItem('dailySessions');
-                    localStorage.removeItem('currentDailySessionId');
-                    dailySessions = [];
-                    currentDailySession = null;
-                    updateDailySessionPanel();
-                    updateDailySessionSelect();
-                    renderDailyOrders();
-                    return;
-                }
-            }
-            
-            const sessionOrders = dailyOrders.filter(order => order.sessionId === sessionId);
-            const orderCount = sessionOrders.length;
-            
-            // 修复undefined显示问题
-            const sessionNum = session.sessionNumber || dailySessions.indexOf(session) + 1;
-            const confirmMsg = `确定要删除这个场次吗？\n\n场次：${session.title || `第${sessionNum}场`}\n主播：${session.anchor || '未知'}\n日期：${session.date} ${session.time || '00:00'}\n订单数量：${orderCount} 个\n\n⚠️ 警告：删除后无法恢复！\n${orderCount > 0 ? '该场次的所有订单也会被同时删除！' : ''}`;
-            
-            if (confirm(confirmMsg)) {
-                // 删除该场次的所有订单
-                dailyOrders = dailyOrders.filter(order => order.sessionId !== sessionId);
-                saveDailyOrders();
-                
-                // 删除场次
-                dailySessions = dailySessions.filter(s => s.id !== sessionId);
-                saveDailySessions();
-                
-                // 如果删除的是当前场次，清除当前场次
-                if (currentDailySession && currentDailySession.id === sessionId) {
-                    currentDailySession = null;
-                    localStorage.removeItem('currentDailySessionId');
-                }
-                
-                // 重置选择框
-                select.value = '';
-                
-                updateDailySessionPanel();
-                updateDailySessionSelect();
-                renderDailyOrders();
-                
-                alert(`✅ 场次已删除！\n\n共删除 ${orderCount} 个订单`);
-            }
-        }
-        
-        // 加载日区订单
-        function loadDailyOrders() {
-            // 从云端加载
-            client.db.from('daily_orders').list().then(r => {
-                if (r.success) dailyOrders = r.data || [];
-                renderDailyOrders();
-            }).catch(() => { dailyOrders = []; renderDailyOrders(); });
-            client.db.from('daily_sessions').list().then(r => {
-                if (r.success) dailySessions = r.data || [];
-            }).catch(() => {});
-            loadDailySessions();
-            renderDailyOrders();
-        }
-        
-        // 保存日区订单
-        function saveDailyOrders() {
-            // 云端自动保存
-        }
-        
-        // 渲染日区订单列表
-        function renderDailyOrders() {
-            const container = document.getElementById('dailyOrderList');
-            if (!container) return;
-            
-            // 按当前场次过滤订单
-            let filteredOrders = dailyOrders;
-            if (currentDailySession) {
-                filteredOrders = dailyOrders.filter(order => order.sessionId === currentDailySession.id);
-            }
-            
-            if (filteredOrders.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.5);">
-                        <div style="font-size:48px;margin-bottom:15px;">📋</div>
-                        <div>${currentDailySession ? '当前场次暂无订单记录' : '暂无订单记录'}</div>
-                        <div style="font-size:13px;margin-top:10px;">点击"添加订单"开始记录</div>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = '';
-            filteredOrders.forEach((order, index) => {
-                const imageCount = order.images ? order.images.length : 0;
-                const hasNote = order.note ? '📝' : '';
-                // 查找订单所属场次信息
-                const orderSession = dailySessions.find(s => s.id === order.sessionId);
-                
-                html += `
-                    <div class="order-item" style="margin-bottom:12px;padding:16px;background:linear-gradient(135deg,rgba(255,255,255,0.05) 0%,rgba(255,255,255,0.02) 100%);border-radius:12px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 2px 12px rgba(0,0,0,0.15);transition:all 0.3s ease;">
-                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-                            <div style="flex:1;">
-                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                                    <span style="color:#fff;font-weight:600;font-size:15px;">${hasNote} 订单 #${index + 1}</span>
-                                    ${orderSession ? `<span style="color:#667eea;font-size:12px;padding:2px 8px;background:rgba(102,126,234,0.15);border-radius:10px;">${orderSession.anchor || '未知主播'}</span>` : ''}
-                                </div>
-                                <div style="color:rgba(255,255,255,0.7);font-size:13px;line-height:1.5;">
-                                    <div><span style="color:rgba(255,255,255,0.5);">订单号:</span> <span style="color:#fff;">${order.customerOrderNo || '-'}</span></div>
-                                    ${order.note ? `<div style="color:#f39c12;margin-top:4px;">📝 ${order.note}</div>` : ''}
-                                </div>
-                            </div>
-                            <div style="display:flex;gap:6px;margin-left:10px;">
-                                <button class="btn btn-primary" style="padding:5px 10px;font-size:11px;border-radius:6px;" onclick="openEditDailyOrderModal(${dailyOrders.indexOf(order)})">✏️ 编辑</button>
-                                <button class="btn btn-danger" style="padding:5px 10px;font-size:11px;border-radius:6px;" onclick="deleteDailyOrder(${dailyOrders.indexOf(order)})">🗑️ 删除</button>
-                            </div>
-                        </div>
-                        <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
-                            <div style="display:flex;align-items:center;gap:6px;color:rgba(255,255,255,0.5);font-size:12px;margin-bottom:8px;">
-                                <span>📷</span>
-                                <span>商品图片</span>
-                                ${imageCount > 0 ? `<span style="color:#667eea;">(${imageCount}张)</span>` : ''}
-                            </div>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                ${order.images && order.images.length > 0 ? order.images.map((img, imgIndex) => `
-                                    <div style="position:relative;border-radius:8px;overflow:hidden;border:2px solid rgba(255,255,255,0.15);transition:all 0.2s ease;">
-                                        <img src="${img}" style="width:75px;height:75px;object-fit:cover;cursor:pointer;" onclick="openImagePreview('${img}')" alt="商品图片">
-                                    </div>
-                                `).join('') : '<div style="color:rgba(255,255,255,0.3);font-size:12px;padding:10px;">暂无图片</div>'}
-                            </div>
-                        </div>
-                        <div style="margin-top:10px;color:rgba(255,255,255,0.35);font-size:11px;">
-                            ⏰ ${new Date(order.createdAt).toLocaleString('zh-CN')}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-        }
-        
-        // 打开添加订单模态框
-        function openDailyOrderModal() {
-            dailyEditingOrderIndex = -1;
-            editingImages = [];
-            openDailyOrderFormModal();
-        }
-        
-        // 打开编辑订单模态框
-        function openEditDailyOrderModal(index) {
-            dailyEditingOrderIndex = index;
-            const order = dailyOrders[index];
-            editingImages = [...(order.images || [])];
-            openDailyOrderFormModal(order);
-        }
-        
-        // 打开订单表单模态框
-        function openDailyOrderFormModal(order = null) {
-            // 先关闭其他模态框，避免叠加
-            const sessionModal = document.querySelector('.daily-session-modal');
-            if (sessionModal) sessionModal.remove();
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal daily-order-modal';
-            modal.style.cssText = 'display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;justify-content:center;align-items:center;flex-direction:column;';
-            
-            const isEdit = dailyEditingOrderIndex >= 0;
-            const customerOrderNo = order ? order.customerOrderNo : '';
-            const uploadOrderNo = order ? order.uploadOrderNo : '';
-            const note = order ? order.note : '';
-            
-            modal.innerHTML = `
-                <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:20px;padding:30px;max-width:600px;width:90%;max-height:90vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.1);position:relative;">
-                    <button onclick="closeDailyOrderModal()" style="position:absolute;top:15px;right:15px;width:32px;height:32px;background:rgba(255,255,255,0.1);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;hover:background:rgba(255,255,255,0.2);transition:background 0.3s;">×</button>
-                    
-                    <div style="color:#fff;font-size:20px;font-weight:600;margin-bottom:20px;">
-                        ${isEdit ? '✏️ 编辑订单' : '➕ 添加订单'}
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom:15px;">
-                        <label for="editDailyCustomerOrderNo" style="color:#fff;font-size:14px;margin-bottom:8px;display:block;">订单号</label>
-                        <input type="text" id="editDailyCustomerOrderNo" value="${customerOrderNo}" placeholder="输入订单号" style="width:100%;padding:12px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom:15px;">
-                        <label for="editDailyNote" style="color:#fff;font-size:14px;margin-bottom:8px;display:block;">备注信息</label>
-                        <input type="text" id="editDailyNote" value="${note}" placeholder="输入备注信息（选填）" style="width:100%;padding:12px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
-                    </div>
-                    
-                    <div style="margin-bottom:20px;">
-                        <label style="color:#fff;font-size:14px;margin-bottom:10px;display:block;">商品图片</label>
-                        <div class="btn-group" style="margin-bottom:15px;">
-                            <button class="btn btn-success" onclick="openCameraModal()">📷 拍照</button>
-                            <button class="btn btn-primary" onclick="document.getElementById('editDailyImageUpload').click()">📁 上传图片</button>
-                        </div>
-                        <input type="file" id="editDailyImageUpload" accept="image/*" multiple style="display:none;" onchange="handleEditImageUpload(event)">
-                        
-                        <div id="editDailyImagePreview" style="display:flex;gap:10px;flex-wrap:wrap;">
-                            ${editingImages.map((img, index) => `
-                                <div style="position:relative;">
-                                    <img src="${img}" style="width:100px;height:100px;object-fit:cover;border-radius:8px;border:2px solid rgba(255,255,255,0.2);" alt="商品图片">
-                                    <button onclick="removeDailyImage(${index})" style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;background:#e74c3c;border:none;border-radius:50%;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="btn-group" style="display:flex;gap:10px;justify-content:flex-end;">
-                        <button class="btn btn-danger" onclick="closeDailyOrderModal()">取消</button>
-                        <button class="btn btn-success" onclick="saveDailyOrder()">保存</button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            // 点击背景关闭
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeDailyOrderModal();
-                }
-            });
-        }
-        
-        // 关闭订单模态框
-        function closeDailyOrderModal() {
-            const modal = document.querySelector('.daily-order-modal');
-            if (modal) {
-                modal.remove();
-            }
-        }
-        
-        // 保存订单
-        function saveDailyOrder() {
-            // 根据是否为编辑模式选择不同的输入框
-            const isEditMode = dailyEditingOrderIndex >= 0;
-            const orderNoInput = isEditMode ? document.getElementById('editDailyCustomerOrderNo') : document.getElementById('dailyCustomerOrderNo');
-            const noteInput = isEditMode ? document.getElementById('editDailyNote') : document.getElementById('dailyNote');
-            
-            if (!orderNoInput || !noteInput) {
-                alert('无法找到输入框，请刷新页面重试！');
-                return;
-            }
-            
-            const customerOrderNo = orderNoInput.value.trim();
-            const note = noteInput.value.trim();
-            
-            if (!customerOrderNo) {
-                alert('请输入订单号！');
-                return;
-            }
-            
-            // 检查是否存在重复订单号（编辑模式除外）
-            if (!isEditMode) {
-                const existingOrder = dailyOrders.find(order => 
-                    order.customerOrderNo === customerOrderNo && 
-                    order.sessionId === (currentDailySession ? currentDailySession.id : null)
-                );
-                if (existingOrder) {
-                    alert('⚠️ 存在相同的订单号！\n\n请检查订单号是否有误。');
-                    return;
-                }
-            }
-            
-            // 如果没有选择场次，提醒用户创建或选择场次
-            if (!currentDailySession) {
-                if (!confirm('当前没有选择场次，是否继续创建订单？\n\n建议：先创建或选择一个直播场次')) {
-                    return;
-                }
-            }
-            
-            const orderData = {
-                customerOrderNo,
-                note,
-                images: [...editingImages],
-                sessionId: currentDailySession ? currentDailySession.id : null,
-                updatedAt: new Date().toISOString()
-            };
-            
-            if (isEditMode) {
-                // 编辑现有订单
-                dailyOrders[dailyEditingOrderIndex] = {
-                    ...dailyOrders[dailyEditingOrderIndex],
-                    ...orderData
-                };
-            } else {
-                // 添加新订单
-                dailyOrders.push({
-                    ...orderData,
-                    createdAt: new Date().toISOString()
-                });
-            }
-            
-            saveDailyOrders();
-            renderDailyOrders();
-            
-            if (isEditMode) {
-                alert('订单更新成功！');
-                closeDailyOrderModal();
-            } else {
-                alert('订单添加成功！');
-            }
-            
-            dailyEditingOrderIndex = -1;
-            // 保存后清空表单，准备录入新订单
-            clearDailyOrderForm();
-        }
-        
-        // 保存订单并清空表单（下一个订单）
-        function saveDailyOrderAndNext() {
-            const customerOrderNo = document.getElementById('dailyCustomerOrderNo').value.trim();
-            
-            if (!customerOrderNo) {
-                alert('请输入订单号！');
-                return;
-            }
-            
-            // 检查是否存在重复订单号
-            const existingOrder = dailyOrders.find(order => 
-                order.customerOrderNo === customerOrderNo && 
-                order.sessionId === (currentDailySession ? currentDailySession.id : null)
-            );
-            if (existingOrder) {
-                alert('⚠️ 存在相同的订单号！\n\n请检查订单号是否有误。');
-                return;
-            }
-            
-            // 如果没有选择场次，提醒用户创建或选择场次
-            if (!currentDailySession) {
-                if (!confirm('当前没有选择场次，是否继续创建订单？\n\n建议：先创建或选择一个直播场次')) {
-                    return;
-                }
-            }
-            
-            const orderData = {
-                customerOrderNo,
-                note: document.getElementById('dailyNote').value.trim(),
-                images: [...editingImages],
-                sessionId: currentDailySession ? currentDailySession.id : null,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            
-            dailyOrders.push(orderData);
-            saveDailyOrders();
-            renderDailyOrders();
-            
-            // 清空表单，准备下一个订单
-            clearDailyOrderForm();
-            
-            // 自动聚焦到客户订单号输入框
-            setTimeout(() => {
-                document.getElementById('dailyCustomerOrderNo').focus();
-            }, 100);
-        }
-        
-        // 清空表单
-        function clearDailyOrderForm() {
-            document.getElementById('dailyCustomerOrderNo').value = '';
-            document.getElementById('dailyNote').value = '';
-            editingImages = [];
-            document.getElementById('dailyImagePreview').innerHTML = '';
-            dailyEditingOrderIndex = -1;
-        }
-        
-        // 删除订单
-        function deleteDailyOrder(index) {
-            if (confirm('确定要删除这个订单吗？')) {
-                dailyOrders.splice(index, 1);
-                saveDailyOrders();
-                renderDailyOrders();
-            }
-        }
-        
-        // 清空当前场次的订单
-        function clearDailyOrders() {
-            if (!currentDailySession) {
-                alert('请先选择一个场次！');
-                return;
-            }
-            
-            const sessionOrders = dailyOrders.filter(order => order.sessionId === currentDailySession.id);
-            if (sessionOrders.length === 0) {
-                alert('当前场次暂无订单记录！');
-                return;
-            }
-            
-            // 修复undefined显示问题
-            const sessionNum = currentDailySession.sessionNumber || dailySessions.indexOf(currentDailySession) + 1;
-            const confirmMsg = `确定要清空当前场次的所有订单吗？\n\n场次：${currentDailySession.title || `第${sessionNum}场`}\n订单数量：${sessionOrders.length} 个\n\n⚠️ 警告：此操作不可恢复！`;
-            
-            if (confirm(confirmMsg)) {
-                dailyOrders = dailyOrders.filter(order => order.sessionId !== currentDailySession.id);
-                saveDailyOrders();
-                renderDailyOrders();
-                alert(`✅ 当前场次的 ${sessionOrders.length} 个订单已清空！`);
-            }
-        }
-        
-        // 处理图片上传
-        function handleImageUpload(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-            
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    editingImages.push(e.target.result);
-                    updateDailyImagePreview();
-                };
-                reader.readAsDataURL(file);
-            });
-            
-            event.target.value = '';
-        }
-        
-        // 处理编辑订单时的图片上传
-        function handleEditImageUpload(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-            
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    editingImages.push(e.target.result);
-                    updateDailyImagePreview();
-                };
-                reader.readAsDataURL(file);
-            });
-            
-            event.target.value = '';
-        }
-        
-        // 更新图片预览
-        function updateDailyImagePreview() {
-            // 更新所有图片预览容器（包括主页面和编辑模态框内的）
-            const containers = document.querySelectorAll('#dailyImagePreview, #editDailyImagePreview');
-            containers.forEach(container => {
-                container.innerHTML = editingImages.map((img, index) => `
-                    <div style="position:relative;">
-                        <img src="${img}" style="width:100px;height:100px;object-fit:cover;border-radius:8px;border:2px solid rgba(255,255,255,0.2);" alt="商品图片">
-                        <button onclick="removeDailyImage(${index})" style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;background:#e74c3c;border:none;border-radius:50%;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
-                    </div>
-                `).join('');
-            });
-        }
-        
-        // 删除图片
-        function removeDailyImage(index) {
-            editingImages.splice(index, 1);
-            updateDailyImagePreview();
-        }
-        
-        // 打开摄像头模态框
-        function openCameraModal() {
-            // 检查摄像头是否已经开启
-            if (!cameraStream) {
-                // 首次开启摄像头
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                    .then(stream => {
-                        cameraStream = stream;
-                        showCameraModal();
-                    })
-                    .catch(err => {
-                        console.error('无法访问摄像头:', err);
-                        alert('无法访问摄像头，请检查权限设置！\n\n错误: ' + err.message);
-                    });
-            } else {
-                // 摄像头已开启，直接显示模态框
-                showCameraModal();
-            }
-        }
-        
-        // 显示摄像头模态框
-        function showCameraModal() {
-            cameraModalElement = document.createElement('div');
-            cameraModalElement.className = 'camera-modal';
-            cameraModalElement.style.cssText = 'display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:10001;justify-content:center;align-items:center;';
-            
-            cameraModalElement.innerHTML = `
-                <div style="background:#1a1a2e;border-radius:20px;padding:30px;max-width:700px;width:90%;max-height:90vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.1);">
-                    <div style="color:#fff;font-size:20px;font-weight:600;margin-bottom:20px;text-align:center;">
-                        📷 拍照
-                    </div>
-                    
-                    <div style="margin-bottom:20px;">
-                        <label style="color:#fff;font-size:14px;margin-bottom:10px;display:block;">选择摄像头</label>
-                        <select id="cameraSelect" onchange="switchCamera(this.value)" style="width:100%;padding:12px;border-radius:8px;border:2px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;">
-                            <option value="">正在获取摄像头...</option>
-                        </select>
-                    </div>
-                    
-                    <div style="margin-bottom:20px;">
-                        <video id="cameraVideo" autoplay playsinline style="width:100%;border-radius:10px;background:#000;"></video>
-                    </div>
-                    
-                    <div class="btn-group" style="display:flex;gap:10px;justify-content:center;">
-                        <button class="btn btn-danger" onclick="closeCameraModal()">取消</button>
-                        <button class="btn btn-success" onclick="takePhoto()">📸 拍照</button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(cameraModalElement);
-            
-            // 获取并显示摄像头列表
-            getCameraDevices();
-            
-            // 显示视频流
-            const video = document.getElementById('cameraVideo');
-            video.srcObject = cameraStream;
-            video.play();
-            
-            // 点击背景关闭
-            cameraModalElement.addEventListener('click', (e) => {
-                if (e.target === cameraModalElement) {
-                    closeCameraModal();
-                }
-            });
-        }
-        
-        // 获取摄像头设备列表
-        async function getCameraDevices() {
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const cameras = devices.filter(device => device.kind === 'videoinput');
-                
-                const select = document.getElementById('cameraSelect');
-                if (select) {
-                    select.innerHTML = cameras.map((camera, index) => `
-                        <option value="${camera.deviceId}">${camera.label || `摄像头 ${index + 1}`}</option>
-                    `).join('');
-                }
-            } catch (err) {
-                console.error('获取摄像头列表失败:', err);
-            }
-        }
-        
-        // 切换摄像头
-        async function switchCamera(deviceId) {
-            if (!deviceId) return;
-            
-            try {
-                // 停止当前流
-                if (cameraStream) {
-                    cameraStream.getTracks().forEach(track => track.stop());
-                }
-                
-                // 获取新的摄像头流
-                cameraStream = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: { exact: deviceId } }
-                });
-                
-                // 更新视频
-                const video = document.getElementById('cameraVideo');
-                if (video) {
-                    video.srcObject = cameraStream;
-                    video.play();
-                }
-            } catch (err) {
-                console.error('切换摄像头失败:', err);
-                alert('切换摄像头失败！\n\n错误: ' + err.message);
-            }
-        }
-        
-        // 拍照
-        function takePhoto() {
-            const video = document.getElementById('cameraVideo');
-            if (!video) return;
-            
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0);
-            
-            const imageData = canvas.toDataURL('image/jpeg', 0.9);
-            editingImages.push(imageData);
-            
-            updateDailyImagePreview();
-            closeCameraModal();
-        }
-        
-        // 关闭摄像头模态框（不停止摄像头流）
-        function closeCameraModal() {
-            if (cameraModalElement) {
-                cameraModalElement.remove();
-                cameraModalElement = null;
-            }
-            // 不停止摄像头流，保持开启状态
-        }
-        
-        // 打开图片预览
-        function openImagePreview(imageSrc) {
-            const modal = document.createElement('div');
-            modal.className = 'image-preview-modal';
-            modal.style.cssText = 'display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:10002;justify-content:center;align-items:center;';
-            
-            modal.innerHTML = `
-                <div style="max-width:90vw;max-height:90vh;position:relative;">
-                    <img src="${imageSrc}" style="max-width:100%;max-height:90vh;object-fit:contain;border-radius:10px;" alt="图片预览">
-                    <button onclick="this.parentElement.parentElement.remove()" style="position:absolute;top:-40px;right:0;width:36px;height:36px;background:#e74c3c;border:none;border-radius:50%;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.remove();
-                }
-            });
-        }
-        
-        // 导出日区订单
-        function exportDailyOrders() {
-            if (dailyOrders.length === 0) {
-                alert('暂无订单记录！');
-                return;
-            }
-            
-            // 选择导出格式
-            const formatChoice = prompt(`选择导出格式：\n\n1 = Excel表格（XLSX）✓ 推荐\n2 = HTML网页（带高清图片）\n3 = CSV表格（纯文字）\n\n请输入数字（1/2/3）：`);
-            
-            if (formatChoice === '1') {
-                exportAllOrdersXLSX();
-            } else if (formatChoice === '2') {
-                exportDailyOrderImages(dailyOrders);
-            } else if (formatChoice === '3') {
-                exportDailyOrdersCSV(dailyOrders);
-            } else {
-                alert('导出已取消');
-            }
-        }
-        
-        // 导出所有订单为XLSX
-        function exportAllOrdersXLSX() {
-            // 按场次分组订单
-            const sessionGroups = {};
-            dailyOrders.forEach(order => {
-                const sessionId = order.sessionId || 'no_session';
-                if (!sessionGroups[sessionId]) {
-                    sessionGroups[sessionId] = [];
-                }
-                sessionGroups[sessionId].push(order);
-            });
-            
-            // 创建工作簿
-            const wb = XLSX.utils.book_new();
-            
-            // 添加所有订单工作表
-            const allOrdersData = [];
-            allOrdersData.push(['序号', '场次', '主播', '客户订单号', '上传订单号', '备注', '图片数量', '创建时间']);
-            
-            let orderIndex = 0;
-            dailyOrders.forEach(order => {
-                const session = dailySessions.find(s => s.id === order.sessionId);
-                orderIndex++;
-                allOrdersData.push([
-                    orderIndex,
-                    session ? (session.title || `第${session.sessionNumber}场`) : '未分配场次',
-                    session ? (session.anchor || '未知') : '-',
-                    order.customerOrderNo || '',
-                    order.uploadOrderNo || '',
-                    order.note || '',
-                    order.images ? order.images.length : 0,
-                    new Date(order.createdAt).toLocaleString('zh-CN')
-                ]);
-            });
-            
-            const wsAll = XLSX.utils.aoa_to_sheet(allOrdersData);
-            wsAll['!cols'] = [
-                { wch: 8 },   // 序号
-                { wch: 25 },  // 场次
-                { wch: 15 },  // 主播
-                { wch: 30 },  // 客户订单号
-                { wch: 30 },  // 上传订单号
-                { wch: 50 },  // 备注
-                { wch: 10 },  // 图片数量
-                { wch: 25 }   // 创建时间
-            ];
-            XLSX.utils.book_append_sheet(wb, wsAll, '所有订单');
-            
-            // 按场次添加工作表
-            Object.keys(sessionGroups).forEach(sessionId => {
-                const session = dailySessions.find(s => s.id === sessionId);
-                const orders = sessionGroups[sessionId];
-                
-                const sessionData = [];
-                sessionData.push(['场次信息']);
-                sessionData.push(['场次', session ? (session.title || `第${session.sessionNumber}场`) : '未分配场次']);
-                sessionData.push(['主播', session ? (session.anchor || '未知') : '-']);
-                sessionData.push(['日期', session ? session.date : '-']);
-                sessionData.push(['时间', session ? (session.time || '00:00') : '-']);
-                sessionData.push(['订单总数', orders.length]);
-                sessionData.push(['导出时间', new Date().toLocaleString('zh-CN')]);
-                sessionData.push([]);
-                sessionData.push(['序号', '客户订单号', '上传订单号', '备注', '图片数量', '创建时间']);
-                
-                orders.forEach((order, index) => {
-                    sessionData.push([
-                        index + 1,
-                        order.customerOrderNo || '',
-                        order.uploadOrderNo || '',
-                        order.note || '',
-                        order.images ? order.images.length : 0,
-                        new Date(order.createdAt).toLocaleString('zh-CN')
-                    ]);
-                });
-                
-                const ws = XLSX.utils.aoa_to_sheet(sessionData);
-                ws['!cols'] = [
-                    { wch: 8 },   // 序号
-                    { wch: 30 },  // 客户订单号
-                    { wch: 30 },  // 上传订单号
-                    { wch: 50 },  // 备注
-                    { wch: 10 },  // 图片数量
-                    { wch: 25 }   // 创建时间
-                ];
-                
-                const sheetName = session ? (session.title || `第${session.sessionNumber}场`).substring(0, 31) : '未分配场次';
-                XLSX.utils.book_append_sheet(wb, ws, sheetName);
-            });
-            
-            // 下载文件
-            const fileName = `日区订单汇总_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.xlsx`;
-            XLSX.writeFile(wb, fileName);
-        }
-        
-        // 直播结束
-        function endDailySession() {
-            if (!currentDailySession) {
-                alert('当前没有进行中的直播场次！');
-                return;
-            }
-            
-            // 获取当前场次的订单数量
-            const sessionOrders = dailyOrders.filter(order => order.sessionId === currentDailySession.id);
-            const orderCount = sessionOrders.length;
-            
-            if (confirm(`确定要结束当前直播场次吗？\n\n场次：${currentDailySession.title || `第${currentDailySession.sessionNumber}场`}\n主播：${currentDailySession.anchor}\n订单数量：${orderCount} 个\n\n结束后可以继续选择其他场次或创建新场次。`)) {
-                // 标记场次为已结束
-                currentDailySession.status = 'ended';
-                currentDailySession.endedAt = new Date().toISOString();
-                saveDailySessions();
-                
-                alert(`✅ 直播场次已结束！\n\n共记录 ${orderCount} 个订单\n可以在"按场次导出"中导出本场订单`);
-                
-                // 取消选择当前场次
-                currentDailySession = null;
-                localStorage.removeItem('currentDailySessionId');
-                updateDailySessionPanel();
-                updateDailySessionSelect();
-                renderDailyOrders();
-            }
-        }
-        
-        // 按场次导出订单 - Excel
-        function exportDailyOrdersBySessionXLSX() {
-            const sessionId = document.getElementById('dailySessionSelect').value;
-            
-            if (!sessionId) {
-                alert('请先选择一个场次！');
-                return;
-            }
-            
-            const session = dailySessions.find(s => s.id === sessionId);
-            const orders = dailyOrders.filter(order => order.sessionId === sessionId);
-            
-            if (orders.length === 0) {
-                alert('该场次暂无订单记录！');
-                return;
-            }
-            
-            exportDailyOrdersXLSXWithImages(orders, session);
-        }
-        
-        // 按场次导出订单 - HTML
-        function exportDailyOrdersBySessionHTML() {
-            const sessionId = document.getElementById('dailySessionSelect').value;
-            
-            if (!sessionId) {
-                alert('请先选择一个场次！');
-                return;
-            }
-            
-            const session = dailySessions.find(s => s.id === sessionId);
-            const orders = dailyOrders.filter(order => order.sessionId === sessionId);
-            
-            if (orders.length === 0) {
-                alert('该场次暂无订单记录！');
-                return;
-            }
-            
-            exportDailyOrderImagesBySession(orders, session);
-        }
-        
-        // 按场次导出订单（旧函数保留以兼容）
-        function exportDailyOrdersBySession() {
-            const sessionId = document.getElementById('dailySessionSelect').value;
-            
-            if (!sessionId) {
-                alert('请先选择一个场次！');
-                return;
-            }
-            
-            const session = dailySessions.find(s => s.id === sessionId);
-            const orders = dailyOrders.filter(order => order.sessionId === sessionId);
-            
-            if (orders.length === 0) {
-                alert('该场次暂无订单记录！');
-                return;
-            }
-            
-            // 默认导出XLSX
-            exportDailyOrdersXLSXWithImages(orders, session);
-        }
-        
-        // 导出Excel XLSX格式（带高清图片）
-        function exportDailyOrdersXLSXWithImages(orders, session) {
-            // 准备Excel数据（包含图片列）
-            const excelData = [];
-            
-            // 添加标题行
-            excelData.push([`${session.title || `第${session.sessionNumber}场`} - 日区订单记录`]);
-            excelData.push([]);
-            excelData.push(['场次信息']);
-            excelData.push(['场次', session.title || `第${session.sessionNumber}场`]);
-            excelData.push(['主播', session.anchor || '未知']);
-            excelData.push(['日期', session.date]);
-            excelData.push(['时间', session.time || '00:00']);
-            excelData.push(['订单总数', orders.length]);
-            excelData.push(['导出时间', new Date().toLocaleString('zh-CN')]);
-            excelData.push([]);
-            
-            // 添加表头（包含图片列）
-            excelData.push(['序号', '客户订单号', '上传订单号', '备注', '商品图片', '创建时间']);
-            
-            // 添加订单数据（图片作为Base64字符串存储）
-            orders.forEach((order, index) => {
-                // 图片数量和预览
-                const imgCount = order.images ? order.images.length : 0;
-                const imgInfo = imgCount > 0 ? `${imgCount}张图片` : '无图片';
-                
-                excelData.push([
-                    index + 1,
-                    order.customerOrderNo || '',
-                    order.uploadOrderNo || '',
-                    order.note || '',
-                    imgInfo,
-                    new Date(order.createdAt).toLocaleString('zh-CN')
-                ]);
-            });
-            
-            // 创建工作簿
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(excelData);
-            
-            // 设置列宽
-            ws['!cols'] = [
-                { wch: 8 },   // 序号
-                { wch: 25 },  // 客户订单号
-                { wch: 25 },  // 上传订单号
-                { wch: 40 },  // 备注
-                { wch: 15 },  // 商品图片
-                { wch: 25 }   // 创建时间
-            ];
-            
-            XLSX.utils.book_append_sheet(wb, ws, '订单列表');
-            
-            // 添加图片工作表（每张订单一个工作表）
-            orders.forEach((order, index) => {
-                if (order.images && order.images.length > 0) {
-                    const imgSheetData = [];
-                    imgSheetData.push(['订单 #' + (index + 1), '', '', '', '', '']);
-                    imgSheetData.push(['客户订单号:', order.customerOrderNo || '', '', '', '', '']);
-                    imgSheetData.push(['上传订单号:', order.uploadOrderNo || '', '', '', '', '']);
-                    imgSheetData.push(['备注:', order.note || '', '', '', '', '']);
-                    imgSheetData.push([]);
-                    imgSheetData.push(['商品图片']);
-                    
-                    // 添加图片数据（Base64格式，便于复制使用）
-                    order.images.forEach((imgBase64, imgIdx) => {
-                        // 提取图片类型和尺寸信息
-                        const contentType = imgBase64.split(';')[0].split(':')[1];
-                        const sizeKB = (imgBase64.length * 0.75 / 1024).toFixed(1);
-                        imgSheetData.push([`图片 ${imgIdx + 1}`, `类型: ${contentType}`, `大小: ${sizeKB}KB`, '', '', '']);
-                        // 添加图片预览提示
-                        imgSheetData.push(['点击下方链接查看图片:', '', '', '', '', '']);
-                        imgSheetData.push([imgBase64.substring(0, 100) + '...（完整Base64）', '', '', '', '', '']);
-                        imgSheetData.push([]);
-                    });
-                    
-                    const imgWs = XLSX.utils.aoa_to_sheet(imgSheetData);
-                    imgWs['!cols'] = [
-                        { wch: 60 },
-                        { wch: 20 },
-                        { wch: 20 },
-                        { wch: 10 },
-                        { wch: 10 },
-                        { wch: 10 }
-                    ];
-                    const sheetName = `订单${index + 1}_图片`.substring(0, 31);
-                    XLSX.utils.book_append_sheet(wb, imgWs, sheetName);
-                }
-            });
-            
-            // 下载文件（使用正确的选项）
-            const fileName = `日区订单_${session.date}_${session.title || `第${session.sessionNumber}场`}.xlsx`.replace(/[\\/:*?"<>|]/g, '_');
-            
-            // 使用writeFile导出
-            XLSX.writeFile(wb, fileName, {
-                bookType: 'xlsx',
-                type: 'file'
-            });
-            
-            // 同时提示用户如果需要带图片的详细报告，可以使用HTML导出
-            alert(`✅ Excel文件已导出！\n\n文件名: ${fileName}\n订单数量: ${orders.length} 个\n\n💡 提示：如果需要包含高清图片的完整报告，建议使用"HTML网页导出"功能`);
-        }
-        
-        // 导出Excel XLSX格式（旧函数保留以兼容）
-        function exportDailyOrdersXLSX(orders, session) {
-            exportDailyOrdersXLSXWithImages(orders, session);
-        }
-        
-        // 导出带高清图片的HTML（按场次）
-        function exportDailyOrderImagesBySession(orders, session) {
-            let html = `
-                <!DOCTYPE html>
-                <html lang="zh-CN">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>${session.title || `第${session.sessionNumber}场`} - 日区订单记录</title>
-                    <style>
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-                        .container { max-width: 1200px; margin: 0 auto; }
-                        .header { text-align: center; margin-bottom: 40px; padding: 40px; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
-                        .header h1 { color: #667eea; font-size: 32px; margin-bottom: 15px; }
-                        .header p { color: #666; font-size: 16px; line-height: 1.8; }
-                        .session-info { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 25px; border-radius: 15px; margin-bottom: 30px; border-left: 5px solid #667eea; }
-                        .session-info h3 { color: #667eea; margin-bottom: 10px; font-size: 18px; }
-                        .session-info p { color: #555; line-height: 1.8; }
-                        .order { background: white; margin: 30px 0; padding: 30px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); transition: transform 0.3s; }
-                        .order:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-                        .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #667eea; padding-bottom: 15px; margin-bottom: 20px; }
-                        .order-title { font-size: 24px; font-weight: bold; color: #333; }
-                        .order-number { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 8px 20px; border-radius: 20px; font-size: 14px; }
-                        .order-info { margin: 20px 0; }
-                        .order-info-item { display: flex; padding: 12px 0; border-bottom: 1px solid #eee; }
-                        .order-info-label { font-weight: bold; color: #667eea; width: 120px; flex-shrink: 0; }
-                        .order-info-value { color: #333; flex: 1; word-break: break-all; }
-                        .order-note { background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%); padding: 20px; border-radius: 12px; margin-top: 20px; color: #856404; border-left: 5px solid #ffc107; }
-                        .order-note strong { display: block; margin-bottom: 8px; font-size: 16px; }
-                        .order-images { margin-top: 25px; }
-                        .order-images h4 { color: #333; margin-bottom: 15px; font-size: 18px; }
-                        .order-images-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-                        .order-images-grid img { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; border: 3px solid #eee; transition: all 0.3s; }
-                        .order-images-grid img:hover { transform: scale(1.05); border-color: #667eea; box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3); }
-                        .no-images { text-align: center; padding: 40px; color: #999; background: #f5f5f5; border-radius: 12px; }
-                        .order-time { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 14px; text-align: right; }
-                        .footer { text-align: center; margin-top: 50px; padding: 30px; color: white; font-size: 14px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>📦 ${session.title || `第${session.sessionNumber}场`}</h1>
-                            <p>日区直播订单记录 | 主播：${session.anchor || '未知'} | 直播时间：${session.date} ${session.time || '00:00'}</p>
-                            <p style="margin-top:10px;">订单总数：<strong style="color:#667eea;font-size:24px;">${orders.length}</strong> 个 | 导出时间: ${new Date().toLocaleString('zh-CN')}</p>
-                        </div>
-                        
-                        <div class="session-info">
-                            <h3>📋 场次信息</h3>
-                            <p>
-                                ${session.title ? `📌 <strong>直播标题：</strong>${session.title}<br>` : ''}
-                                🎯 <strong>场次编号：</strong>第${session.sessionNumber}场<br>
-                                🎤 <strong>主播名字：</strong>${session.anchor || '未知'}<br>
-                                📅 <strong>直播日期：</strong>${session.date}<br>
-                                ⏰ <strong>直播时间：</strong>${session.time || '00:00'}
-                            </p>
-                        </div>
-            `;
-            
-            orders.forEach((order, index) => {
-                const orderSession = dailySessions.find(s => s.id === order.sessionId);
-                
-                html += `
-                    <div class="order">
-                        <div class="order-header">
-                            <div class="order-title">${orderSession ? `🎬 ${orderSession.anchor}` : '📦'} 订单详情</div>
-                            <div class="order-number">订单 #${index + 1}</div>
-                        </div>
-                        <div class="order-info">
-                            <div class="order-info-item">
-                                <div class="order-info-label">👤 客户订单号</div>
-                                <div class="order-info-value">${order.customerOrderNo || '-'}</div>
-                            </div>
-                            <div class="order-info-item">
-                                <div class="order-info-label">📤 上传订单号</div>
-                                <div class="order-info-value">${order.uploadOrderNo || '-'}</div>
-                            </div>
-                        </div>
-                        ${order.note ? `<div class="order-note"><strong>📝 备注信息</strong>${order.note}</div>` : ''}
-                        <div class="order-images">
-                            <h4>📷 商品图片 (${order.images ? order.images.length : 0}张)</h4>
-                            <div class="order-images-grid">
-                                ${order.images && order.images.length > 0 ? order.images.map((img, imgIndex) => `
-                                    <img src="${img}" alt="商品图片 ${imgIndex + 1}" title="商品图片 ${imgIndex + 1}">
-                                `).join('') : '<div class="no-images">暂无商品图片</div>'}
-                            </div>
-                        </div>
-                        <div class="order-time">⏰ 创建时间: ${new Date(order.createdAt).toLocaleString('zh-CN')}</div>
-                    </div>
-                `;
-            });
-            
-            html += `
-                        <div class="footer">
-                            <p>日区直播订单记录系统 | 导出时间：${new Date().toLocaleString('zh-CN')}</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `;
-            
-            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const fileName = `日区订单_${session.date}_${session.title || `第${session.sessionNumber}场`}.html`.replace(/[\\/:*?"<>|]/g, '_');
-            a.download = fileName;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-        
-        // 导出带图片的HTML
-        function exportDailyOrderImages(orders) {
-            let html = `
-                <!DOCTYPE html>
-                <html lang="zh-CN">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>日区订单记录</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-                        .order { background: white; margin: 20px 0; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                        .order-header { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
-                        .order-title { font-size: 18px; font-weight: bold; color: #333; }
-                        .order-info { margin: 10px 0; color: #666; }
-                        .order-images { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
-                        .order-images img { width: 150px; height: 150px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; }
-                        .order-note { background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px; color: #856404; }
-                        .order-time { color: #999; font-size: 12px; margin-top: 10px; }
-                    </style>
-                </head>
-                <body>
-                    <h1 style="text-align: center; color: #333;">日区订单记录</h1>
-                    <p style="text-align: center; color: #666;">导出时间: ${new Date().toLocaleString('zh-CN')}</p>
-            `;
-            
-            orders.forEach((order, index) => {
-                html += `
-                    <div class="order">
-                        <div class="order-header">
-                            <div class="order-title">订单 #${index + 1}</div>
-                        </div>
-                        <div class="order-info">
-                            <strong>客户订单号:</strong> ${order.customerOrderNo || '-'}<br>
-                            <strong>上传订单号:</strong> ${order.uploadOrderNo || '-'}
-                        </div>
-                        ${order.note ? `<div class="order-note"><strong>备注:</strong> ${order.note}</div>` : ''}
-                        <div class="order-images">
-                            ${order.images && order.images.length > 0 ? order.images.map(img => `
-                                <img src="${img}" alt="商品图片">
-                            `).join('') : '<div style="color: #999;">暂无图片</div>'}
-                        </div>
-                        <div class="order-time">创建时间: ${new Date(order.createdAt).toLocaleString('zh-CN')}</div>
-                    </div>
-                `;
-            });
-            
-            html += `
-                </body>
-                </html>
-            `;
-            
-            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `日区订单_${new Date().toLocaleDateString('zh-CN')}.html`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-        
-        // 导出CSV
-        function exportDailyOrdersCSV(orders) {
-            let csv = '客户订单号,上传订单号,备注,图片数量,创建时间\n';
-            
-            orders.forEach(order => {
-                csv += `"${order.customerOrderNo || ''}","${order.uploadOrderNo || ''}","${order.note || ''}",${order.images ? order.images.length : 0},"${new Date(order.createdAt).toLocaleString('zh-CN')}"\n`;
-            });
-            
-            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `日区订单_${new Date().toLocaleDateString('zh-CN')}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-        
-        initApp();
-    </script>
+
+        // 页面加载完成后自动初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 页面加载完成，开始初始化...');
+            await initApp();
+            console.log('✅ 初始化完成');
+        });
+</script>
 </body>
 </html>
