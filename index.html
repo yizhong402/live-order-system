@@ -6518,6 +6518,8 @@ function checkJSZipLibrary() {
                     await client.db.from('combo_skus').delete().neq('id', 0);
                     await client.db.from('live_sessions').delete().neq('id', 0);
                 } catch(e) { console.error('清空云端失败:', e); }
+            }
+        }
         
         async function deleteAllProducts() {
             if (products.length === 0) {
@@ -6721,7 +6723,7 @@ function checkJSZipLibrary() {
             updateCurrentComboSkus();
         }
         
-        function saveCombo() { /* 云端自动保存 */ }
+        function saveCombo() {
             const code = document.getElementById('comboCode').value.trim().toUpperCase();
             
             if (!code) {
