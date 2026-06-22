@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>直播订单管理系统</title>
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    
 </head>
 <body>
     <div class="app-shell">
@@ -18,12 +18,11 @@
             <div class="sidebar-nav" id="sidebarNav">
                 <button class="sidebar-btn active" onclick="showPage('home')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>首页</span></button>
                 <button class="sidebar-btn" onclick="showPage('order')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" x2="12" y1="18" y2="12"/><line x1="9" x2="15" y1="15" y2="15"/></svg><span>订单录入</span></button>
-                <button class="sidebar-btn" onclick="showPage('product')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" x2="12" y1="22.08" y2="12"/></svg><span>商品管理</span></button>
-                <button class="sidebar-btn" onclick="showPage('combo')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M4 20V4"/><path d="M20 20V8"/><path d="M12 20V12"/></svg><span>组合SKU</span></button>
+                <button class="sidebar-btn" onclick="openProductModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" x2="12" y1="22.08" y2="12"/></svg><span>商品管理</span></button>
+                <button class="sidebar-btn" onclick="openComboModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M4 20V4"/><path d="M20 20V8"/><path d="M12 20V12"/></svg><span>组合SKU</span></button>
                 <button class="sidebar-btn" onclick="showPage('history')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>历史记录</span></button>
                 <button class="sidebar-btn" onclick="showPage('profit')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="1" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>毛利计算</span></button>
                 <button class="sidebar-btn" onclick="showPage('data')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span>数据管理</span></button>
-                <button class="sidebar-btn" onclick="showPage('settings')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span>系统设置</span></button>
                 <button class="sidebar-btn" onclick="openHelpModal()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg><span>使用说明</span></button>
             </div>
             <div class="sidebar-footer" id="sidebarFooter">PA仓库</div>
@@ -33,12 +32,6 @@
             <div class="topbar">
                 <div class="topbar-left">
                     <span class="topbar-title" id="topbarTitle">首页</span>
-                    <div class="session-selector" style="display:flex;align-items:center;gap:6px;font-size:13px;margin-left:16px;">
-                        <span style="color:rgba(255,255,255,0.5);">📌</span>
-                        <select id="sessionSelector" onchange="switchSession(parseInt(this.value)||null)" style="padding:4px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:13px;max-width:200px;">
-                            <option value="">-- 请选择场次 --</option>
-                        </select>
-                    </div>
                     <div class="topbar-status">
                         <span class="status-dot"></span>
                         <span id="connectionStatus">已连接</span>
@@ -86,8 +79,8 @@
             </div>
         </div>
         
-        <div id="page-product" class="page">
-            <div class="panel">
+        <div class="modal-overlay" id="productModal">
+            <div class="modal" style="max-width:800px;">
                 <h2>📦 商品库存管理</h2>
                 <div class="form-group">
                     <label for="productSku">SKU</label>
@@ -127,9 +120,7 @@
                     <button class="btn btn-secondary" onclick="checkJSZipLibrary()">🔧 诊断JSZip</button>
                 <button class="btn btn-info" onclick="openImageMatchModal()" id="imageMatchBtn" style="display:none;">🔄 调整图片匹配</button>
                 <button class="btn btn-danger" onclick="deleteAllProducts()" style="background:#c0392b;">🗑️ 删除全部商品</button>
-                <button class="btn btn-outline" onclick="showPage('home')">返回首页</button>
-                    <button class="btn btn-info" id="batchEditBtn" onclick="openBatchEditModal()" style="display:none;">✏️ 批量编辑 (0)</button>
-                    <button class="btn btn-secondary" id="batchSelectCancel" onclick="exitBatchSelectMode()" style="display:none;">取消选择</button>
+                <button class="btn btn-danger" onclick="closeProductModal()">关闭</button>
                 </div>
                 <div id="importProgress" style="display:none;margin-top:15px;">
                     <div style="display:flex;align-items:center;gap:10px;">
@@ -140,16 +131,7 @@
                     </div>
                     <div id="progressMessage" style="margin-top:8px;color:rgba(255,255,255,0.6);font-size:13px;"></div>
                 </div>
-                                <div id="productSearchBar" style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                    <input type="text" id="productSearchInput" placeholder="🔍 搜索SKU或商品名称..." oninput="onProductSearchInput()" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:rgba(0,0,0,0.2);color:#fff;font-size:13px;">
-                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
-                        <input type="checkbox" id="filterNoImage" onchange="onProductFilterChange()"> 仅缺图
-                    </label>
-                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
-                        <input type="checkbox" id="filterNoPrice" onchange="onProductFilterChange()"> 仅缺价
-                    </label>
-                </div>
-                <div id="productStats" style="margin-top:10px;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px;">
+                <div id="productStats" style="margin-top:15px;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px;">
                     <div style="display:flex;flex-wrap:wrap;gap:20px;font-size:13px;">
                         <div><span style="color:#4CAF50;">📦 商品总数:</span> <strong id="statsTotal" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
                         <div><span style="color:#FF9800;">🖼️ 无图片:</span> <strong id="statsNoImage" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
@@ -161,9 +143,6 @@
                 </div>
                 <div style="margin-top:20px;">
                     <h3>商品列表</h3>
-                    <div style="display:flex;gap:6px;margin-bottom:8px;">
-                        <button class="btn btn-secondary" onclick="enterBatchSelectMode()" style="padding:3px 10px;font-size:11px;">✅ 选择商品</button>
-                    </div>
                     <div id="productList" style="max-height:300px;overflow-y:auto;"></div>
                 </div>
             </div>
@@ -206,36 +185,6 @@
             </div>
         </div>
 
-        <div class="modal-overlay" id="batchEditModal">
-            <div class="modal" style="max-width:500px;">
-                <h2>✏️ 批量编辑商品</h2>
-                <div id="batchEditInfo" style="padding:10px;background:rgba(102,126,234,0.1);border-radius:6px;margin-bottom:15px;font-size:13px;color:var(--text-muted);"></div>
-                
-                <div class="form-group">
-                    <label for="batchEditStock" style="font-weight:500;">库存数量 <span style="color:var(--text-muted);font-weight:normal;font-size:11px;">（留空不改）</span></label>
-                    <input type="number" id="batchEditStock" min="0" placeholder="输入统一的库存值">
-                </div>
-                <div class="form-group">
-                    <label for="batchEditPriceCny" style="font-weight:500;">采购价 (¥) <span style="color:var(--text-muted);font-weight:normal;font-size:11px;">（留空不改）</span></label>
-                    <input type="number" id="batchEditPriceCny" min="0" step="0.01" placeholder="输入统一的采购价（人民币）">
-                </div>
-                <div class="form-group">
-                    <label for="batchEditPriceUsd" style="font-weight:500;">采购价 ($) <span style="color:var(--text-muted);font-weight:normal;font-size:11px;">（留空不改）</span></label>
-                    <input type="number" id="batchEditPriceUsd" min="0" step="0.01" placeholder="输入统一的采购价（美金）">
-                </div>
-                
-                <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:15px;margin-top:5px;">
-                    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">或按SKU粘贴批量编辑（每行一个SKU）</div>
-                    <textarea id="batchEditSkuList" placeholder="BA0125111905&#10;BA0125111903&#10;..." style="width:100%;height:60px;padding:8px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,0.2);color:#fff;font-size:12px;resize:vertical;"></textarea>
-                </div>
-                
-                <div class="btn-group" style="margin-top:15px;">
-                    <button class="btn btn-success" onclick="applyBatchEdit()" style="flex:1;padding:10px;">✅ 确认修改</button>
-                    <button class="btn btn-danger" onclick="closeModal('batchEditModal')" style="flex:1;padding:10px;">取消</button>
-                </div>
-                <div id="batchEditResult" style="margin-top:10px;font-size:12px;"></div>
-            </div>
-        </div>
         <div class="modal-overlay" id="imageMatchModal">
             <div class="modal" style="max-width:1200px;">
                 <h2>🔄 调整图片匹配</h2>
@@ -249,7 +198,37 @@
             </div>
         </div>
         
-
+        <div class="modal-overlay" id="comboModal">
+            <div class="modal" style="max-width:800px;">
+                <h2 style="color:#fff;">🔗 组合 SKU 管理</h2>
+                <div class="form-group">
+                    <label for="comboSearch" >搜索组合（输入组合编码或任意 SKU）</label>
+                    <input type="text" id="comboSearch" placeholder="搜索组合编码或组合内的 SKU..." oninput="searchCombo()">
+                </div>
+                <div id="comboSearchResult" style="margin-bottom:15px;padding:15px;background:rgba(16,185,129,0.1);border-radius:8px;display:none;"></div>
+                <div class="form-group">
+                    <label for="comboCode" >组合编码</label>
+                    <input type="text" id="comboCode" placeholder="例如：ABBB">
+                </div>
+                <div class="form-group">
+                    <label for="comboSkuInput" >扫描添加 SKU（扫码枪输入）</label>
+                    <input type="text" id="comboSkuInput" placeholder="扫描 SKU 码，按回车添加" onkeypress="if(event.key==='Enter') addComboSku()">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="addComboSku()">添加 SKU</button>
+                    <button class="btn btn-primary" onclick="saveCombo()">保存组合</button>
+                    <button class="btn btn-danger" onclick="closeComboModal()">关闭</button>
+                </div>
+                <div style="margin-top:15px;">
+                    <h4 style="color:#fff;">当前组合包含的 SKU：</h4>
+                    <div id="currentComboSkus" style="max-height:200px;overflow-y:auto;margin-bottom:15px;"></div>
+                </div>
+                <div style="margin-top:20px;">
+                    <h3 style="color:#fff;">已有组合列表</h3>
+                    <div id="comboList"></div>
+                </div>
+            </div>
+        </div>
         
         <div class="modal-overlay" id="comboEditModal">
             <div class="modal" style="max-width:800px;">
@@ -300,100 +279,32 @@
             </div>
         </div>
                 <div id="page-home" class="page active">
-                    <div class="panel" style="padding:24px 20px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                            <div>
-                                <div style="font-size:20px;font-weight:600;color:var(--text-primary);">📊 数据看板</div>
-                                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">PA仓库 · 多平台直播订单管理</div>
+                    <div class="panel" style="text-align:center;padding:32px 20px;">
+                        <div style="font-size:36px;margin-bottom:12px;opacity:0.7;">📊</div>
+                        <h2 style="font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">直播订单管理系统</h2>
+                        <p style="color:var(--text-muted);margin-bottom:24px;font-size:13px;">一站式直播订单管理解决方案</p>
+                        
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:800px;margin:0 auto;">
+                            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 12px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--border-hover)'" onmouseleave="this.style.borderColor='var(--border)'" onclick="showPage('order')">
+                                <div style="font-size:24px;margin-bottom:8px;">📝</div>
+                                <div style="color:var(--text-primary);font-weight:500;margin-bottom:4px;">订单录入</div>
+                                <div style="color:var(--text-muted);font-size:12px;">扫码录入竞拍订单</div>
                             </div>
-                            <div style="display:flex;gap:8px;">
-                                <button class="btn btn-outline" style="padding:4px 12px;font-size:12px;" onclick="refreshDashboard()">🔄 刷新</button>
-                                <button class="btn btn-outline" style="padding:4px 12px;font-size:12px;" onclick="initializeApp()">⚙️ 初始化</button>
+                            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 12px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--border-hover)'" onmouseleave="this.style.borderColor='var(--border)'" onclick="openProductModal()">
+                                <div style="font-size:24px;margin-bottom:8px;">📦</div>
+                                <div style="color:var(--text-primary);font-weight:500;margin-bottom:4px;">商品管理</div>
+                                <div style="color:var(--text-muted);font-size:12px;">管理商品库存信息</div>
+                            </div>
+                            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 12px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.borderColor='var(--border-hover)'" onmouseleave="this.style.borderColor='var(--border)'" onclick="openComboModal()">
+                                <div style="font-size:24px;margin-bottom:8px;">🔗</div>
+                                <div style="color:var(--text-primary);font-weight:500;margin-bottom:4px;">组合SKU</div>
+                                <div style="color:var(--text-muted);font-size:12px;">创建商品套餐组合</div>
                             </div>
                         </div>
                         
-                        <!-- 统计卡片行 -->
-                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
-                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(102,126,234,0.2),rgba(102,126,234,0.05));border:1px solid rgba(102,126,234,0.3);border-radius:10px;padding:16px;">
-                                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">📦 商品总数</div>
-                                <div style="font-size:28px;font-weight:700;color:#667eea;" id="dashTotalProducts">-</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">缺图: <span id="dashNoImage" style="color:#FF9800;">-</span> | 缺价: <span id="dashNoPrice" style="color:#f44336;">-</span></div>
-                            </div>
-                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(76,175,80,0.2),rgba(76,175,80,0.05));border:1px solid rgba(76,175,80,0.3);border-radius:10px;padding:16px;">
-                                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">📋 总订单数</div>
-                                <div style="font-size:28px;font-weight:700;color:#4CAF50;" id="dashTotalOrders">-</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">今日: <span id="dashTodayOrders" style="color:#4CAF50;">-</span> 单</div>
-                            </div>
-                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,215,0,0.05));border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:16px;">
-                                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">🎬 历史场次</div>
-                                <div style="font-size:28px;font-weight:700;color:#FFD700;" id="dashTotalSessions">-</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">活跃: <span id="dashActiveSessions" style="color:#4CAF50;">-</span> 场</div>
-                            </div>
-                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(244,67,54,0.2),rgba(244,67,54,0.05));border:1px solid rgba(244,67,54,0.3);border-radius:10px;padding:16px;">
-                                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">💰 今日GMV</div>
-                                <div style="font-size:28px;font-weight:700;color:#ef4444;" id="dashTodayGMV">$0.00</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">总GMV: <span id="dashTotalGMV" style="color:#FFD700;">$0.00</span></div>
-                            </div>
-                        </div>
-                        
-                        <!-- 快捷操作 -->
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
-                            <button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="showPage('order')">📝 订单录入</button>
-                            <button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="showPage('product')">📦 商品管理</button>
-                            <button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="showPage('combo')">🔗 组合SKU</button>
-                            <button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="showPage('profit')">💰 毛利计算</button>
-                            <button class="btn btn-primary" style="padding:6px 14px;font-size:12px;" onclick="showPage('history')">📋 历史记录</button>
-                            <button class="btn btn-success" style="padding:6px 14px;font-size:12px;" onclick="openSessionModal()">➕ 创建场次</button>
-                        </div>
-                        
-                        <!-- 库存预警条 -->
-                        <div id="stockWarningBar" style="display:none;margin-bottom:20px;padding:10px 16px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:8px;">
-                            <span style="color:#f59e0b;font-weight:500;">⚠️ 库存预警</span>
-                            <span id="stockWarningText" style="color:rgba(255,255,255,0.8);margin-left:8px;"></span>
-                        </div>
-                        
-                        <!-- 主区域：左图表 + 右活跃场次 -->
-                        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:20px;">
-                            <!-- 左侧图表 -->
-                            <div style="background:rgba(0,0,0,0.15);border-radius:10px;padding:16px;">
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                                    <div style="font-size:14px;font-weight:500;color:var(--text-primary);">📈 今日订单趋势</div>
-                                    <select id="dashPeriod" onchange="renderDashboardCharts()" style="padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:rgba(0,0,0,0.3);color:#fff;font-size:11px;">
-                                        <option value="today">今日</option>
-                                        <option value="7d">近7天</option>
-                                        <option value="30d">近30天</option>
-                                    </select>
-                                </div>
-                                <canvas id="dashTrendChart" style="max-height:200px;"></canvas>
-                            </div>
-                            
-                            <!-- 右侧活跃场次 -->
-                            <div id="activeSessionsSection" style="background:rgba(0,0,0,0.15);border-radius:10px;padding:16px;">
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                                    <div style="font-size:14px;font-weight:500;color:var(--text-primary);">🎬 活跃场次</div>
-                                </div>
-                                <div id="activeSessionCards" style="max-height:200px;overflow-y:auto;">
-                                    <div style="padding:16px;text-align:center;color:rgba(255,255,255,0.4);font-size:13px;">
-                                        暂无活跃场次
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 底部：最近订单 + 库存概览 -->
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                            <div style="background:rgba(0,0,0,0.15);border-radius:10px;padding:16px;">
-                                <div style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:12px;">🕐 最近订单</div>
-                                <div id="dashRecentOrders" style="max-height:160px;overflow-y:auto;font-size:12px;">
-                                    <div style="text-align:center;color:rgba(255,255,255,0.3);padding:16px;">暂无订单</div>
-                                </div>
-                            </div>
-                            <div style="background:rgba(0,0,0,0.15);border-radius:10px;padding:16px;">
-                                <div style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:12px;">📊 库存概览</div>
-                                <div id="dashStockOverview" style="max-height:160px;overflow-y:auto;font-size:12px;">
-                                    <div style="text-align:center;color:rgba(255,255,255,0.3);padding:16px;">暂无数据</div>
-                                </div>
-                            </div>
+                        <div style="margin-top:20px;display:flex;gap:8px;justify-content:center;">
+                            <button class="btn btn-primary" onclick="showPage('order')">开始录入订单</button>
+                            <button class="btn btn-outline" style="font-size:12px;" onclick="initializeApp()">🔄 初始化数据</button>
                         </div>
                     </div>
                 </div>
@@ -401,10 +312,7 @@
                 <div id="page-order" class="page">
                     <div class="order-layout" style="display:flex;gap:15px;height:100%;">
                         <div class="panel" style="flex:1;overflow-y:auto;">
-                        <div class="panel-title">📝 订单录入</div>
-                        <div id="sessionIndicator" style="margin-bottom:12px;padding:10px 14px;background:rgba(102,126,234,0.1);border:1px solid rgba(102,126,234,0.3);border-radius:8px;display:flex;justify-content:space-between;align-items:center;font-size:13px;">
-                            <span>📌 <strong>当前场次</strong>：<span id="currentSessionLabel" style="color:#667eea;">未选择</span></span>
-                        </div>
+                        <div class="panel-title">📝 当前竞拍设置</div>
                         
                         <!-- 场次信息区域 -->
                         <div class="session-panel" id="sessionPanel" style="margin-bottom:15px;padding:15px;background:rgba(255,255,255,0.05);border-radius:10px;">
@@ -433,8 +341,8 @@
                         </div>
                         
                         <div class="btn-group" style="margin-bottom:15px;">
-                            <button class="btn btn-success" onclick="showPage('product')">📦 商品管理</button>
-                            <button class="btn btn-primary" onclick="showPage('combo')">🔗 组合SKU</button>
+                            <button class="btn btn-success" onclick="openProductModal()">📦 商品管理</button>
+                            <button class="btn btn-primary" onclick="openComboModal()">🔗 组合SKU</button>
                             <button class="btn btn-warning" onclick="endLive()">🚫 结束直播</button>
                         </div>
                         
@@ -532,12 +440,6 @@
                         <div class="panel-title">🔗 组合SKU管理</div>
                         
                         <div class="form-group">
-                            <label for="comboSearch" >搜索组合（输入组合编码或任意 SKU）</label>
-                            <input type="text" id="comboSearch" placeholder="搜索组合编码或组合内的 SKU..." oninput="searchCombo()">
-                        </div>
-                        <div id="comboSearchResult" style="margin-bottom:15px;padding:15px;background:rgba(16,185,129,0.1);border-radius:8px;display:none;"></div>
-                        
-                        <div class="form-group">
                             <label for="comboCode">组合编码</label>
                             <input type="text" id="comboCode" placeholder="例如: COMBO001">
                         </div>
@@ -551,7 +453,6 @@
                             <button class="btn btn-success" onclick="addComboSku()">添加 SKU</button>
                             <button class="btn btn-primary" onclick="saveCombo()">保存组合</button>
                             <button class="btn btn-danger" onclick="resetCombo()">清空</button>
-                            <button class="btn btn-outline" onclick="showPage('home')">返回首页</button>
                         </div>
                         
                         <div style="margin-top:20px;">
@@ -687,24 +588,6 @@
                                     </div>
                                     <div id="profitDetails"></div>
                                 </div>
-                                
-                                <!-- 图表区域 -->
-                                <div style="margin-top:20px;">
-                                    <div style="display:flex;gap:8px;margin-bottom:15px;">
-                                        <button class="btn btn-primary chart-tab active" data-tab="trend" onclick="switchChartTab('trend')" style="padding:6px 14px;font-size:12px;">📈 日趋势</button>
-                                        <button class="btn btn-secondary chart-tab" data-tab="session" onclick="switchChartTab('session')" style="padding:6px 14px;font-size:12px;">🎬 场次对比</button>
-                                        <button class="btn btn-secondary chart-tab" data-tab="product" onclick="switchChartTab('product')" style="padding:6px 14px;font-size:12px;">🏆 商品排行</button>
-                                    </div>
-                                    <div id="chartTrend" class="chart-container" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:15px;">
-                                        <canvas id="trendChart"></canvas>
-                                    </div>
-                                    <div id="chartSession" class="chart-container" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:15px;display:none;">
-                                        <canvas id="sessionChart"></canvas>
-                                    </div>
-                                    <div id="chartProduct" class="chart-container" style="background:rgba(0,0,0,0.2);border-radius:8px;padding:15px;display:none;">
-                                        <canvas id="productChart"></canvas>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -733,14 +616,6 @@
                         </div>
                     </div>
                 </div>
-                <div id="page-settings" class="page">
-                    <div class="panel">
-                        <div class="panel-title">⚙️ 系统设置</div>
-                        <div id="settingsContent">
-                            <p style="color:var(--text-muted);text-align:center;padding:40px 0;">加载中...</p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -753,104 +628,183 @@
             </div>
             
             <div id="helpContent" style="font-size:14px;line-height:1.8;color:#e0e0e0;">
-                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">
-                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🚀 版本 v3.0 — 2026年6月22日</h3>
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🚀 版本更新 v2.4</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">📊 数据看板</strong>: 首页升级为完整数据仪表盘，含统计卡片、库存预警、订单趋势图、最近订单动态</li>
-                    <li><strong style="color:#ffffff;">✏️ 批量编辑</strong>: 商品管理支持多选批量修改库存/价格，支持按SKU列表批量更新</li>
-                    <li><strong style="color:#ffffff;">⚙️ 系统设置</strong>: 新增平台费用模板（TT/Shopee/独立站）、运费模板、汇率设置，云端持久化</li>
-                    <li><strong style="color:#ffffff;">🔗 毛利联动设置</strong>: 毛利计算页自动读取系统设置中的平台费率，无需手动输入</li>
+                    <li><strong style="color:#ffffff;">📦 系统更名升级</strong>: 从"直播竞拍订单系统"升级为"直播订单管理系统"</li>
+                    <li><strong style="color:#ffffff;">🎨 界面布局优化</strong>: 订单列表卡片样式全新设计，渐变背景、阴影效果更美观</li>
+                    <li><strong style="color:#ffffff;">🪟 模态框管理优化</strong>: 自动关闭叠加窗口，避免多层弹窗叠加导致界面混乱</li>
+                                        <li><strong style="color:#ffffff;">📋 首页信息更新</strong>: 更全面的系统描述，体现多平台管理特性</li>
+                    <li><strong style="color:#ffffff;">🔧 订单编辑修复</strong>: 修复编辑订单时输入框ID冲突问题，编辑功能正常工作</li>
+                    <li><strong style="color:#ffffff;">⚠️ 重复订单号检测</strong>: 同一场次内自动检测重复订单号，避免录入错误</li>
+                    <li><strong style="color:#ffffff;">🗑️ 场次删除优化</strong>: 增强数据修复能力，自动处理损坏的场次数据</li>
+                </ul>
+                
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🚀 版本更新 v2.3</h3>
+                <ul style="color:#d0d0d0;">
+                                        <li><strong style="color:#ffffff;">📅 场次管理增强</strong>: 支持创建直播场次、设置主播名字、订单按场次保存</li>
+                    <li><strong style="color:#ffffff;">📸 摄像头权限优化</strong>: 一场直播仅询问一次摄像头权限，无需重复授权</li>
+                    <li><strong style="color:#ffffff;">🖼️ 多图片支持</strong>: 一个订单支持多张商品图片，支持拍照和上传</li>
+                    <li><strong style="color:#ffffff;">✏️ 订单编辑功能</strong>: 支持修改订单号、备注信息和图片（添加/删除/替换）</li>
+                    <li><strong style="color:#ffffff;">🌐 HTML导出优化</strong>: 支持带高清图片的HTML格式导出，完美展示订单信息</li>
+                    <li><strong style="color:#ffffff;">➡️ 下一个订单</strong>: 保存当前订单后自动清空表单，快速录入下一个</li>
+                    <li><strong style="color:#ffffff;">🔍 场次查询</strong>: 新增场次查询按钮，快速查看特定场次订单</li>
+                    <li><strong style="color:#ffffff;">🗑️ 删除场次</strong>: 支持删除历史场次，同步删除对应订单数据</li>
+                    <li><strong style="color:#ffffff;">⚠️ 重复订单号检测</strong>: 自动检测重复订单号，避免录入错误</li>
+                    <li><strong style="color:#ffffff;">🎨 界面布局优化</strong>: 场次查询框移至右侧，创建/更换场次按钮移至左侧，操作更便捷</li>
+                </ul>
+                
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🚀 版本更新 v2.2</h3>
+                <ul style="color:#d0d0d0;">
+                                        <li><strong style="color:#ffffff;">📅 场次管理</strong>: 创建直播场次、设置主播名字、订单按场次保存</li>
+                    <li><strong style="color:#ffffff;">📸 摄像头权限优化</strong>: 一场直播仅询问一次摄像头权限，无需重复授权</li>
+                    <li><strong style="color:#ffffff;">🖼️ 多图片支持</strong>: 一个订单支持多张商品图片，支持拍照和上传</li>
+                    <li><strong style="color:#ffffff;">✏️ 订单编辑</strong>: 支持修改订单号、备注信息和图片（添加/删除/替换）</li>
+                    <li><strong style="color:#ffffff;">📊 多种导出格式</strong>: 支持Excel(XLSX)、HTML(带高清图片)、CSV三种格式导出</li>
+                    <li><strong style="color:#ffffff;">🔚 直播结束</strong>: 一键结束当前场次，自动保存订单记录</li>
+                    <li><strong style="color:#ffffff;">🗑️ 删除场次</strong>: 支持删除历史场次，同步删除对应订单数据</li>
+                    <li><strong style="color:#ffffff;">➡️ 下一个订单</strong>: 保存当前订单后自动清空表单，快速录入下一个</li>
+                </ul>
+                
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🚀 版本更新 v2.1</h3>
+                <ul style="color:#d0d0d0;">
+                    <li><strong style="color:#ffffff;">💰 毛利统计板块</strong>: 全新的毛利计算功能，支持自定义日期范围统计</li>
+                    <li><strong style="color:#ffffff;">📅 灵活时间筛选</strong>: 可自由选择任意日期区间，支持统计到今天或从某天开始</li>
+                    <li><strong style="color:#ffffff;">📤 毛利数据导出</strong>: 一键导出毛利报表，包含GMV、手续费、采购成本、毛利等核心数据</li>
+                    <li><strong style="color:#ffffff;">⚠️ SKU采购价检查</strong>: 自动检测未设置采购价的SKU，提示补全后再统计</li>
+                    <li><strong style="color:#ffffff;">🔢 竞拍链接独立轮次</strong>: 不同链接名称独立计数，切换时自动恢复对应轮次</li>
+                    <li><strong style="color:#ffffff;">📋 历史链接下拉</strong>: 支持从下拉框快速选择常用竞拍链接</li>
+                    <li><strong style="color:#ffffff;">⚡ 初始化加载动画</strong>: 显示加载进度和状态提示，提升启动体验</li>
+                    <li><strong style="color:#ffffff;">📐 订单页面优化</strong>: 实时订单记录移至右侧显示，方便查询</li>
+                    <li><strong style="color:#ffffff;">🎯 组合SKU快速调用</strong>: 订单录入页面可直接快速选择组合SKU</li>
+                    <li><strong style="color:#ffffff;">🖼️ 图片导入优化</strong>: 修复Excel图片匹配错位问题，支持同一单元格多张图片</li>
+                </ul>
+                
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🚀 版本更新 v2.0</h3>
+                <ul style="color:#d0d0d0;">
+                    <li><strong style="color:#ffffff;">数据云端存储</strong>: 数据自动保存到云端，多设备共享</li>
+                    <li><strong style="color:#ffffff;">商品筛选功能</strong>: 新增无图片、无价格、正常价格等筛选条件</li>
+                    <li><strong style="color:#ffffff;">批量删除功能</strong>: 支持按筛选条件批量删除商品</li>
+                    <li><strong style="color:#ffffff;">直播历史记录</strong>: 保存每场直播记录，随时查看回放</li>
+                    <li><strong style="color:#ffffff;">UI全面优化</strong>: 界面更加美观，提升用户体验</li>
+                    <li><strong style="color:#ffffff;">修复数据残留</strong>: 删除商品后刷新不会再恢复</li>
                 </ul>
                 
                 <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🔧 功能概览</h3>
-                <p style="color:#d0d0d0;">本工具用于管理直播拍卖订单，支持SKU管理、订单录入、场次管理、毛利统计、数据看板等功能。</p>
+                <p style="color:#d0d0d0;">本工具用于管理直播拍卖订单，支持SKU扫描、库存管理、订单记录、毛利统计等功能。</p>
                 
-                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🏠 首页 / 数据看板</h3>
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">💰 毛利计算</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">统计卡片</strong>: 展示商品总数、订单数、场次数、今日GMV等核心指标</li>
-                    <li><strong style="color:#ffffff;">库存预警</strong>: 自动标记库存不足的SKU（≤5），支持进度条可视化</li>
-                    <li><strong style="color:#ffffff;">订单趋势</strong>: Chart.js 柱状图，支持今日/近7天/近30天切换</li>
-                    <li><strong style="color:#ffffff;">活跃场次</strong>: 当前正在直播的场次列表</li>
-                    <li><strong style="color:#ffffff;">最近订单</strong>: 最新录入的订单动态</li>
-                    <li><strong style="color:#ffffff;">快捷操作</strong>: 一键跳转到订单录入、商品管理、毛利计算等页面</li>
+                    <li><strong style="color:#ffffff;">自定义日期范围</strong>: 自由选择任意开始和结束日期，灵活统计</li>
+                    <li><strong style="color:#ffffff;">场次筛选</strong>: 可选择特定场次或查看全部场次汇总</li>
+                    <li><strong style="color:#ffffff;">手续费设置</strong>: 可配置平台手续费比例，自动计算实际GMV</li>
+                    <li><strong style="color:#ffffff;">核心指标</strong>: 展示GMV、手续费、采购成本、毛利、毛利率等</li>
+                    <li><strong style="color:#ffffff;">SKU采购价检查</strong>: 自动检测未设置采购价的SKU，提示补全</li>
+                    <li><strong style="color:#ffffff;">导出报表</strong>: 一键导出详细毛利数据到CSV文件</li>
                 </ul>
                 
                 <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">📦 商品管理</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">添加商品</strong>: 录入SKU、名称、库存、采购价（¥/$）、产品图片</li>
-                    <li><strong style="color:#ffffff;">批量导入</strong>: 支持XLSX/CSV批量导入，自动提取图片（云端导入支持超大文件）</li>
-                    <li><strong style="color:#ffffff;">搜索筛选</strong>: 按SKU或名称搜索，支持"仅缺图"、"仅缺价"快速筛选</li>
-                    <li><strong style="color:#ffffff;">统计信息</strong>: 显示商品总数、无图片/无价格数量，支持下载问题商品清单</li>
-                    <li><strong style="color:#ffffff;">批量编辑</strong>: 点击"✅ 选择商品"进入多选模式，勾选后批量修改库存/采购价，或按SKU列表批量更新</li>
-                    <li><strong style="color:#ffffff;">编辑/删除</strong>: 每一行支持单独编辑、删除或复制SKU</li>
-                    <li><strong style="color:#ffffff;">删除全部</strong>: 一键清空所有商品数据（需确认）</li>
+                    <li><strong style="color:#ffffff;">添加商品</strong>: 点击"商品管理"按钮，录入SKU、名称、库存、价格等信息</li>
+                    <li><strong style="color:#ffffff;">导入商品</strong>: 支持XLSX/CSV批量导入，自动提取图片</li>
+                    <li><strong style="color:#ffffff;">统计信息</strong>: 显示商品总数、缺图、缺价的SKU数量，支持下载问题商品</li>
+                    <li><strong style="color:#ffffff;">筛选功能</strong>: 支持无图片、无价格、正常价格、库存状态等多维度筛选</li>
+                    <li><strong style="color:#ffffff;">批量删除</strong>: 可按筛选条件批量删除商品</li>
+                    <li><strong style="color:#ffffff;">编辑/删除</strong>: 在商品列表中可编辑或删除单个商品</li>
                 </ul>
                 
                 <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🔗 组合SKU</h3>
                 <ul style="color:#d0d0d0;">
                     <li><strong style="color:#ffffff;">创建组合</strong>: 设置组合编码，添加多个SKU组成套餐</li>
                     <li><strong style="color:#ffffff;">搜索组合</strong>: 输入组合编码或包含的SKU即可搜索</li>
-                    <li><strong style="color:#ffffff;">快速添加</strong>: 扫描组合编码自动添加所有包含的SKU到订单</li>
+                    <li><strong style="color:#ffffff;">快速添加</strong>: 扫描组合编码自动添加所有包含的SKU</li>
                 </ul>
                 
-                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">📝 订单录入</h3>
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🎯 订单录入</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">场次管理</strong>: 创建直播场次、设置主播名字、选择/切换场次</li>
-                    <li><strong style="color:#ffffff;">扫描SKU</strong>: 光标放在扫描区，使用扫码枪扫描商品条码并指定数量</li>
+                    <li><strong style="color:#ffffff;">设置标题</strong>: 在"竞拍链接名称"输入竞拍链接名称</li>
+                    <li><strong style="color:#ffffff;">扫描SKU</strong>: 将光标放在扫描区，使用扫码枪扫描商品条码</li>
+                    <li><strong style="color:#ffffff;">数量管理</strong>: 同一SKU多次扫描自动累加数量</li>
+                    <li><strong style="color:#ffffff;">手动修改</strong>: 点击数量数字可直接修改</li>
                     <li><strong style="color:#ffffff;">竞拍金额</strong>: 可记录每轮竞拍金额（选填）</li>
                     <li><strong style="color:#ffffff;">订单备注</strong>: 添加备注信息（选填）</li>
-                    <li><strong style="color:#ffffff;">商品图片</strong>: 支持拍照或上传图片，一个订单支持多张</li>
-                    <li><strong style="color:#ffffff;">轮次管理</strong>: 支持下一轮/上一轮/跳转轮次/复制订单，切换时自动保存</li>
-                    <li><strong style="color:#ffffff;">保存/下一个</strong>: 保存当前订单或保存并立即录入下一个</li>
-                    <li><strong style="color:#ffffff;">订单列表</strong>: 右侧实时显示当前场次所有订单，支持编辑和删除</li>
-                    <li><strong style="color:#ffffff;">状态标识</strong>: <span style="color:#ff4444;">🔴</span> 超卖 <span style="color:#ffaa00;">🟡</span> 有备注 <span style="color:#44ff44;">🟢</span> 正常</li>
-                    <li><strong style="color:#ffffff;">重复检测</strong>: 同一场次内自动检测重复订单号</li>
                 </ul>
                 
-                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">💰 毛利计算</h3>
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🔄 轮次管理</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">平台费率自动读取</strong>: 默认使用系统设置中的平台费用模板费率，也可手动输入</li>
-                    <li><strong style="color:#ffffff;">手动GMV</strong>: 可选手动输入GMV金额代替订单金额计算</li>
-                    <li><strong style="color:#ffffff;">时间范围</strong>: 自定义开始/结束日期，灵活统计</li>
-                    <li><strong style="color:#ffffff;">场次筛选</strong>: 可选择特定场次或查看全部汇总</li>
-                    <li><strong style="color:#ffffff;">核心指标</strong>: GMV、手续费、采购成本、毛利、毛利率</li>
-                    <li><strong style="color:#ffffff;">SKU采购价检查</strong>: 自动检测未设置采购价的SKU</li>
-                    <li><strong style="color:#ffffff;">图表分析</strong>: 日趋势/场次对比/商品排行三种图表视图</li>
-                    <li><strong style="color:#ffffff;">导出报表</strong>: 一键导出详细毛利数据到CSV文件</li>
+                    <li><strong style="color:#ffffff;">下一轮</strong>: 点击后自动保存当前轮次订单并进入下一轮</li>
+                    <li><strong style="color:#ffffff;">上一轮</strong>: 返回上一轮次继续编辑</li>
+                    <li><strong style="color:#ffffff;">跳转轮次</strong>: 快速定位到指定轮次</li>
+                    <li><strong style="color:#ffffff;">复制订单</strong>: 将某轮订单复制到指定轮次</li>
+                    <li><strong style="color:#ffffff;">自动保存</strong>: 切换轮次时自动保存，无需手动点击</li>
                 </ul>
                 
-                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">📋 历史记录</h3>
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">📋 订单管理</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">场次列表</strong>: 查看所有历史直播场次</li>
-                    <li><strong style="color:#ffffff;">查询订单</strong>: 查看特定场次的所有订单明细</li>
-                    <li><strong style="color:#ffffff;">导出/删除</strong>: 按场次导出HTML或删除场次（同步删除订单）</li>
+                    <li><strong style="color:#ffffff;">订单列表</strong>: 底部显示所有已保存的订单记录</li>
+                    <li><strong style="color:#ffffff;">搜索订单</strong>: 输入轮次数字筛选订单</li>
+                    <li><strong style="color:#ffffff;">状态标识</strong>: 
+                        <span style="color:#ff4444;">🔴</span> 超卖订单 
+                        <span style="color:#ffaa00;">🟡</span> 有备注订单 
+                        <span style="color:#44ff44;">🟢</span> 正常订单
+                    </li>
+                    <li><strong style="color:#ffffff;">快速编辑</strong>: 点击金额或备注可直接修改</li>
+                    <li><strong style="color:#ffffff;">导出订单</strong>: 将所有订单导出为CSV文件</li>
                 </ul>
                 
-                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">⚙️ 系统设置</h3>
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">📊 库存状态</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">平台费用模板</strong>: 配置各平台（TT Shop/Shopee/独立站等）默认手续费率</li>
-                    <li><strong style="color:#ffffff;">运费模板</strong>: 按国家/地区设置基础运费和续重费用</li>
-                    <li><strong style="color:#ffffff;">汇率设置</strong>: 美元兑人民币汇率配置</li>
-                    <li><strong style="color:#ffffff;">自动保存</strong>: 修改后自动保存到云端，全局生效</li>
+                    <li><span class="stock-badge stock-green" style="display:inline-block;"></span> <strong style="color:#ffffff;">正常</strong>: 库存充足</li>
+                    <li><span class="stock-badge stock-yellow" style="display:inline-block;"></span> <strong style="color:#ffffff;">即将售罄</strong>: 库存少于3件</li>
+                    <li><span class="stock-badge stock-red" style="display:inline-block;"></span> <strong style="color:#ffffff;">已售罄</strong>: 库存为0</li>
                 </ul>
                 
-                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">💾 数据管理</h3>
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🖼️ 图片功能</h3>
                 <ul style="color:#d0d0d0;">
-                    <li><strong style="color:#ffffff;">云端存储</strong>: 所有数据自动保存到云端，刷新不丢失</li>
-                    <li><strong style="color:#ffffff;">导出数据</strong>: 将所有数据导出为JSON文件</li>
-                    <li><strong style="color:#ffffff;">导入数据</strong>: 从JSON文件恢复数据</li>
+                    <li><strong style="color:#ffffff;">图片导入</strong>: 支持从XLSX文件批量导入图片，智能匹配单元格位置</li>
+                    <li><strong style="color:#ffffff;">智能匹配</strong>: 自动根据图片在Excel中的位置匹配对应SKU，支持同一单元格多张图片</li>
+                    <li><strong style="color:#ffffff;">点击放大</strong>: 点击商品图片可全屏查看</li>
+                    <li><strong style="color:#ffffff;">自动压缩</strong>: 大图片自动压缩以节省存储空间</li>
+                </ul>
+                
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">📺 直播场次</h3>
+                <ul style="color:#d0d0d0;">
+                    <li><strong style="color:#ffffff;">开始直播</strong>: 设置主播和标题，开始新的直播场次</li>
+                    <li><strong style="color:#ffffff;">结束直播</strong>: 结束当前场次，自动保存到历史记录</li>
+                    <li><strong style="color:#ffffff;">历史记录</strong>: 查看所有历史直播记录</li>
+                </ul>
+                
+                                    <li><strong style="color:#ffffff;">创建场次</strong>: 点击"📅 创建/更换场次"按钮，设置直播标题、日期、时间和主播名字</li>
+                    <li><strong style="color:#ffffff;">选择场次</strong>: 从右侧下拉框选择已有场次，点击"🔍 查询订单"查看该场次订单</li>
+                    <li><strong style="color:#ffffff;">录入订单</strong>: 在左侧表单输入订单号，添加备注（可选）</li>
+                    <li><strong style="color:#ffffff;">商品图片</strong>: 点击"📷 拍照"调用摄像头或"📁 上传图片"从本地选择，支持多张图片</li>
+                    <li><strong style="color:#ffffff;">保存订单</strong>: 点击"💾 保存订单"保存当前订单，表单自动清空；或"➡️ 下一个订单"保存并自动聚焦</li>
+                    <li><strong style="color:#ffffff;">订单列表</strong>: 右侧实时显示当前场次的所有订单，支持编辑和删除</li>
+                    <li><strong style="color:#ffffff;">编辑订单</strong>: 点击订单旁的编辑按钮，可修改订单号、备注和图片</li>
+                    <li><strong style="color:#ffffff;">直播结束</strong>: 点击"🔚 直播结束"按钮保存场次状态</li>
+                    <li><strong style="color:#ffffff;">按场次导出</strong>: 选择场次后点击"🌐 HTML网页导出"</li>
+                    <li><strong style="color:#ffffff;">删除场次</strong>: 选择场次后点击"🗑️ 删除场次"，同步删除该场次的所有订单</li>
+                    <li><strong style="color:#ffffff;">重复订单检测</strong>: 系统自动检测同一场次内的重复订单号，避免录入错误</li>
+                    <li><strong style="color:#ffffff;">摄像头权限</strong>: 首次拍照时询问权限，同一场直播无需重复授权</li>
+                </ul>
+                
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">💾 数据持久化</h3>
+                <ul style="color:#d0d0d0;">
+                    <li>所有数据云端存储，安全可靠</li>
+                    <li>刷新页面后数据不会丢失</li>
+                    <li>支持数据初始化（密码: 1987）</li>
                 </ul>
                 
                 <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">⚠️ 注意事项</h3>
                 <ul style="color:#d0d0d0;">
                     <li>扫描SKU时确保光标在输入框内</li>
                     <li>超卖订单会自动标记红色，需及时处理</li>
-                    <li>建议定期备份数据（数据管理 → 导出数据）</li>
+                    <li>建议定期导出订单备份</li>
                     <li>首次使用建议先导入商品数据</li>
                 </ul>
-<hr style="margin:20px 0;border-color:rgba(255,255,255,0.2);">
+                
+                <hr style="margin:20px 0;border-color:rgba(255,255,255,0.2);">
                 <p style="text-align:center;color:#888888;font-size:12px;">
-                    版本: 3.0 | 更新日期: 2026年6月22日
+                    版本: 2.4 | 更新日期: 2026年6月6日
                 </p>
             </div>
         </div>
@@ -924,7 +878,6 @@
     <script src="js/services/product.js"></script>
     <script src="js/services/combo.js"></script>
     <script src="js/services/app.js"></script>
-    <script src="js/services/settings.js"></script>
     
     <script>
 document.addEventListener('DOMContentLoaded', async function() {
