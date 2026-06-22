@@ -19,9 +19,12 @@
             // OMS同步配置
             omsSync: {
                 enabled: false,
+                apiUrl: '',
+                apiKey: '',
                 intervalMinutes: 60,
                 lastSync: null,
                 autoSync: false,
+                syncLog: [],
             }
         };
 
@@ -32,7 +35,6 @@
             try {
                 const res = await client.db.from('settings').list();
                 if (res.success && res.data && res.data.length > 0) {
-                    // 合并本地默认值，保留新增字段
                     const cloud = res.data[0];
                     systemSettings = deepMerge(systemSettings, cloud);
                     console.log('⚙️ 系统设置已加载');
@@ -94,84 +96,111 @@
             let html = '';
 
             // === 平台费用模板 ===
-            html += `<div class="settings-section">
-                <div class="settings-section-header">
-                    <h3>🏪 平台费用模板</h3>
-                    <button class="btn btn-success" onclick="addPlatformFeeTmpl()" style="padding:4px 12px;font-size:12px;">+ 添加模板</button>
-                </div>
-                <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">设置各平台的默认手续费率，毛利计算将使用当前选中平台的费率</p>
-                <table class="settings-table">
-                    <thead><tr><th>平台名称</th><th>费率 (%)</th><th>说明</th><th style="width:60px;"></th></tr></thead>
-                    <tbody id="platformFeeTableBody">`;
+            html += '<div class="settings-section">' +
+                '<div class="settings-section-header">' +
+                    '<h3>🏪 平台费用模板</h3>' +
+                    '<button class="btn btn-success" onclick="addPlatformFeeTmpl()" style="padding:4px 12px;font-size:12px;">+ 添加模板</button>' +
+                '</div>' +
+                '<p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">设置各平台的默认手续费率，毛利计算将使用当前选中平台的费率</p>' +
+                '<table class="settings-table"><thead><tr><th>平台名称</th><th>费率 (%)</th><th>说明</th><th style="width:60px;"></th></tr></thead><tbody id="platformFeeTableBody">';
             
             systemSettings.platformFees.forEach((t, i) => {
-                html += `<tr>
-                    <td><input class="settings-input" value="${escHtml(t.name)}" onchange="updatePlatformFee(${i},'name',this.value)" style="width:120px;"></td>
-                    <td><input class="settings-input" type="number" min="0" step="0.1" value="${t.rate}" onchange="updatePlatformFee(${i},'rate',this.value)" style="width:80px;"></td>
-                    <td><input class="settings-input" value="${escHtml(t.desc || '')}" onchange="updatePlatformFee(${i},'desc',this.value)" style="width:200px;"></td>
-                    <td><button class="btn btn-danger" onclick="removePlatformFee(${i})" style="padding:2px 8px;font-size:11px;">🗑️</button></td>
-                </tr>`;
+                html += '<tr>' +
+                    '<td><input class="settings-input" value="' + escHtml(t.name) + '" onchange="updatePlatformFee(' + i + ',\'name\',this.value)" style="width:120px;"></td>' +
+                    '<td><input class="settings-input" type="number" min="0" step="0.1" value="' + t.rate + '" onchange="updatePlatformFee(' + i + ',\'rate\',this.value)" style="width:80px;"></td>' +
+                    '<td><input class="settings-input" value="' + escHtml(t.desc || '') + '" onchange="updatePlatformFee(' + i + ',\'desc\',this.value)" style="width:200px;"></td>' +
+                    '<td><button class="btn btn-danger" onclick="removePlatformFee(' + i + ')" style="padding:2px 8px;font-size:11px;">🗑️</button></td>' +
+                '</tr>';
             });
 
-            html += `</tbody></table></div>`;
+            html += '</tbody></table></div>';
 
             // === 运费模板 ===
-            html += `<div class="settings-section">
-                <div class="settings-section-header">
-                    <h3>🚚 运费模板</h3>
-                    <button class="btn btn-success" onclick="addShippingTmpl()" style="padding:4px 12px;font-size:12px;">+ 添加模板</button>
-                </div>
-                <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">按国家/地区设置运费，毛利率计算时将扣除对应运费</p>
-                <table class="settings-table">
-                    <thead><tr><th>模板名称</th><th>国家代码</th><th>基础运费 ($)</th><th>续重每KG ($)</th><th style="width:60px;"></th></tr></thead>
-                    <tbody id="shippingTableBody">`;
+            html += '<div class="settings-section">' +
+                '<div class="settings-section-header">' +
+                    '<h3>🚚 运费模板</h3>' +
+                    '<button class="btn btn-success" onclick="addShippingTmpl()" style="padding:4px 12px;font-size:12px;">+ 添加模板</button>' +
+                '</div>' +
+                '<p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">按国家/地区设置运费，毛利率计算时将扣除对应运费</p>' +
+                '<table class="settings-table"><thead><tr><th>模板名称</th><th>国家代码</th><th>基础运费 ($)</th><th>续重每KG ($)</th><th style="width:60px;"></th></tr></thead><tbody id="shippingTableBody">';
             
             systemSettings.shippingTemplates.forEach((t, i) => {
-                html += `<tr>
-                    <td><input class="settings-input" value="${escHtml(t.name)}" onchange="updateShippingTmpl(${i},'name',this.value)" style="width:100px;"></td>
-                    <td><input class="settings-input" value="${escHtml(t.countries)}" onchange="updateShippingTmpl(${i},'countries',this.value)" style="width:140px;" placeholder="US,TH,PH..."></td>
-                    <td><input class="settings-input" type="number" min="0" step="0.1" value="${t.baseFee}" onchange="updateShippingTmpl(${i},'baseFee',this.value)" style="width:80px;"></td>
-                    <td><input class="settings-input" type="number" min="0" step="0.1" value="${t.perKg}" onchange="updateShippingTmpl(${i},'perKg',this.value)" style="width:80px;"></td>
-                    <td><button class="btn btn-danger" onclick="removeShippingTmpl(${i})" style="padding:2px 8px;font-size:11px;">🗑️</button></td>
-                </tr>`;
+                html += '<tr>' +
+                    '<td><input class="settings-input" value="' + escHtml(t.name) + '" onchange="updateShippingTmpl(' + i + ',\'name\',this.value)" style="width:100px;"></td>' +
+                    '<td><input class="settings-input" value="' + escHtml(t.countries) + '" onchange="updateShippingTmpl(' + i + ',\'countries\',this.value)" style="width:140px;" placeholder="US,TH,PH..."></td>' +
+                    '<td><input class="settings-input" type="number" min="0" step="0.1" value="' + t.baseFee + '" onchange="updateShippingTmpl(' + i + ',\'baseFee\',this.value)" style="width:80px;"></td>' +
+                    '<td><input class="settings-input" type="number" min="0" step="0.1" value="' + t.perKg + '" onchange="updateShippingTmpl(' + i + ',\'perKg\',this.value)" style="width:80px;"></td>' +
+                    '<td><button class="btn btn-danger" onclick="removeShippingTmpl(' + i + ')" style="padding:2px 8px;font-size:11px;">🗑️</button></td>' +
+                '</tr>';
             });
 
-            html += `</tbody></table></div>`;
+            html += '</tbody></table></div>';
 
             // === 汇率设置 ===
-            html += `<div class="settings-section">
-                <div class="settings-section-header">
-                    <h3>💱 汇率设置</h3>
-                </div>
-                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-                    <div class="form-group" style="margin-bottom:0;flex:1;max-width:300px;">
-                        <label>1 USD = <input class="settings-input" type="number" min="0.01" step="0.01" value="${systemSettings.exchangeRate}" onchange="updateExchangeRate(this.value)" style="width:90px;"> CNY</label>
-                    </div>
-                    <div style="font-size:12px;color:var(--text-muted);">
-                        <span>当前参考: 1 USD ≈ ${systemSettings.exchangeRate} CNY</span>
-                    </div>
-                </div>
-            </div>`;
+            html += '<div class="settings-section">' +
+                '<div class="settings-section-header"><h3>💱 汇率设置</h3></div>' +
+                '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">' +
+                    '<div class="form-group" style="margin-bottom:0;flex:1;max-width:300px;">' +
+                        '<label>1 USD = <input class="settings-input" type="number" min="0.01" step="0.01" value="' + systemSettings.exchangeRate + '" onchange="updateExchangeRate(this.value)" style="width:90px;"> CNY</label>' +
+                    '</div>' +
+                    '<div style="font-size:12px;color:var(--text-muted);">' +
+                        '<span>当前参考: 1 USD ≈ ' + systemSettings.exchangeRate + ' CNY</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
 
             // === OMS同步配置 ===
-            html += `<div class="settings-section">
-                <div class="settings-section-header">
-                    <h3>🔄 OMS 库存同步（开发中）</h3>
-                </div>
-                <p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">定时从外部OMS系统同步库存数据到商品管理</p>
-                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
-                        <input type="checkbox" ${systemSettings.omsSync.enabled ? 'checked' : ''} disabled> 启用同步
-                    </label>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label style="font-size:12px;">同步间隔（分钟）</label>
-                        <input class="settings-input" type="number" min="5" value="${systemSettings.omsSync.intervalMinutes}" disabled style="width:80px;">
-                    </div>
-                    <span style="font-size:12px;color:orange;">⏳ OMS 接口对接中，稍后开放</span>
-                </div>
-            </div>`;
+            var omsCfg = systemSettings.omsSync;
+            html += '<div class="settings-section">' +
+                '<div class="settings-section-header">' +
+                    '<h3>🔄 OMS 库存同步</h3>' +
+                    '<button class="btn btn-primary" onclick="syncFromOMS()" style="padding:4px 12px;font-size:12px;" id="omsManualSyncBtn">🔄 立即同步</button>' +
+                '</div>' +
+                '<p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">定时从外部OMS系统同步库存数据到商品管理</p>' +
+                '<div style="display:flex;flex-direction:column;gap:10px;">' +
+                    '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">' +
+                        '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">' +
+                            '<input type="checkbox" ' + (omsCfg.enabled ? 'checked' : '') + ' onchange="toggleOMSSync(this.checked)"> 启用自动同步' +
+                        '</label>' +
+                        '<div class="form-group" style="margin-bottom:0;">' +
+                            '<label style="font-size:12px;">同步间隔（分钟）</label>' +
+                            '<input class="settings-input" type="number" min="5" value="' + omsCfg.intervalMinutes + '" onchange="updateOMSInterval(this.value)" style="width:80px;">' +
+                        '</div>' +
+                        '<span id="omsSyncStatus" style="font-size:12px;color:var(--text-muted);">' +
+                            (omsCfg.lastSync ? '上次同步: ' + omsCfg.lastSync.substring(0, 19).replace('T', ' ') : '尚未同步') +
+                        '</span>' +
+                    '</div>' +
+                    '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">' +
+                        '<div class="form-group" style="margin-bottom:0;flex:2;min-width:280px;">' +
+                            '<label style="font-size:12px;">OMS API 地址</label>' +
+                            '<input class="settings-input" type="url" value="' + escHtml(omsCfg.apiUrl) + '" onchange="updateOMSApiUrl(this.value)" ' +
+                                'placeholder="https://your-oms.com/api/stock" style="width:100%;">' +
+                        '</div>' +
+                        '<div class="form-group" style="margin-bottom:0;flex:1;min-width:160px;">' +
+                            '<label style="font-size:12px;">API 密钥（可选）</label>' +
+                            '<input class="settings-input" type="password" value="' + escHtml(omsCfg.apiKey) + '" onchange="updateOMSApiKey(this.value)" ' +
+                                'placeholder="Bearer token" style="width:100%;">' +
+                        '</div>' +
+                    '</div>' +
+                    '<details style="margin-top:8px;">' +
+                        '<summary style="cursor:pointer;font-size:12px;color:var(--text-secondary);padding:4px 0;">📋 同步记录 (' + (omsCfg.syncLog || []).length + ')</summary>' +
+                        '<div id="omsSyncLogContainer">' +
+                            (typeof renderOMSSyncLog === 'function' ? renderOMSSyncLog() : '<div style="color:var(--text-muted);font-size:12px;">加载中...</div>') +
+                        '</div>' +
+                    '</details>' +
+                '</div>' +
+            '</div>';
 
             container.innerHTML = html;
+
+            // 页面渲染后初始化 OMS 自动同步
+            setTimeout(function() {
+                if (typeof omsSyncTimer !== 'undefined' && systemSettings.omsSync.enabled && systemSettings.omsSync.apiUrl) {
+                    if (typeof startOMSAutoSync === 'function' && !omsSyncTimer) {
+                        startOMSAutoSync();
+                    }
+                }
+            }, 500);
         }
 
         // ===== 字段更新函数 =====
@@ -217,10 +246,10 @@
         }
 
         // ===== 防抖保存 =====
-        let _saveTimer = null;
+        var _saveTimer = null;
         function debouncedSaveSettings() {
             if (_saveTimer) clearTimeout(_saveTimer);
-            _saveTimer = setTimeout(async () => {
+            _saveTimer = setTimeout(async function() {
                 await saveSettings();
             }, 800);
         }

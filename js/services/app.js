@@ -174,6 +174,10 @@
             // 加载系统设置
             try {
                 await loadSettings();
+                // OMS 同步初始化（如已启用则自动启动定时器）
+                if (typeof initOMSSyncOnLoad === 'function') {
+                    initOMSSyncOnLoad();
+                }
             } catch (e) {
                 console.warn('⚙️ 设置加载失败:', e.message);
             }
