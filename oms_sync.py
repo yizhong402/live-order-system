@@ -243,7 +243,11 @@ def sync(fresh_token=None):
     for sku, data in merged.items():
         if sku in prod_existing:
             old = prod_existing[sku]
-            if old.get("stock") != data["stock"]:
+            # 库存变化 OR 数据不全（缺图缺名）都更新
+            if old.get("stock") != data["stock"] \
+                or not old.get("image_url") \
+                or not old.get("name") \
+                or (old.get("name","") == old.get("sku","")):
                 to_update.append((sku, data))
         else:
             to_add.append((sku, data))
@@ -324,9 +328,9 @@ def daemon():
                     save_oms_field("lastScheduledDate", now.strftime("%Y-%m-%d"))
                     continue
 
-            # 每 60 分钟自动同步
-            if time.time() - last_auto >= 3600:
-                print(f"[{datetime.now().isoformat()}] ⏰ 小时同步")
+            # 每 3 小时自动同步
+            if time.time() - last_auto >= 10800:
+                print(f"[{datetime.now().isoformat()}] ⏰ 3小时同步")
                 sync()
                 last_auto = time.time()
 
