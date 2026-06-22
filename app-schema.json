@@ -6,94 +6,441 @@
       "tableName": "products",
       "description": "商品库存",
       "columns": [
-        { "columnName": "id", "columnType": "INT", "columnComment": "主键ID", "isRequired": true, "isPrimary": true, "isShow": false },
-        { "columnName": "sku", "columnType": "VARCHAR(255)", "columnComment": "SKU编码", "isRequired": true, "isPrimary": false, "isShow": true },
-        { "columnName": "name", "columnType": "VARCHAR(255)", "columnComment": "商品名称", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "stock", "columnType": "number", "columnComment": "当前库存", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "price_cny", "columnType": "decimal", "columnComment": "采购价(CNY)", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "price_usd", "columnType": "decimal", "columnComment": "采购价(USD)", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "original_stock", "columnType": "number", "columnComment": "原始库存", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "image_url", "columnType": "VARCHAR(1024)", "columnComment": "图片URL", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "created_at", "columnType": "datetime", "columnComment": "创建时间", "isRequired": false, "isPrimary": false, "isShow": false }
+        {
+          "columnName": "id",
+          "columnType": "INT",
+          "columnComment": "主键ID",
+          "isRequired": true,
+          "isPrimary": true,
+          "isShow": false
+        },
+        {
+          "columnName": "sku",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "SKU编码",
+          "isRequired": true,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "name",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "商品名称",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "stock",
+          "columnType": "number",
+          "columnComment": "当前库存",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "price_cny",
+          "columnType": "decimal",
+          "columnComment": "采购价(CNY)",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "price_usd",
+          "columnType": "decimal",
+          "columnComment": "采购价(USD)",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "original_stock",
+          "columnType": "number",
+          "columnComment": "原始库存",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "image_url",
+          "columnType": "VARCHAR(1024)",
+          "columnComment": "图片URL",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "created_at",
+          "columnType": "datetime",
+          "columnComment": "创建时间",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": false
+        }
       ]
     },
     {
       "tableName": "orders",
       "description": "订单",
       "columns": [
-        { "columnName": "id", "columnType": "INT", "columnComment": "主键ID", "isRequired": true, "isPrimary": true, "isShow": false },
-        { "columnName": "round", "columnType": "number", "columnComment": "轮次", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "title", "columnType": "VARCHAR(255)", "columnComment": "竞拍标题", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "skus_json", "columnType": "FULLTEXT", "columnComment": "SKU数据JSON", "isRequired": false, "isPrimary": false, "isShow": false },
-        { "columnName": "session_id", "columnType": "number", "columnComment": "场次ID", "isRequired": false, "isPrimary": false, "isShow": false },
-        { "columnName": "created_at", "columnType": "datetime", "columnComment": "创建时间", "isRequired": false, "isPrimary": false, "isShow": true }
+        {
+          "columnName": "id",
+          "columnType": "INT",
+          "columnComment": "主键ID",
+          "isRequired": true,
+          "isPrimary": true,
+          "isShow": false
+        },
+        {
+          "columnName": "round",
+          "columnType": "number",
+          "columnComment": "轮次",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "title",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "竞拍标题",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "skus_json",
+          "columnType": "FULLTEXT",
+          "columnComment": "SKU数据JSON",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": false
+        },
+        {
+          "columnName": "session_id",
+          "columnType": "number",
+          "columnComment": "场次ID",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": false
+        },
+        {
+          "columnName": "created_at",
+          "columnType": "datetime",
+          "columnComment": "创建时间",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        }
       ]
     },
     {
       "tableName": "combo_skus",
       "description": "组合SKU",
       "columns": [
-        { "columnName": "id", "columnType": "INT", "columnComment": "主键ID", "isRequired": true, "isPrimary": true, "isShow": false },
-        { "columnName": "code", "columnType": "VARCHAR(255)", "columnComment": "组合编码", "isRequired": true, "isPrimary": false, "isShow": true },
-        { "columnName": "skus_json", "columnType": "FULLTEXT", "columnComment": "组合SKU列表JSON", "isRequired": false, "isPrimary": false, "isShow": false },
-        { "columnName": "created_at", "columnType": "datetime", "columnComment": "创建时间", "isRequired": false, "isPrimary": false, "isShow": false }
+        {
+          "columnName": "id",
+          "columnType": "INT",
+          "columnComment": "主键ID",
+          "isRequired": true,
+          "isPrimary": true,
+          "isShow": false
+        },
+        {
+          "columnName": "code",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "组合编码",
+          "isRequired": true,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "skus_json",
+          "columnType": "FULLTEXT",
+          "columnComment": "组合SKU列表JSON",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": false
+        },
+        {
+          "columnName": "created_at",
+          "columnType": "datetime",
+          "columnComment": "创建时间",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": false
+        }
       ]
     },
     {
       "tableName": "live_sessions",
       "description": "直播场次",
       "columns": [
-        { "columnName": "id", "columnType": "INT", "columnComment": "主键ID", "isRequired": true, "isPrimary": true, "isShow": false },
-        { "columnName": "session_no", "columnType": "VARCHAR(255)", "columnComment": "场次编号", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "title", "columnType": "VARCHAR(255)", "columnComment": "场次标题", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "date", "columnType": "VARCHAR(255)", "columnComment": "日期", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "time", "columnType": "VARCHAR(255)", "columnComment": "时间", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "anchor", "columnType": "VARCHAR(255)", "columnComment": "主播", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "platform", "columnType": "VARCHAR(255)", "columnComment": "平台", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "status", "columnType": "VARCHAR(50)", "columnComment": "状态", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "created_at", "columnType": "datetime", "columnComment": "创建时间", "isRequired": false, "isPrimary": false, "isShow": false }
+        {
+          "columnName": "id",
+          "columnType": "INT",
+          "columnComment": "主键ID",
+          "isRequired": true,
+          "isPrimary": true,
+          "isShow": false
+        },
+        {
+          "columnName": "session_no",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "场次编号",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "title",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "场次标题",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "date",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "日期",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "time",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "时间",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "anchor",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "主播",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "platform",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "平台",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "status",
+          "columnType": "VARCHAR(50)",
+          "columnComment": "状态",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "created_at",
+          "columnType": "datetime",
+          "columnComment": "创建时间",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": false
+        }
       ]
     },
     {
       "tableName": "daily_sessions",
       "description": "每日直播场次（日报）",
       "columns": [
-        { "columnName": "id", "columnType": "INT", "columnComment": "主键ID", "isRequired": true, "isPrimary": true, "isShow": false },
-        { "columnName": "name", "columnType": "VARCHAR(255)", "columnComment": "场次名称", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "date", "columnType": "VARCHAR(255)", "columnComment": "日期", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "time", "columnType": "VARCHAR(255)", "columnComment": "时间", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "anchor", "columnType": "VARCHAR(255)", "columnComment": "主播", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "created_at", "columnType": "datetime", "columnComment": "创建时间", "isRequired": false, "isPrimary": false, "isShow": false }
+        {
+          "columnName": "id",
+          "columnType": "INT",
+          "columnComment": "主键ID",
+          "isRequired": true,
+          "isPrimary": true,
+          "isShow": false
+        },
+        {
+          "columnName": "name",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "场次名称",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "date",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "日期",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "time",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "时间",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "anchor",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "主播",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "created_at",
+          "columnType": "datetime",
+          "columnComment": "创建时间",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": false
+        }
       ]
     },
     {
       "tableName": "daily_orders",
       "description": "每日订单（日报）",
       "columns": [
-        { "columnName": "id", "columnType": "INT", "columnComment": "主键ID", "isRequired": true, "isPrimary": true, "isShow": false },
-        { "columnName": "order_no", "columnType": "VARCHAR(255)", "columnComment": "订单号", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "note", "columnType": "FULLTEXT", "columnComment": "备注信息", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "session_id", "columnType": "number", "columnComment": "场次ID", "isRequired": false, "isPrimary": false, "isShow": false },
-        { "columnName": "created_at", "columnType": "datetime", "columnComment": "创建时间", "isRequired": false, "isPrimary": false, "isShow": true }
+        {
+          "columnName": "id",
+          "columnType": "INT",
+          "columnComment": "主键ID",
+          "isRequired": true,
+          "isPrimary": true,
+          "isShow": false
+        },
+        {
+          "columnName": "order_no",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "订单号",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "note",
+          "columnType": "FULLTEXT",
+          "columnComment": "备注信息",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "session_id",
+          "columnType": "number",
+          "columnComment": "场次ID",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": false
+        },
+        {
+          "columnName": "created_at",
+          "columnType": "datetime",
+          "columnComment": "创建时间",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        }
       ]
     },
     {
       "tableName": "title_history",
       "description": "竞拍标题历史",
       "columns": [
-        { "columnName": "id", "columnType": "INT", "columnComment": "主键ID", "isRequired": true, "isPrimary": true, "isShow": false },
-        { "columnName": "title", "columnType": "VARCHAR(255)", "columnComment": "标题名称", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "created_at", "columnType": "datetime", "columnComment": "创建时间", "isRequired": false, "isPrimary": false, "isShow": false }
+        {
+          "columnName": "id",
+          "columnType": "INT",
+          "columnComment": "主键ID",
+          "isRequired": true,
+          "isPrimary": true,
+          "isShow": false
+        },
+        {
+          "columnName": "title",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "标题名称",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "created_at",
+          "columnType": "datetime",
+          "columnComment": "创建时间",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": false
+        }
       ]
     },
     {
       "tableName": "title_round_map",
       "description": "标题轮次映射",
       "columns": [
-        { "columnName": "id", "columnType": "INT", "columnComment": "主键ID", "isRequired": true, "isPrimary": true, "isShow": false },
-        { "columnName": "title", "columnType": "VARCHAR(255)", "columnComment": "标题", "isRequired": true, "isPrimary": false, "isShow": true },
-        { "columnName": "round_value", "columnType": "number", "columnComment": "当前轮次", "isRequired": false, "isPrimary": false, "isShow": true },
-        { "columnName": "created_at", "columnType": "datetime", "columnComment": "创建时间", "isRequired": false, "isPrimary": false, "isShow": false }
+        {
+          "columnName": "id",
+          "columnType": "INT",
+          "columnComment": "主键ID",
+          "isRequired": true,
+          "isPrimary": true,
+          "isShow": false
+        },
+        {
+          "columnName": "title",
+          "columnType": "VARCHAR(255)",
+          "columnComment": "标题",
+          "isRequired": true,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "round_value",
+          "columnType": "number",
+          "columnComment": "当前轮次",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": true
+        },
+        {
+          "columnName": "created_at",
+          "columnType": "datetime",
+          "columnComment": "创建时间",
+          "isRequired": false,
+          "isPrimary": false,
+          "isShow": false
+        }
+      ]
+    },
+    {
+      "tableName": "settings",
+      "columns": [
+        {
+          "field": "platformFees",
+          "type": "json",
+          "default": "[]"
+        },
+        {
+          "field": "shippingTemplates",
+          "type": "json",
+          "default": "[]"
+        },
+        {
+          "field": "exchangeRate",
+          "type": "number",
+          "default": 7.2
+        },
+        {
+          "field": "omsSync",
+          "type": "json",
+          "default": "{}"
+        }
       ]
     }
   ]

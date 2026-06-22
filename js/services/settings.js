@@ -40,6 +40,10 @@
                 const res = await client.db.from('settings').list();
                 if (res.success && res.data && res.data.length > 0) {
                     const cloud = res.data[0];
+                    // 解析 JSON 字符串字段（BaaS JSON 字段存为字符串）
+                    if (typeof cloud.omsSync === 'string') cloud.omsSync = JSON.parse(cloud.omsSync);
+                    if (typeof cloud.platformFees === 'string') cloud.platformFees = JSON.parse(cloud.platformFees);
+                    if (typeof cloud.shippingTemplates === 'string') cloud.shippingTemplates = JSON.parse(cloud.shippingTemplates);
                     systemSettings = deepMerge(systemSettings, cloud);
                     console.log('⚙️ 系统设置已加载');
                 }
@@ -158,9 +162,9 @@
             html += '<div class="settings-section">' +
                 '<div class="settings-section-header">' +
                     '<h3>🔄 OMS 库存同步</h3>' +
-                    '<button class="btn btn-primary" onclick="syncFromOMS()" style="padding:4px 12px;font-size:12px;" id="omsManualSyncBtn">🔄 立即同步</button>' +
+                    '<span style="font-size:11px;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:4px;">服务端定时执行</span>' +
                 '</div>' +
-                '<p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">定时从外部OMS系统同步库存数据到商品管理</p>' +
+                '<p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">定时从外部OMS系统（PA仓库）同步库存到商品管理。同步由服务器定时执行，浏览器端仅查看状态。</p>' +
                 '<div style="display:flex;flex-direction:column;gap:10px;">' +
                     '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">' +
                         '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">' +
