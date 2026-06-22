@@ -71,6 +71,16 @@
         function closeProductModal() {
             showPage('home');
         }
+        
+        function toggleAddForm() {
+            var form = document.getElementById('addProductForm');
+            var btn = document.getElementById('addProductToggleBtn');
+            if (form && btn) {
+                var isVisible = form.style.display !== 'none';
+                form.style.display = isVisible ? 'none' : 'block';
+                btn.textContent = isVisible ? '➕ 添加商品' : '✖️ 收起表单';
+            }
+        }
 
         let originalImages = [];
         

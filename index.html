@@ -88,58 +88,46 @@
         
         <div id="page-product" class="page">
             <div class="panel">
-                <h2>📦 商品库存管理</h2>
-                <div class="form-group">
-                    <label for="productSku">SKU</label>
-                    <input type="text" id="productSku" placeholder="输入商品SKU">
-                </div>
-                <div class="form-group">
-                    <label for="productName">商品名称</label>
-                    <input type="text" id="productName" placeholder="输入商品中文名称">
-                </div>
-                <div class="form-group">
-                    <label for="productStock">库存数量</label>
-                    <input type="number" id="productStock" min="0" value="10">
-                </div>
-                <div class="form-group">
-                    <label for="productPriceCny">采购价 (人民币)</label>
-                    <input type="number" id="productPriceCny" min="0" step="0.01" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="productPriceUsd">采购价 (美金)</label>
-                    <input type="number" id="productPriceUsd" min="0" step="0.01" value="0">
-                </div>
-                <div class="form-group">
-                    <label for="productImage">产品图片</label>
-                    <input type="file" id="productImage" accept="image/*" onchange="previewImage()">
-                    <img id="imagePreview" src="" style="display:none;width:100px;height:100px;margin-top:10px;object-fit:cover;border-radius:4px;">
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-success" onclick="addProduct()">添加商品</button>
-                    <button class="btn btn-primary" onclick="importProducts()">批量导入</button>
-                    <button class="btn btn-info" onclick="document.getElementById('xlsxFile').click()" id="xlsxImportBtn">📊 导入Excel(含图片)</button>
-                    <input type="file" id="xlsxFile" accept="*" style="display:none;" onchange="importXlsxWithImages()">
-                    <button class="btn btn-warning" onclick="cloudImportXlsx()" id="cloudImportBtn">☁️ 云端导入(支持超大文件)</button>
-                    <input type="file" id="cloudXlsxFile" accept=".xlsx,.xls" style="display:none;" onchange="cloudImportFileSelected(event)">
-                    <button class="btn btn-warning" onclick="downloadTemplate()">📥 下载模板</button>
-                    <button class="btn btn-secondary" onclick="showImageImportTips()">💡 图片导入说明</button>
-                    <button class="btn btn-secondary" onclick="checkXlsxLibrary()">🔧 诊断XLSX</button>
-                    <button class="btn btn-secondary" onclick="checkJSZipLibrary()">🔧 诊断JSZip</button>
-                <button class="btn btn-info" onclick="openImageMatchModal()" id="imageMatchBtn" style="display:none;">🔄 调整图片匹配</button>
-                <button class="btn btn-danger" onclick="deleteAllProducts()" style="background:#c0392b;">🗑️ 删除全部商品</button>
-                <button class="btn btn-outline" onclick="showPage('home')">返回首页</button>
-                    <button class="btn btn-info" id="batchEditBtn" onclick="openBatchEditModal()" style="display:none;">✏️ 批量编辑 (0)</button>
-                    <button class="btn btn-secondary" id="batchSelectCancel" onclick="exitBatchSelectMode()" style="display:none;">取消选择</button>
-                </div>
-                <div id="importProgress" style="display:none;margin-top:15px;">
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <div style="width:100%;height:20px;background:rgba(255,255,255,0.2);border-radius:10px;overflow:hidden;">
-                            <div id="progressBar" style="height:100%;background:linear-gradient(90deg,#4CAF50,#8BC34A);width:0%;transition:width 0.3s ease;"></div>
+                <h2>📦 商品库存管理 <span style="font-size:12px;color:var(--text-muted);font-weight:400;">(数据由 OMS 自动同步)</span></h2>
+                
+                <!-- 折叠的添加商品区域 -->
+                <button class="btn btn-success" onclick="toggleAddForm()" id="addProductToggleBtn" style="margin-bottom:12px;">➕ 添加商品</button>
+                <div id="addProductForm" style="display:none;padding:15px;background:rgba(0,0,0,0.12);border-radius:10px;margin-bottom:15px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="productSku">SKU <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="productSku" placeholder="输入商品SKU">
                         </div>
-                        <span id="progressText" font-size:14px;">0%</span>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="productName">商品名称</label>
+                            <input type="text" id="productName" placeholder="输入商品中文名称">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="productStock">库存数量 <span style="color:var(--text-muted);font-size:11px;">(OMS同步)</span></label>
+                            <input type="number" id="productStock" min="0" value="10">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="productImage">产品图片 <span style="color:var(--text-muted);font-size:11px;">(OMS同步)</span></label>
+                            <input type="file" id="productImage" accept="image/*" onchange="previewImage()">
+                            <img id="imagePreview" src="" style="display:none;width:80px;height:80px;margin-top:8px;object-fit:cover;border-radius:4px;">
+                        </div>
                     </div>
-                    <div id="progressMessage" style="margin-top:8px;color:rgba(255,255,255,0.6);font-size:13px;"></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="productPriceCny">采购价 (人民币)</label>
+                            <input type="number" id="productPriceCny" min="0" step="0.01" value="0">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="productPriceUsd">采购价 (美金)</label>
+                            <input type="number" id="productPriceUsd" min="0" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <div style="margin-top:12px;display:flex;gap:8px;">
+                        <button class="btn btn-success" onclick="addProduct()">✅ 确认添加</button>
+                        <button class="btn btn-secondary" onclick="toggleAddForm()" style="padding:4px 12px;font-size:12px;">取消</button>
+                    </div>
                 </div>
+
                                 <div id="productSearchBar" style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                     <input type="text" id="productSearchInput" placeholder="🔍 搜索SKU或商品名称..." oninput="onProductSearchInput()" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:rgba(0,0,0,0.2);color:#fff;font-size:13px;">
                     <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
