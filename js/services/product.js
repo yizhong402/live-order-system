@@ -1437,7 +1437,12 @@
         }
         
         function showImageFullscreen(sku) {
-            const imageData = productImagesCache[sku] || '';
+            // 从 products 数组查找真实图片 URL
+            var prod = products.find(function(p) { return p.sku === sku; });
+            var imageData = productImagesCache[sku] || '';
+            if (!imageData && prod) {
+                imageData = prod.image_url || prod.image || '';
+            }
             if (!imageData) return;
             
             const modal = document.createElement('div');
