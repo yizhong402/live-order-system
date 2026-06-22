@@ -1,56 +1,113 @@
 // oms-sync.js — OMS 库存同步服务
+// OAuth 认证流程：
+//   GET /api/oauth/authorize?domain=xxx&clientId=xxx&email=xxx&token=*** → 返回 code
+//   用 code 调用商品库存查询接口
 
-        // ============ OMS 同步配置（合并到 systemSettings） ============
-        // systemSettings.omsSync 现已扩展：
-        // {
+        // ============ 数据结构 ============
+        // systemSettings.omsSync: {
         //   enabled: false,
-        //   apiUrl: '',
-        //   apiKey: '',
+        //   domain: '',       // OMS 域名
+        //   clientId: '',     // API 客户端 ID
+        //   clientSecret: '',
+        //   email: '',
+        //   token: '',        // OMS 授权一次性 Token（使用后失效）
         //   intervalMinutes: 60,
         //   lastSync: null,
         //   autoSync: false,
-        //   syncLog: []  // { time, success, changed, total, message }
+        //   syncLog: []
         // }
+
+        let omsSyncTimer = null;
+        let omsAccessCode = null;    // 缓存授权 code
+        let omsRefreshToken = null;  // 保留刷新 token（API 返回后填充）
 
         // ============ 核心同步逻辑 ============
 
-        let omsSyncTimer = null;
-
         async function syncFromOMS() {
             const cfg = systemSettings.omsSync;
-            if (!cfg.apiUrl) {
-                showSyncResult('❌ OMS API 地址未配置', false);
-                return { success: false, message: 'API 地址未配置' };
+            if (!cfg.domain) {
+                showSyncResult('❌ OMS 域名未配置', false);
+                return { success: false, message: '域名未配置' };
+            }
+            if (!cfg.clientId || !cfg.email) {
+                showSyncResult('❌ OMS clientId 或 email 未配置', false);
+                return { success: false, message: 'clientId 或 email 未配置' };
             }
 
-            updateSyncStatus('🔄 正在同步...', '#f59e0b');
+            updateSyncStatus('🔄 正在认证...', '#f59e0b');
 
             try {
-                // 1. 调用 OMS API 获取库存数据
-                const resp = await fetch(cfg.apiUrl, {
+                // 1. 获取授权码（如果没有缓存）
+                if (!omsAccessCode) {
+                    const authUrl = 'https://' + cfg.domain + '/api/oauth/authorize' +
+                        '?domain=' + encodeURIComponent(cfg.domain) +
+                        '&clientId=' + encodeURIComponent(cfg.clientId) +
+                        '&email=' + encodeURIComponent(cfg.email);
+
+                    const authHeaders = {};
+                    if (cfg.token) {
+                        authHeaders['token'] = cfg.token;
+                    }
+
+                    const authResp = await fetch(authUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            ...authHeaders
+                        },
+                        signal: AbortSignal.timeout(15000)
+                    });
+
+                    if (!authResp.ok) {
+                        throw new Error('授权失败: ' + authResp.status + ' ' + authResp.statusText);
+                    }
+
+                    const authData = await authResp.json();
+                    // 预期返回 { code: "xxx" } 或 { success: true, data: { code: "xxx" } }
+                    omsAccessCode = authData.code || (authData.data && authData.data.code);
+                    if (!omsAccessCode) {
+                        throw new Error('授权响应中未找到 code（返回: ' + JSON.stringify(authData).substring(0, 200) + '）');
+                    }
+
+                    console.log('🔑 OMS 授权成功，获取到 code');
+                    updateSyncStatus('🔄 已授权，正在同步库存...', '#f59e0b');
+                }
+
+                // 2. 用授权码调库存查询接口
+                // 使用标准 stock 查询端点，可能为 /api/stock/list 或 /api/product/getStock
+                const stockUrl = 'https://' + cfg.domain + '/api/stock/list?code=' + encodeURIComponent(omsAccessCode);
+
+                const stockResp = await fetch(stockUrl, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                        ...(cfg.apiKey ? { 'Authorization': 'Bearer ' + cfg.apiKey } : {})
+                        'domain': cfg.domain,
+                        'clientId': cfg.clientId,
+                        'email': cfg.email
                     },
                     signal: AbortSignal.timeout(30000)
                 });
 
-                if (!resp.ok) {
-                    throw new Error('OMS 返回 ' + resp.status + ': ' + resp.statusText);
+                if (!stockResp.ok) {
+                    // code 可能失效，清缓存下次重试
+                    if (stockResp.status === 401 || stockResp.status === 403) {
+                        omsAccessCode = null;
+                        throw new Error('授权已过期，需要重新获取 token');
+                    }
+                    throw new Error('库存查询失败: ' + stockResp.status + ' ' + stockResp.statusText);
                 }
 
-                const data = await resp.json();
+                const stockData = await stockResp.json();
 
-                // 2. 解析 OMS 数据（支持多种格式）
-                const omsStockMap = parseOMSStockData(data);
-                const omsSkuCount = Object.keys(omsStockMap).length;
+                // 3. 解析库存数据
+                const omsStockMap = parseOMSStockData(stockData);
+                const omsSkuCount = omsStockMap.size;
 
                 if (omsSkuCount === 0) {
                     throw new Error('OMS 返回数据中未找到有效 SKU 库存信息');
                 }
 
-                // 3. 对比本地库存，找出变化
+                // 4. 对比本地库存，找出变化
                 const changes = [];
                 const noMatch = [];
 
@@ -68,11 +125,10 @@
                     }
                 });
 
-                // 4. 批量更新到云端 BaaS
+                // 5. 批量更新到云端 BaaS
                 let updatedCount = 0;
                 for (const chg of changes) {
                     try {
-                        // 查找云端记录 ID
                         const searchRes = await client.db.from('products').select('id,stock').where('sku', chg.sku).list();
                         if (searchRes.success && searchRes.data && searchRes.data.length > 0) {
                             const record = searchRes.data[0];
@@ -84,7 +140,7 @@
                     }
                 }
 
-                // 5. 记录同步日志
+                // 6. 记录同步日志
                 const syncLog = {
                     time: new Date().toISOString(),
                     success: true,
@@ -101,7 +157,7 @@
                 if (cfg.syncLog.length > 50) cfg.syncLog = cfg.syncLog.slice(0, 50);
                 await saveSettings();
 
-                // 6. 刷新 UI
+                // 7. 刷新 UI
                 if (changes.length > 0) {
                     if (typeof updateSkuList === 'function') updateSkuList();
                     if (typeof renderStockOverview === 'function') renderStockOverview();
@@ -117,7 +173,6 @@
                 const msg = '❌ OMS 同步失败: ' + e.message;
                 console.error('OMS sync error:', e);
 
-                // 记录失败日志
                 cfg.lastSync = new Date().toISOString();
                 cfg.syncLog = cfg.syncLog || [];
                 cfg.syncLog.unshift({ time: cfg.lastSync, success: false, changed: 0, total: 0, unmatched: 0, message: msg });
@@ -131,6 +186,12 @@
             }
         }
 
+        // 清除缓存的授权码（下次同步重新获取）
+        function resetOMSAuth() {
+            omsAccessCode = null;
+            omsRefreshToken = null;
+        }
+
         // 解析 OMS 返回数据为 Map<SKU, stock>
         function parseOMSStockData(data) {
             const map = new Map();
@@ -138,9 +199,9 @@
             if (!data) return map;
 
             // 格式1: { "SKU001": 100, "SKU002": 50, ... }
-            if (typeof data === 'object' && !Array.isArray(data) && !data.data && !data.products && !data.items) {
+            if (typeof data === 'object' && !Array.isArray(data) && !data.data && !data.products && !data.items && !data.result) {
                 for (const [key, val] of Object.entries(data)) {
-                    if (val !== null && val !== undefined && !key.startsWith('_')) {
+                    if (val !== null && val !== undefined && !key.startsWith('_') && key !== 'code' && key !== 'success') {
                         const num = parseInt(val);
                         if (!isNaN(num)) map.set(key, num);
                     }
@@ -153,7 +214,7 @@
             if (Array.isArray(arr)) {
                 arr.forEach(item => {
                     const sku = item.sku || item.SKU || item.sku_code || item.product_code || item.code;
-                    const stock = item.stock || item.quantity || item.qty || item.available || item.inventory;
+                    const stock = item.stock || item.quantity || item.qty || item.available || item.inventory || item.stock_qty || item.available_qty;
                     if (sku && stock !== undefined) {
                         const num = parseInt(stock);
                         if (!isNaN(num)) map.set(String(sku), num);
@@ -184,7 +245,7 @@
         function startOMSAutoSync() {
             stopOMSAutoSync();
             const cfg = systemSettings.omsSync;
-            if (!cfg.enabled || !cfg.apiUrl) return;
+            if (!cfg.enabled || !cfg.domain) return;
 
             const intervalMs = (cfg.intervalMinutes || 60) * 60 * 1000;
             console.log('🔄 OMS 自动同步已启动，间隔 ' + (cfg.intervalMinutes || 60) + ' 分钟');
@@ -220,7 +281,6 @@
         }
 
         function showSyncResult(msg, isSuccess) {
-            // 浮动提示
             const toast = document.createElement('div');
             toast.style.cssText = `
                 position: fixed; bottom: 20px; right: 20px; z-index: 9999;
@@ -240,7 +300,7 @@
             }, 4000);
         }
 
-        // ============ 同步日志页面 ============
+        // ============ 同步日志渲染 ============
 
         function renderOMSSyncLog() {
             const cfg = systemSettings.omsSync;
@@ -285,32 +345,25 @@
             </div>`;
         }
 
-        // ============ 刷新同步日志UI ============
-
         function refreshOMSSyncLog() {
             var container = document.getElementById('omsSyncLogContainer');
             var summary = document.querySelector('#settingsContent details summary');
-            if (container) {
-                container.innerHTML = renderOMSSyncLog();
-            }
+            if (container) container.innerHTML = renderOMSSyncLog();
             if (summary) {
                 var count = (systemSettings.omsSync.syncLog || []).length;
                 summary.textContent = '📋 同步记录 (' + count + ')';
             }
         }
 
-        // ============ 初始化检查（页面加载时自动启动） ============
+        // ============ 初始化钩子 ============
 
-        // 在 settings 加载完成后，如果 OMS 已启用则自动启动
-        // 钩子由 settings.js 的 renderSettingsPage 触发
         function initOMSSyncOnLoad() {
             const cfg = systemSettings.omsSync;
-            if (cfg.enabled && cfg.apiUrl) {
+            if (cfg.enabled && cfg.domain) {
                 startOMSAutoSync();
             }
         }
 
-        // 当用户切换 OMS 启用状态时调用
         function toggleOMSSync(enabled) {
             systemSettings.omsSync.enabled = enabled;
             debouncedSaveSettings();
@@ -321,21 +374,8 @@
             }
         }
 
-        function updateOMSApiUrl(url) {
-            systemSettings.omsSync.apiUrl = url;
-            debouncedSaveSettings();
-        }
-
-        function updateOMSApiKey(key) {
-            systemSettings.omsSync.apiKey = key;
-            debouncedSaveSettings();
-        }
-
         function updateOMSInterval(minutes) {
             systemSettings.omsSync.intervalMinutes = parseInt(minutes) || 60;
             debouncedSaveSettings();
-            // 如果正在运行，重启定时器
-            if (omsSyncTimer) {
-                startOMSAutoSync();
-            }
+            if (omsSyncTimer) startOMSAutoSync();
         }

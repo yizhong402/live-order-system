@@ -19,8 +19,11 @@
             // OMS同步配置
             omsSync: {
                 enabled: false,
-                apiUrl: '',
-                apiKey: '',
+                domain: '',      // OMS 域名
+                clientId: '',    // API 客户端 ID
+                clientSecret: '', // API 客户端密钥
+                email: '',       // 注册邮箱
+                token: '',       // OMS 授权一次性 Token
                 intervalMinutes: 60,
                 lastSync: null,
                 autoSync: false,
@@ -170,16 +173,31 @@
                             (omsCfg.lastSync ? '上次同步: ' + omsCfg.lastSync.substring(0, 19).replace('T', ' ') : '尚未同步') +
                         '</span>' +
                     '</div>' +
-                    '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">' +
-                        '<div class="form-group" style="margin-bottom:0;flex:2;min-width:280px;">' +
-                            '<label style="font-size:12px;">OMS API 地址</label>' +
-                            '<input class="settings-input" type="url" value="' + escHtml(omsCfg.apiUrl) + '" onchange="updateOMSApiUrl(this.value)" ' +
-                                'placeholder="https://your-oms.com/api/stock" style="width:100%;">' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+                        '<div class="form-group" style="margin-bottom:0;">' +
+                            '<label style="font-size:12px;">OMS 域名 <span style="color:var(--text-muted);">domain</span></label>' +
+                            '<input class="settings-input" type="text" value="' + escHtml(omsCfg.domain) + '" onchange="updateOMSDomain(this.value)" ' +
+                                'placeholder="oms.example.com" style="width:100%;">' +
                         '</div>' +
-                        '<div class="form-group" style="margin-bottom:0;flex:1;min-width:160px;">' +
-                            '<label style="font-size:12px;">API 密钥（可选）</label>' +
-                            '<input class="settings-input" type="password" value="' + escHtml(omsCfg.apiKey) + '" onchange="updateOMSApiKey(this.value)" ' +
-                                'placeholder="Bearer token" style="width:100%;">' +
+                        '<div class="form-group" style="margin-bottom:0;">' +
+                            '<label style="font-size:12px;">邮箱 <span style="color:var(--text-muted);">email</span></label>' +
+                            '<input class="settings-input" type="email" value="' + escHtml(omsCfg.email) + '" onchange="updateOMSEmail(this.value)" ' +
+                                'placeholder="admin@example.com" style="width:100%;">' +
+                        '</div>' +
+                        '<div class="form-group" style="margin-bottom:0;">' +
+                            '<label style="font-size:12px;">Client ID</label>' +
+                            '<input class="settings-input" type="text" value="' + escHtml(omsCfg.clientId) + '" onchange="updateOMSClientId(this.value)" ' +
+                                'placeholder="client_id" style="width:100%;">' +
+                        '</div>' +
+                        '<div class="form-group" style="margin-bottom:0;">' +
+                            '<label style="font-size:12px;">Client Secret</label>' +
+                            '<input class="settings-input" type="password" value="' + escHtml(omsCfg.clientSecret) + '" onchange="updateOMSClientSecret(this.value)" ' +
+                                'placeholder="client_secret" style="width:100%;">' +
+                        '</div>' +
+                        '<div class="form-group" style="margin-bottom:0;grid-column:span 2;">' +
+                            '<label style="font-size:12px;">授权 Token <span style="color:var(--text-muted);">OMS 后台生成的一次性 token</span></label>' +
+                            '<input class="settings-input" type="password" value="' + escHtml(omsCfg.token) + '" onchange="updateOMSToken(this.value)" ' +
+                                'placeholder="授权一次性 token，使用后失效" style="width:100%;">' +
                         '</div>' +
                     '</div>' +
                     '<details style="margin-top:8px;">' +
@@ -195,7 +213,7 @@
 
             // 页面渲染后初始化 OMS 自动同步
             setTimeout(function() {
-                if (typeof omsSyncTimer !== 'undefined' && systemSettings.omsSync.enabled && systemSettings.omsSync.apiUrl) {
+                if (typeof omsSyncTimer !== 'undefined' && systemSettings.omsSync.enabled && systemSettings.omsSync.domain) {
                     if (typeof startOMSAutoSync === 'function' && !omsSyncTimer) {
                         startOMSAutoSync();
                     }
@@ -242,6 +260,28 @@
 
         function updateExchangeRate(value) {
             systemSettings.exchangeRate = parseFloat(value) || 7.2;
+            debouncedSaveSettings();
+        }
+
+        // ===== OMS 同步配置更新函数 =====
+        function updateOMSDomain(value) {
+            systemSettings.omsSync.domain = value;
+            debouncedSaveSettings();
+        }
+        function updateOMSEmail(value) {
+            systemSettings.omsSync.email = value;
+            debouncedSaveSettings();
+        }
+        function updateOMSClientId(value) {
+            systemSettings.omsSync.clientId = value;
+            debouncedSaveSettings();
+        }
+        function updateOMSClientSecret(value) {
+            systemSettings.omsSync.clientSecret = value;
+            debouncedSaveSettings();
+        }
+        function updateOMSToken(value) {
+            systemSettings.omsSync.token = value;
             debouncedSaveSettings();
         }
 
