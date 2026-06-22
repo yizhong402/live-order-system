@@ -299,9 +299,23 @@
                 existing.priceCny = priceCny;
                 existing.priceUsd = priceUsd;
                 if (image) {
-                    const imgUrl = await uploadImageBase64(image); if (imgUrl) { products[products.length-1].image = imgUrl; await client.db.from("products").insert().values({ sku, name, stock, price_cny: priceCny, price_usd: priceUsd, image_url: imgUrl, original_stock: stock }); } else { await client.db.from("products").insert().values({ sku, name, stock, price_cny: priceCny, price_usd: priceUsd, image_url: "", original_stock: stock }); }
+                    var imgUrl = await uploadImageBase64(image);
+                    existing.image = imgUrl || image;
                     productImagesCache[sku] = image;
                 }
+                // 保存到 BaaS
+                client.db.from('products').list().then(function(r) {
+                    if (r.success && r.data) {
+                        var f = r.data.find(function(x) { return x.sku === sku; });
+                        if (f) {
+                            client.db.from('products').update(f.id, {
+                                price_cny: priceCny, price_usd: priceUsd,
+                                name: name || existing.name,
+                                stock: stock, original_stock: stock
+                            }).catch(function(e) { console.error('BaaS update err:', e); });
+                        }
+                    }
+                });
             } else {
                 products.push({
                     sku: sku,
@@ -312,7 +326,7 @@
                     originalStock: stock
                 });
                 if (image) {
-                    const imgUrl = await uploadImageBase64(image); if (imgUrl) { products[products.length-1].image = imgUrl; await client.db.from("products").insert().values({ sku, name, stock, price_cny: priceCny, price_usd: priceUsd, image_url: imgUrl, original_stock: stock }); } else { await client.db.from("products").insert().values({ sku, name, stock, price_cny: priceCny, price_usd: priceUsd, image_url: "", original_stock: stock }); }
+                    const imgUrl = await uploadImageBase64(image); if (imgUrl) { products[products.length-1].image = imgUrl; } var pdata = { sku: sku, name: name || '', stock: stock, price_cny: priceCny, price_usd: priceUsd, image_url: imgUrl || '', original_stock: stock }; await client.db.from('products').save(pdata);
                     productImagesCache[sku] = image;
                 }
             }
@@ -1436,6 +1450,47 @@
             
             function finishSave() {
                 product.originalStock = product.stock;
+                // 编辑时只修改价格字段，保留 OMS 同步的库存/名称/图片不变
+                var sku = product.sku;
+                var ppriceCny = product.priceCny || 0;
+                var ppriceUsd = product.priceUsd || 0;
+                var pname = product.name || '';
+                var pstock = product.stock || 0;
+                var pimg = product.image_url || '';
+                
+                // 上传新图片（如果选了）
+                var imagePromise = Promise.resolve(null);
+                var fileInput = document.getElementById('editProductImage');
+                if (fileInput && fileInput.files && fileInput.files[0]) {
+                    imagePromise = uploadImageBase64(productImagesCache[sku] || '');
+                }
+                
+                imagePromise.then(function(imgUrl) {
+                    var finalImg = imgUrl || pimg;
+                    // 查找 BaaS 记录并更新
+                    client.db.from('products').list().then(function(res) {
+                        if (res.success && res.data) {
+                            var found = res.data.find(function(r) { return r.sku === sku; });
+                            if (found) {
+                                client.db.from('products').update(found.id, {
+                                    price_cny: ppriceCny,
+                                    price_usd: ppriceUsd,
+                                    name: pname,
+                                    stock: pstock,
+                                    original_stock: pstock,
+                                    image_url: finalImg
+                                }).then(function() {
+                                    console.log('✅ BaaS 保存成功:', sku);
+                                }).catch(function(e) {
+                                    console.error('❌ BaaS 保存失败:', e);
+                                });
+                            }
+                        }
+                    }).catch(function(e) {
+                        console.error('❌ 查询失败:', e);
+                    });
+                });
+                
                 updateProductList();
                 updateProductListDisplay();
                 saveProducts();
