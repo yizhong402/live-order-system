@@ -101,6 +101,7 @@ def save_cache(data):
         json.dump(data, f, indent=2)
 
 def ensure_auth(cfg, cache, fresh_token=None):
+    """确保有有效的 AccessToken。自动用 refreshToken 续期。"""
     global at, uid
     domain = cfg["domain"].replace("https://","").replace("http://","").rstrip("/")
     cid = cfg["clientId"]
@@ -108,16 +109,42 @@ def ensure_auth(cfg, cache, fresh_token=None):
     email = cfg["email"]
 
     now_ms = int(time.time() * 1000)
+
+    # 缓存未过期 → 直接用
     if cache.get("accessToken") and cache.get("expireAt", 0) > now_ms:
         at = cache["accessToken"]
         uid = cache.get("userId", 0)
         print(f"  ✅ 使用缓存的 AccessToken")
         return
 
-    if not fresh_token:
-        raise Exception("需要授权 Token，请使用 --token 参数传入")
+    # 尝试用 refreshToken 续期
+    if cache.get("refreshToken"):
+        print(f"  🔄 尝试刷新 AccessToken...")
+        try:
+            r = requests.get(f"https://{domain}/api/oauth/refreshToken",
+                params={"clientId": cid, "refreshToken": cache["refreshToken"], "userId": cache.get("userId", 0)},
+                timeout=15, verify=False)
+            j = r.json()
+            if j.get("code") == 0 and j.get("data", {}).get("accessToken"):
+                d = j["data"]
+                at = d["accessToken"]
+                uid = d.get("userId", 0)
+                save_cache({
+                    "accessToken": at,
+                    "refreshToken": d.get("refreshToken", cache["refreshToken"]),
+                    "userId": uid,
+                    "expireAt": d.get("expireIn", now_ms + 3600000)
+                })
+                print(f"  ✅ AccessToken 已自动续期: {at[:20]}...")
+                return
+        except Exception as e:
+            print(f"  ⚠️ 刷新 token 失败: {e}")
 
-    print("\n📡 授权中（使用一次性 Token）...")
+    # refresh 失败 → 需要一次性 token
+    if not fresh_token:
+        raise Exception("AccessToken 已过期且 refreshToken 无效，需要 --token 重新授权")
+
+    print("\n📡 重新授权中（使用一次性 Token）...")
     params = {"domain": cfg["authDomain"], "clientId": cid, "email": email, "token": fresh_token}
     r = requests.get(f"https://{domain}/api/oauth/authorize",
         params=params, timeout=15, verify=False)
@@ -125,7 +152,6 @@ def ensure_auth(cfg, cache, fresh_token=None):
     if j.get("code") != 0:
         raise Exception(f"授权失败: {j.get('message')}")
     code = j["data"]
-    print(f"  ✅ 授权码获取成功")
 
     r = requests.get(f"https://{domain}/api/oauth/accessToken",
         params={"clientId": cid, "clientSecret": secret, "key": code},
@@ -136,9 +162,9 @@ def ensure_auth(cfg, cache, fresh_token=None):
     d = j["data"]
     at = d["accessToken"]
     uid = d.get("userId", 0)
-    save_cache({"accessToken": d["accessToken"], "refreshToken": d.get("refreshToken", ""),
+    save_cache({"accessToken": at, "refreshToken": d.get("refreshToken", ""),
                 "userId": uid, "expireAt": d.get("expireIn", now_ms + 3600000)})
-    print(f"  ✅ AccessToken: {at[:20]}... UserID: {uid}")
+    print(f"  ✅ 授权成功: {at[:20]}... UserID: {uid}")
 
 # ==================== OMS 签名 ====================
 
