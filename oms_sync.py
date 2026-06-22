@@ -1,344 +1,311 @@
 #!/usr/bin/env python3
 """
-OMS 库存同步脚本（服务端执行，定时任务）
-从 OMS API 同步库存 → 写入 BaaS 云数据库
-配置从 BaaS settings 表读取，避免 CORS 问题
-
-用法：
-  python3 oms_sync.py [--token xxxx]        # 同步一次
-  python3 oms_sync.py --list-warehouses       # 列出仓库
-  python3 oms_sync.py --cron                  # 以 cron 模式运行（循环）
+OMS 库存同步守护脚本
+- 全量同步 SKU 详情 + 库存到 BaaS oms_products 表（含库存=0的SKU）
+- 支持手动触发（前端写 manualTrigger=true 到 settings）
+- 支持每日定时同步
+- 自动用 refreshToken 续期 AccessToken
 """
-import requests, json, hashlib, hmac, random, time, sys, os
+import requests, json, hashlib, hmac, random, time, sys, os, argparse
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(BASE_DIR, "oms_token_cache.json")
-
 BAAS = "https://baas.kuafuai.net/baas-api"
 BAAS_KEY = "baas_CJbcgwuf"
 
+# OMS 固定凭证
+OMS_DOMAIN = "ftnet.jfwms.com"
+OMS_CID = "fa5f768a7b32449e9350fcb3dedfd5f7"
+OMS_SECRET = "3968f218031b43d59afb4e0ef5c38890"
+OMS_EMAIL = "308170378@qq.com"
+OMS_WAREHOUSE = "MM01"
+
 at, uid = "", 0
 
-# ==================== BaaS 操作 ====================
+# ==================== BaaS 工具 ====================
 
-def baas_list(table, page_size=1):
-    r = requests.post(f"{BAAS}/api/data/invoke?table={table}&method=list",
-        json={"pageNo": 1, "pageSize": page_size},
-        headers={"CODE_FLYING": BAAS_KEY, "Content-Type": "application/json"}, timeout=30)
+def _baas_req(table, method, payload=None):
+    url = f"{BAAS}/api/data/invoke?table={table}&method={method}"
+    r = requests.post(url, json=payload or {}, headers={"CODE_FLYING": BAAS_KEY, "Content-Type": "application/json"}, timeout=30)
     j = r.json()
     if not j.get("success"):
-        raise Exception(f"BaaS 查询失败 [{table}]: {j.get('message')}")
+        raise Exception(f"BaaS {method} [{table}] 失败: {j.get('message')}")
     return j.get("data", [])
 
-def baas_update(table, record_id, data):
-    r = requests.post(f"{BAAS}/api/data/invoke?table={table}&method=update",
-        json={"id": record_id, **data},
-        headers={"CODE_FLYING": BAAS_KEY, "Content-Type": "application/json"}, timeout=15)
-    j = r.json()
-    if not j.get("success"):
-        raise Exception(f"BaaS 更新失败: {j.get('message')}")
+def list_all(table, page_size=500):
+    all_data, page = [], 1
+    while True:
+        rows = _baas_req(table, "list", {"pageNo": page, "pageSize": page_size})
+        if not rows:
+            break
+        all_data.extend(rows)
+        if len(rows) < page_size:
+            break
+        page += 1
+    return all_data
 
-# ==================== 配置加载（从 BaaS） ====================
+# ==================== 设置读写 ====================
 
-def load_config():
-    r = baas_list("settings", 1)
-    if not r:
-        raise Exception("settings 表为空，请先在系统设置中配置 OMS")
-    item = r[0]
-    oms_raw = item.get("omsSync", "{}")
-    if isinstance(oms_raw, str):
-        oms = json.loads(oms_raw)
-    else:
-        oms = oms_raw
-    enabled = oms.get("enabled", False)
-    if isinstance(enabled, int):
-        enabled = bool(enabled)
-    return {
-        "domain": oms.get("domain", ""),
-        "authDomain": oms.get("authDomain", ""),
-        "warehouse": oms.get("warehouse", "MM01"),
-        "clientId": oms.get("clientId", ""),
-        "clientSecret": oms.get("clientSecret", ""),
-        "email": oms.get("email", ""),
-        "enabled": enabled,
-        "settings_id": item.get("id")
-    }
+def load_settings():
+    rows = _baas_req("settings", "list", {"pageNo": 1, "pageSize": 1})
+    if not rows:
+        return None
+    item = rows[0]
+    raw = item.get("omsSync", "{}")
+    oms = json.loads(raw) if isinstance(raw, str) else raw
+    if isinstance(oms.get("enabled"), int):
+        oms["enabled"] = bool(oms["enabled"])
+    oms["_id"] = item["id"]
+    return oms
 
-def save_sync_log(cfg, log_entry):
-    try:
-        r = baas_list("settings", 1)
-        if r:
-            record = r[0]
-            oms_raw = record.get("omsSync", "{}")
-            if isinstance(oms_raw, str):
-                oms = json.loads(oms_raw)
-            else:
-                oms = oms_raw
-            sync_log = oms.get("syncLog", [])
-            sync_log.insert(0, log_entry)
-            if len(sync_log) > 50:
-                sync_log = sync_log[:50]
-            oms["lastSync"] = log_entry["time"]
-            oms["syncLog"] = sync_log
-            baas_update("settings", record["id"], {
-                "omsSync": json.dumps(oms)
-            })
-    except Exception as e:
-        print(f"  ⚠️ 保存日志失败: {e}")
+def save_oms_field(key, value):
+    s = load_settings()
+    if s:
+        sid = s.pop("_id")
+        s[key] = value
+        _baas_req("settings", "update", {"id": sid, "omsSync": json.dumps(s)})
 
 # ==================== OMS 认证 ====================
 
-def load_cache():
+def _save_cache(data):
+    with open(CACHE_FILE, "w") as f:
+        json.dump(data, f)
+
+def _load_cache():
     try:
         with open(CACHE_FILE) as f:
             return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+    except:
         return {"accessToken": "", "refreshToken": "", "userId": 0, "expireAt": 0}
 
-def save_cache(data):
-    with open(CACHE_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-
-def ensure_auth(cfg, cache, fresh_token=None):
-    """确保有有效的 AccessToken。自动用 refreshToken 续期。"""
+def ensure_auth(fresh_token=None):
     global at, uid
-    domain = cfg["domain"].replace("https://","").replace("http://","").rstrip("/")
-    cid = cfg["clientId"]
-    secret = cfg["clientSecret"]
-    email = cfg["email"]
-
+    cache = _load_cache()
     now_ms = int(time.time() * 1000)
 
-    # 缓存未过期 → 直接用
     if cache.get("accessToken") and cache.get("expireAt", 0) > now_ms:
-        at = cache["accessToken"]
-        uid = cache.get("userId", 0)
-        print(f"  ✅ 使用缓存的 AccessToken")
-        return
-
-    # 尝试用 refreshToken 续期
-    if cache.get("refreshToken"):
-        print(f"  🔄 尝试刷新 AccessToken...")
-        try:
-            r = requests.get(f"https://{domain}/api/oauth/refreshToken",
-                params={"clientId": cid, "refreshToken": cache["refreshToken"], "userId": cache.get("userId", 0)},
-                timeout=15, verify=False)
-            j = r.json()
-            if j.get("code") == 0 and j.get("data", {}).get("accessToken"):
-                d = j["data"]
-                at = d["accessToken"]
-                uid = d.get("userId", 0)
-                save_cache({
-                    "accessToken": at,
-                    "refreshToken": d.get("refreshToken", cache["refreshToken"]),
-                    "userId": uid,
-                    "expireAt": d.get("expireIn", now_ms + 3600000)
-                })
-                print(f"  ✅ AccessToken 已自动续期: {at[:20]}...")
-                return
-        except Exception as e:
-            print(f"  ⚠️ 刷新 token 失败: {e}")
-
-    # refresh 失败 → 需要一次性 token
-    if not fresh_token:
-        raise Exception("AccessToken 已过期且 refreshToken 无效，需要 --token 重新授权")
-
-    print("\n📡 重新授权中（使用一次性 Token）...")
-    params = {"domain": cfg["authDomain"], "clientId": cid, "email": email, "token": fresh_token}
-    r = requests.get(f"https://{domain}/api/oauth/authorize",
-        params=params, timeout=15, verify=False)
-    j = r.json()
-    if j.get("code") != 0:
-        raise Exception(f"授权失败: {j.get('message')}")
-    code = j["data"]
-
-    r = requests.get(f"https://{domain}/api/oauth/accessToken",
-        params={"clientId": cid, "clientSecret": secret, "key": code},
-        timeout=15, verify=False)
-    j = r.json()
-    if j.get("code") != 0:
-        raise Exception(f"Token 兑换失败: {j.get('message')}")
-    d = j["data"]
-    at = d["accessToken"]
-    uid = d.get("userId", 0)
-    save_cache({"accessToken": at, "refreshToken": d.get("refreshToken", ""),
-                "userId": uid, "expireAt": d.get("expireIn", now_ms + 3600000)})
-    print(f"  ✅ 授权成功: {at[:20]}... UserID: {uid}")
-
-# ==================== OMS 签名 ====================
-
-def gen_sign(method, path, secret, cid=""):
-    global at, uid
-    nonce = str(random.randint(100000, 999999999))
-    ts = str(int(time.time() * 1000))
-    params = {"accessToken": at, "clientId": cid, "method": method.lower(),
-              "nonce": nonce, "timestamp": ts, "url": path, "userId": str(uid)}
-    sign_str = "&".join([f"{k}={params[k]}" for k in sorted(params)])
-    h = hmac.new(secret.encode(), sign_str.encode(), hashlib.sha256).hexdigest()
-    return {"clientId": cid, "accessToken": at, "timestamp": ts, "nonce": nonce,
-            "userId": str(uid), "sign": h, "Content-Type": "application/json"}
-
-# ==================== 同步核心 ====================
-
-def sync_from_oms(fresh_token=None):
-    global at, uid
-
-    try:
-        cfg = load_config()
-    except Exception as e:
-        print(f"❌ 配置读取失败: {e}")
-        return False
-
-    if not cfg["enabled"]:
-        print("⏸️  OMS 同步未启用（settings.omsSync.enabled = false）")
-        return False
-
-    domain = cfg["domain"].replace("https://","").replace("http://","").rstrip("/")
-    if not domain or not cfg["clientId"] or not cfg["clientSecret"]:
-        print("❌ 配置不完整（domain/clientId/clientSecret）")
-        return False
-
-    cache = load_cache()
-    warehouse = cfg["warehouse"]
-    cid = cfg["clientId"]
-    secret = cfg["clientSecret"]
-
-    print(f"\n{'='*50}")
-    print(f"🔄 OMS 同步: {datetime.now().isoformat()}")
-    print(f"  仓库: {warehouse}, 域名: {domain}")
-    print(f"{'='*50}")
-
-    try:
-        ensure_auth(cfg, cache, fresh_token)
-
-        print(f"\n📡 查询库存 (warehouse={warehouse})...")
-        inv_map, total = {}, 0
-        page = 1
-        while True:
-            headers = gen_sign("POST", "/api/inventory/queryInventory", secret, cid)
-            time.sleep(0.05)
-            r = requests.post(f"https://{domain}/api/inventory/queryInventory",
-                json={"warehouse": warehouse, "pageNo": page, "pageSize": 300},
-                headers=headers, timeout=30, verify=False)
-            j = r.json()
-            if j.get("code") == 10004:
-                save_cache({"accessToken": "","refreshToken": "","userId": 0,"expireAt": 0})
-                raise Exception("AccessToken 已过期，需要重新授权")
-            if j.get("code") != 0:
-                if page == 1:
-                    raise Exception(f"库存查询失败: {j.get('message')}")
-                break
-            pg = j.get("data", {}).get("page", {})
-            rows = pg.get("rows", [])
-            total = pg.get("totalSize", 0)
-            for x in rows:
-                sku = (x.get("sku", "") or "").strip()
-                if sku:
-                    inv_map[sku] = {"total": x.get("totalNum", 0) or 0,
-                                    "available": x.get("availableNum", 0) or 0,
-                                    "locked": x.get("lockedNum", 0) or 0}
-            if len(inv_map) >= total:
-                break
-            page += 1
-        print(f"  ✅ 获取到 {len(inv_map)} 个 SKU")
-
-        print("\n📡 对比本地库存...")
-        local_products = baas_list("products", 10000)
-        print(f"  📦 本地商品: {len(local_products)} 个")
-
-        changes, unmatched = [], 0
-        local_map = {p.get("sku"): p for p in local_products if p.get("sku")}
-        for sku, inv in inv_map.items():
-            p = local_map.get(sku)
-            if p:
-                old_stock = p.get("stock", 0)
-                new_stock = inv["total"]
-                if old_stock != new_stock:
-                    changes.append({"sku": sku, "id": p["id"], "old": old_stock,
-                                    "new": new_stock, "avail": inv["available"],
-                                    "lock": inv["locked"]})
-            else:
-                unmatched += 1
-        print(f"  📊 变更: {len(changes)}, 未匹配: {unmatched}")
-
-        if changes:
-            print(f"\n📡 更新 {len(changes)} 条库存到 BaaS...")
-            ok = 0
-            for chg in changes:
-                try:
-                    baas_update("products", chg["id"], {
-                        "stock": chg["new"],
-                        "available_num": chg["avail"],
-                        "locked_num": chg["lock"]
-                    })
-                    ok += 1
-                except:
-                    pass
-                if ok % 50 == 0:
-                    sys.stdout.write(f"\r  ⏳ {ok}/{len(changes)}")
-                    sys.stdout.flush()
-            print(f"\n  ✅ {ok}/{len(changes)}")
-        else:
-            print("  ✅ 无变更")
-
-        # 保存同步日志到 BaaS
-        log_entry = {
-            "time": datetime.now().isoformat(),
-            "success": True,
-            "changed": len(changes),
-            "total": len(inv_map),
-            "updated": len(changes),
-            "unmatched": unmatched,
-            "message": f"{len(changes)} 变更 / {len(inv_map)} SKU" + (f" ({unmatched} 未匹配)" if unmatched else "")
-        }
-        save_sync_log(cfg, log_entry)
-
-        print(f"\n✅ 同步完成! {len(changes)} 变更 / {len(inv_map)} SKU{', 未匹配' + str(unmatched) if unmatched else ''}")
+        at, uid = cache["accessToken"], cache.get("userId", 0)
         return True
 
-    except Exception as e:
-        print(f"\n❌ 同步失败: {e}")
-        save_sync_log(cfg, {"time": datetime.now().isoformat(), "success": False,
-                            "changed": 0, "total": 0, "unmatched": 0, "message": f"❌ {str(e)[:200]}"})
+    # refreshToken 续期
+    if cache.get("refreshToken"):
+        try:
+            r = requests.get(f"https://{OMS_DOMAIN}/api/oauth/refreshToken",
+                params={"clientId": OMS_CID, "refreshToken": cache["refreshToken"],
+                        "userId": cache.get("userId", 0)},
+                timeout=15, verify=False)
+            d = r.json().get("data", {})
+            if d.get("accessToken"):
+                at, uid = d["accessToken"], d.get("userId", 0)
+                _save_cache({"accessToken": at, "refreshToken": d.get("refreshToken", cache["refreshToken"]),
+                             "userId": uid, "expireAt": d.get("expireIn", now_ms + 3600000)})
+                return True
+        except:
+            pass
+
+    if not fresh_token:
         return False
 
-# ==================== 仓库列表 ====================
+    # 一次性 token 授权
+    r = requests.get(f"https://{OMS_DOMAIN}/api/oauth/authorize",
+        params={"domain": "ftnet", "clientId": OMS_CID, "email": OMS_EMAIL, "token": fresh_token},
+        timeout=15, verify=False)
+    code = r.json()["data"]
+    r = requests.get(f"https://{OMS_DOMAIN}/api/oauth/accessToken",
+        params={"clientId": OMS_CID, "clientSecret": OMS_SECRET, "key": code},
+        timeout=15, verify=False)
+    d = r.json()["data"]
+    at, uid = d["accessToken"], d.get("userId", 0)
+    _save_cache({"accessToken": at, "refreshToken": d.get("refreshToken", ""),
+                 "userId": uid, "expireAt": d.get("expireIn", now_ms + 3600000)})
+    return True
 
-def list_warehouses(fresh_token):
+def _sign(path):
+    nonce = str(random.randint(100000, 999999999))
+    ts = str(int(time.time() * 1000))
+    ss = "&".join([f"{k}={v}" for k, v in sorted({
+        "accessToken": at, "clientId": OMS_CID, "method": "post",
+        "nonce": nonce, "timestamp": ts, "url": path, "userId": str(uid)
+    }.items())])
+    h = hmac.new(OMS_SECRET.encode(), ss.encode(), hashlib.sha256).hexdigest()
+    return {"clientId": OMS_CID, "accessToken": at, "timestamp": ts, "nonce": nonce,
+            "userId": str(uid), "sign": h, "Content-Type": "application/json"}
+
+# ==================== OMS 数据拉取 ====================
+
+def _fetch_all(path, body_builder, key_builder):
+    """通用分页拉取函数"""
+    data = {}
+    page = 1
+    while True:
+        body = body_builder(page)
+        r = requests.post(f"https://{OMS_DOMAIN}{path}", json=body,
+            headers=_sign(path), timeout=30, verify=False)
+        j = r.json()
+        if j.get("code") != 0:
+            break
+        rows = j.get("data", {}).get("rows", []) or j.get("data", {}).get("page", {}).get("rows", [])
+        for x in rows:
+            k = key_builder(x)
+            if k:
+                data[k] = x
+        total = j.get("data", {}).get("totalSize", 0) or j.get("data", {}).get("page", {}).get("totalSize", 0)
+        if len(data) >= total:
+            break
+        page += 1
+        time.sleep(0.03)
+    return data
+
+def fetch_sku_details():
+    return _fetch_all("/api/sku/detail",
+        lambda p: {"pageNo": p, "pageSize": 300},
+        lambda x: (x.get("sku") or "").strip())
+
+def fetch_inventory():
+    return _fetch_all("/api/inventory/queryInventory",
+        lambda p: {"warehouse": OMS_WAREHOUSE, "pageNo": p, "pageSize": 300},
+        lambda x: (x.get("sku") or "").strip())
+
+# ==================== 核心同步 ====================
+
+def sync(fresh_token=None):
+    """执行一次全量同步，返回结果 dict"""
     global at, uid
-    cfg = load_config()
-    cache = load_cache()
-    domain = cfg["domain"].replace("https://","").replace("http://","").rstrip("/")
-    cid = cfg["clientId"]
-    secret = cfg["clientSecret"]
-    ensure_auth(cfg, cache, fresh_token)
+    start = time.time()
 
-    headers = gen_sign("POST", "/api/warehouse/list", secret, cid)
-    r = requests.post(f"https://{domain}/api/warehouse/list",
-        json={"pageNo": 1, "pageSize": 50},
-        headers=headers, timeout=15, verify=False)
-    j = r.json()
-    print(json.dumps(j, indent=2, ensure_ascii=False))
+    if not ensure_auth(fresh_token):
+        return {"success": False, "message": "认证失败，需要一次性授权 Token (--token)"}
 
-# ==================== 主入口 ====================
+    print(f"[{datetime.now().isoformat()}] 开始全量同步...")
+
+    # 1. 拉取 SKU 详情
+    print("  📡 拉取 SKU 详情...", end=" ", flush=True)
+    sku_data = fetch_sku_details()
+    print(f"{len(sku_data)} 条")
+
+    # 2. 拉取库存
+    print("  📡 拉取库存...", end=" ", flush=True)
+    inv_data = fetch_inventory()
+    print(f"{len(inv_data)} 条")
+
+    # 3. 合并
+    print("  📡 合并数据...", end=" ", flush=True)
+    merged = {}
+    all_skus = set(sku_data.keys()) | set(inv_data.keys())
+    for sku in sorted(all_skus):
+        sd = sku_data.get(sku, {})
+        iv = inv_data.get(sku, {})
+        merged[sku] = {
+            "sku": sku,
+            "skuNo": sd.get("skuNo", ""),
+            "name": sd.get("name", "") or sku,
+            "imgUrl": sd.get("imgUrl", "") or "",
+            "stock": iv.get("totalNum", 0) or 0,
+            "availableStock": iv.get("availableNum", 0) or 0,
+            "lockedStock": iv.get("lockedNum", 0) or 0,
+            "updatedAt": datetime.now().isoformat(timespec="seconds")
+        }
+    print(f"{len(merged)} 条")
+
+    # 4. 写入 BaaS oms_products
+    print("  📡 写入 oms_products...", end=" ", flush=True)
+    existing = {}
+    for item in list_all("oms_products"):
+        existing[item["sku"]] = item["id"]
+
+    add_c, upd_c = 0, 0
+    for sku, data in merged.items():
+        if sku in existing:
+            try:
+                _baas_req("oms_products", "update", {"id": existing[sku], **data})
+                upd_c += 1
+            except:
+                pass
+        else:
+            try:
+                _baas_req("oms_products", "add", data)
+                add_c += 1
+            except:
+                pass
+        if (add_c + upd_c) % 200 == 0:
+            print(".", end="", flush=True)
+    print(f" 新增{add_c} 更新{upd_c}")
+
+    # 5. 更新同步日志
+    elapsed = time.time() - start
+    log_entry = {"time": datetime.now().isoformat(timespec="seconds"),
+                 "success": True, "total": len(merged),
+                 "added": add_c, "updated": upd_c, "elapsed": f"{elapsed:.0f}s"}
+    save_oms_field("lastSync", log_entry["time"])
+    save_oms_field("manualTrigger", False)
+
+    # 追加日志（保留最近50条）
+    s = load_settings()
+    logs = s.get("syncLog", []) if s else []
+    logs.insert(0, log_entry)
+    save_oms_field("syncLog", logs[:50])
+
+    print(f"  ✅ 完成 ({elapsed:.0f}s): {len(merged)} SKU")
+    return {"success": True, "total": len(merged), "added": add_c, "updated": upd_c, "elapsed": f"{elapsed:.0f}s"}
+
+# ==================== 守护进程 ====================
+
+def daemon():
+    print(f"\n{'='*50}")
+    print(f"  OMS 同步守护进程启动 @ {datetime.now().isoformat()}")
+    print(f"{'='*50}")
+
+    # 首次同步
+    sync()
+
+    last_auto = time.time()
+    while True:
+        try:
+            time.sleep(30)
+            
+            # 检查手动触发
+            s = load_settings()
+            if s and s.get("manualTrigger"):
+                print(f"[{datetime.now().isoformat()}] 🚀 手动触发同步")
+                sync()
+                continue
+
+            # 每日定时
+            if s and s.get("scheduleTime"):
+                now = datetime.now()
+                if now.strftime("%H:%M") == s["scheduleTime"] and s.get("lastScheduledDate") != now.strftime("%Y-%m-%d"):
+                    print(f"[{datetime.now().isoformat()}] ⏰ 定时同步: {s['scheduleTime']}")
+                    sync()
+                    save_oms_field("lastScheduledDate", now.strftime("%Y-%m-%d"))
+                    continue
+
+            # 每 60 分钟自动同步
+            if time.time() - last_auto >= 3600:
+                print(f"[{datetime.now().isoformat()}] ⏰ 小时同步")
+                sync()
+                last_auto = time.time()
+
+        except KeyboardInterrupt:
+            print("\n⏹️  停止")
+            break
+        except Exception as e:
+            print(f"  ⚠️ {e}")
+            time.sleep(30)
+
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="OMS 库存同步服务端脚本")
-    parser.add_argument("--token", help="OMS 一次性授权 Token")
-    parser.add_argument("--list-warehouses", action="store_true", help="列出可用仓库")
-    parser.add_argument("--cron", action="store_true", help="定时运行模式（每60分钟执行一次）")
-    args = parser.parse_args()
+    p = argparse.ArgumentParser()
+    p.add_argument("--token", help="一次性授权 Token")
+    p.add_argument("--daemon", action="store_true", help="守护进程模式")
+    p.add_argument("--sync", action="store_true", help="立即同步")
+    a = p.parse_args()
 
-    if args.list_warehouses:
-        list_warehouses(args.token)
-    elif args.cron:
-        print(f"⏰ OMS 定时同步已启动，每60分钟执行一次")
-        while True:
-            sync_from_oms()
-            print(f"\n⏳ 等待 60 分钟... ({datetime.now().isoformat()})\n")
-            for i in range(60):
-                time.sleep(60)
+    if a.daemon:
+        daemon()
+    elif a.sync or a.token:
+        r = sync(fresh_token=a.token)
+        print(json.dumps(r, indent=2, ensure_ascii=False))
     else:
-        sync_from_oms(fresh_token=args.token)
+        r = sync()
+        print(json.dumps(r, indent=2, ensure_ascii=False))

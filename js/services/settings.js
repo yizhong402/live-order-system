@@ -159,38 +159,51 @@
 
             // === OMS同步配置 ===
             var omsCfg = systemSettings.omsSync;
+            var omsSkuCount = omsCfg.skuCount || 0;
             html += '<div class="settings-section">' +
                 '<div class="settings-section-header">' +
                     '<h3>🔄 OMS 库存同步</h3>' +
-                    '<span style="font-size:11px;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:4px;">服务端定时执行</span>' +
-                '</div>' +
-                '<p style="color:var(--text-muted);font-size:12px;margin-bottom:12px;">定时从外部OMS系统（PA仓库）同步库存到商品管理。同步由服务器定时执行，浏览器端仅查看状态。</p>' +
-                '<div style="display:flex;flex-direction:column;gap:10px;">' +
-                    '<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">' +
-                        '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">' +
-                            '<input type="checkbox" ' + (omsCfg.enabled ? 'checked' : '') + ' onchange="toggleOMSSync(this.checked)"> 启用自动同步' +
-                        '</label>' +
-                        '<div class="form-group" style="margin-bottom:0;">' +
-                            '<label style="font-size:12px;">同步间隔（分钟）</label>' +
-                            '<input class="settings-input" type="number" min="5" value="' + omsCfg.intervalMinutes + '" onchange="updateOMSInterval(this.value)" style="width:80px;">' +
-                        '</div>' +
-                        '<span id="omsSyncStatus" style="font-size:12px;color:var(--text-muted);">' +
-                            (omsCfg.lastSync ? '上次同步: ' + omsCfg.lastSync.substring(0, 19).replace('T', ' ') : '尚未同步') +
-                        '</span>' +
+                    '<div style="display:flex;align-items:center;gap:10px;">' +
+                        '<span style="font-size:11px;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:4px;">' + (omsSkuCount ? omsSkuCount + ' SKU' : '暂无数据') + '</span>' +
+                        (omsCfg.lastSync ? '<span style="font-size:11px;color:var(--text-muted);">上次: ' + omsCfg.lastSync.substring(0, 16).replace('T', ' ') + '</span>' : '') +
                     '</div>' +
-                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+                '</div>' +
+
+                // 开关 + 手动同步 + 定时
+                '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px 14px;background:rgba(0,0,0,0.1);border-radius:8px;">' +
+                    '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">' +
+                        '<input type="checkbox" id="omsEnabledCheckbox" ' + (omsCfg.enabled ? 'checked' : '') + ' onchange="toggleOMSSync(this.checked)">' +
+                        '<span style="color:' + (omsCfg.enabled ? '#22c55e' : 'var(--text-muted)') + ';">' + (omsCfg.enabled ? '🟢 已启用' : '🔴 已停用') + '</span>' +
+                    '</label>' +
+                    '<button class="btn btn-primary" onclick="triggerOMSSync()" style="padding:6px 14px;font-size:12px;" ' + (!omsCfg.enabled ? 'disabled style="opacity:0.5"' : '') + '>' +
+                        '<span id="omsSyncBtnText">🚀 立即同步</span>' +
+                    '</button>' +
+                    '<span id="omsSyncStatusMsg" style="font-size:12px;color:var(--text-muted);"></span>' +
+                '</div>' +
+
+                // 每日定时 + 配置展开
+                '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">' +
+                    '<span style="font-size:13px;">⏰ 每日定时:</span>' +
+                    '<input type="time" id="omsScheduleTime" value="' + (omsCfg.scheduleTime || '') + '" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,0.3);color:#fff;font-size:13px;">' +
+                    '<button class="btn btn-success" onclick="saveOMSSchedule()" style="padding:4px 10px;font-size:12px;">保存</button>' +
+                    (omsCfg.scheduleTime ? '<span style="font-size:11px;color:var(--text-muted);">每天 ' + omsCfg.scheduleTime + ' 自动同步</span>' : '') +
+                '</div>' +
+
+                '<details style="margin-bottom:10px;">' +
+                    '<summary style="cursor:pointer;font-size:12px;color:var(--text-secondary);padding:4px 0;">⚙️ OMS 连接配置</summary>' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">' +
                         '<div class="form-group" style="margin-bottom:0;">' +
                             '<label style="font-size:12px;">OMS 域名</label>' +
                             '<input class="settings-input" type="text" value="' + escHtml(omsCfg.domain) + '" onchange="updateOMSDomain(this.value)" ' +
                                 'placeholder="ftnet.jfwms.com" style="width:100%;">' +
                         '</div>' +
                         '<div class="form-group" style="margin-bottom:0;">' +
-                            '<label style="font-size:12px;">授权 domain 参数</label>' +
+                            '<label style="font-size:12px;">授权 domain</label>' +
                             '<input class="settings-input" type="text" value="' + escHtml(omsCfg.authDomain) + '" onchange="updateOMSAuthDomain(this.value)" ' +
                                 'placeholder="ftnet" style="width:100%;">' +
                         '</div>' +
                         '<div class="form-group" style="margin-bottom:0;">' +
-                            '<label style="font-size:12px;">邮箱 <span style="color:var(--text-muted);">email</span></label>' +
+                            '<label style="font-size:12px;">邮箱</label>' +
                             '<input class="settings-input" type="email" value="' + escHtml(omsCfg.email) + '" onchange="updateOMSEmail(this.value)" ' +
                                 'placeholder="xxx@qq.com" style="width:100%;">' +
                         '</div>' +
@@ -205,17 +218,34 @@
                                 'placeholder="client_secret" style="width:100%;">' +
                         '</div>' +
                         '<div class="form-group" style="margin-bottom:0;">' +
-                            '<label style="font-size:12px;">授权 Token（15分钟有效）</label>' +
+                            '<label style="font-size:12px;">授权 Token</label>' +
                             '<input class="settings-input" type="password" value="' + escHtml(omsCfg.token) + '" onchange="updateOMSToken(this.value)" ' +
                                 'placeholder="OMS 后台生成 token" style="width:100%;">' +
                         '</div>' +
                     '</div>' +
-                    '<details style="margin-top:8px;">' +
-                        '<summary style="cursor:pointer;font-size:12px;color:var(--text-secondary);padding:4px 0;">📋 同步记录 (' + (omsCfg.syncLog || []).length + ')</summary>' +
-                        '<div id="omsSyncLogContainer">' +
-                            (typeof renderOMSSyncLog === 'function' ? renderOMSSyncLog() : '<div style="color:var(--text-muted);font-size:12px;">加载中...</div>') +
+                '</details>' +
+
+                // 同步日志
+                '<details style="margin-top:8px;">' +
+                    '<summary style="cursor:pointer;font-size:12px;color:var(--text-secondary);padding:4px 0;">📋 同步记录 (' + ((omsCfg.syncLog || []).length) + ')</summary>' +
+                    '<div id="omsSyncLogContainer">' +
+                        (typeof renderOMSSyncLog === 'function' ? renderOMSSyncLog() : '<div style="color:var(--text-muted);font-size:12px;">加载中...</div>') +
+                    '</div>' +
+                '</details>' +
+
+                // OMS 商品数据表
+                '<div style="margin-top:12px;padding:12px;background:rgba(0,0,0,0.08);border-radius:8px;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+                        '<h4 style="font-size:13px;color:#fff;">📦 OMS 商品库存 (' + omsSkuCount + ' SKU)</h4>' +
+                        '<div style="display:flex;gap:6px;">' +
+                            '<input type="text" id="omsSearchInput" placeholder="🔍 搜索SKU/名称..." oninput="searchOMSProducts()" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,0.3);color:#fff;font-size:12px;width:150px;">' +
+                            '<button class="btn btn-secondary" onclick="renderOMSProductsList(1)" style="padding:4px 8px;font-size:11px;">🔄 刷新</button>' +
                         '</div>' +
-                    '</details>' +
+                    '</div>' +
+                    '<div id="omsProductsList" style="max-height:350px;overflow-y:auto;font-size:11px;">' +
+                        '<div style="text-align:center;padding:20px;color:var(--text-muted);">加载中...</div>' +
+                    '</div>' +
+                    '<div id="omsProductsPagination"></div>' +
                 '</div>' +
             '</div>';
 
