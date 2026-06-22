@@ -88,7 +88,10 @@
         
         <div id="page-product" class="page">
             <div class="panel">
-                <h2>📦 商品库存管理 <span style="font-size:12px;color:var(--text-muted);font-weight:400;">(数据由 OMS 自动同步)</span></h2>
+                <h2>📦 商品库存管理
+                    <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(由 OMS 同步)</span>
+                    <button class="btn btn-primary" onclick="syncOMSProducts()" style="padding:3px 12px;font-size:11px;float:right;">🔄 同步 OMS 数据</button>
+                </h2>
                 
                 <!-- 折叠的添加商品区域 -->
                 <button class="btn btn-success" onclick="toggleAddForm()" id="addProductToggleBtn" style="margin-bottom:12px;">➕ 添加商品</button>

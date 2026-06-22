@@ -82,6 +82,53 @@
             }
         }
 
+
+        function syncOMSProducts() {
+            var btn = document.getElementById('omsSyncBtnText') || document.querySelector('.btn-primary[onclick*="triggerOMSSync"]');
+            if (btn) {
+                btn.textContent = '⏳ 同步中...';
+                btn.disabled = true;
+            }
+            
+            // 触发 OMS 同步标记
+            systemSettings.omsSync.manualTrigger = true;
+            debouncedSaveSettings();
+            
+            // 提示用户
+            var statusEl = document.getElementById('omsSyncStatusMsg');
+            if (!statusEl) {
+                statusEl = document.createElement('span');
+                statusEl.id = 'omsSyncStatusMsg';
+                statusEl.style.cssText = 'font-size:12px;color:var(--text-muted);margin-left:10px;';
+                if (btn && btn.parentNode) btn.parentNode.appendChild(statusEl);
+            }
+            statusEl.textContent = '⏳ 同步信号已发送，等待服务端执行...';
+            
+            // 等几秒后刷新商品列表
+            setTimeout(function() {
+                // 重新从 BaaS 加载商品
+                client.db.from('products').list().then(function(res) {
+                    if (res.success && res.data) {
+                        products = res.data.map(function(p) { return {
+                            sku: p.sku, name: p.name || '', stock: p.stock || 0,
+                            priceCny: p.price_cny || 0, priceUsd: p.price_usd || 0,
+                            originalStock: p.original_stock || p.stock || 0, 
+                            image: p.image_url || '',
+                            image_url: p.image_url || ''
+                        }; });
+                        updateProductList();
+                        updateProductListDisplay();
+                        updateProductStats();
+                        statusEl.textContent = '✅ 已刷新: ' + products.length + ' 条';
+                    }
+                    if (btn) { btn.textContent = '🔄 同步 OMS 数据'; btn.disabled = false; }
+                }).catch(function(e) {
+                    statusEl.textContent = '❌ 刷新失败';
+                    if (btn) { btn.textContent = '🔄 同步 OMS 数据'; btn.disabled = false; }
+                });
+            }.bind(this), 5000);
+        }
+
         let originalImages = [];
         
         function openImageMatchModal() {
@@ -831,13 +878,13 @@
                 var usd = Number(p.price_usd || p.priceUsd || 0);
                 if (cny === 0 && usd === 0) problems.push('无价格');
                 
-                csv += \`"\${p.sku || ''}","\${p.name || ''}",\${p.stock || 0},\${p.priceCny || 0},\${p.priceUsd || 0},"\${problems.join(';')}"\n\`;
+                csv += `"${p.sku || ''}","${p.name || ''}",${p.stock || 0},${p.priceCny || 0},${p.priceUsd || 0},"${problems.join(';')}"\n`;
             });
             
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = \`问题商品_\${new Date().toLocaleDateString()}.csv\`;
+            link.download = `问题商品_${new Date().toLocaleDateString()}.csv`;
             link.click();
         }
         

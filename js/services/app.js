@@ -49,7 +49,7 @@
                 if (res.success) products = (res.data || []).map(p => ({
                     sku: p.sku, name: p.name || '', stock: p.stock || 0,
                     priceCny: p.price_cny || 0, priceUsd: p.price_usd || 0,
-                    originalStock: p.original_stock || p.stock || 0, image: p.image_url || ''
+                    originalStock: p.original_stock || p.stock || 0, image: p.image_url || '', image_url: p.image_url || ''
                 }));
             } catch(e) { products = []; }
         }
