@@ -19,11 +19,12 @@
             // OMS同步配置
             omsSync: {
                 enabled: false,
-                domain: '',      // OMS 域名
-                clientId: '',    // API 客户端 ID
+                domain: '',       // OMS 域名（如 https://ftnet.jfwms.com）
+                authDomain: '',   // 授权 domain 参数（如 ftnet）
+                clientId: '',     // API 客户端 ID
                 clientSecret: '', // API 客户端密钥
-                email: '',       // 注册邮箱
-                token: '',       // OMS 授权一次性 Token
+                email: '',        // 注册邮箱
+                token: '',        // OMS 授权一次性 Token
                 intervalMinutes: 60,
                 lastSync: null,
                 autoSync: false,
@@ -175,14 +176,19 @@
                     '</div>' +
                     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
                         '<div class="form-group" style="margin-bottom:0;">' +
-                            '<label style="font-size:12px;">OMS 域名 <span style="color:var(--text-muted);">domain</span></label>' +
+                            '<label style="font-size:12px;">OMS 域名</label>' +
                             '<input class="settings-input" type="text" value="' + escHtml(omsCfg.domain) + '" onchange="updateOMSDomain(this.value)" ' +
-                                'placeholder="ftnet.jfwms.com 或 https://ftnet.jfwms.com" style="width:100%;">' +
+                                'placeholder="ftnet.jfwms.com" style="width:100%;">' +
+                        '</div>' +
+                        '<div class="form-group" style="margin-bottom:0;">' +
+                            '<label style="font-size:12px;">授权 domain 参数</label>' +
+                            '<input class="settings-input" type="text" value="' + escHtml(omsCfg.authDomain) + '" onchange="updateOMSAuthDomain(this.value)" ' +
+                                'placeholder="ftnet" style="width:100%;">' +
                         '</div>' +
                         '<div class="form-group" style="margin-bottom:0;">' +
                             '<label style="font-size:12px;">邮箱 <span style="color:var(--text-muted);">email</span></label>' +
                             '<input class="settings-input" type="email" value="' + escHtml(omsCfg.email) + '" onchange="updateOMSEmail(this.value)" ' +
-                                'placeholder="admin@example.com" style="width:100%;">' +
+                                'placeholder="xxx@qq.com" style="width:100%;">' +
                         '</div>' +
                         '<div class="form-group" style="margin-bottom:0;">' +
                             '<label style="font-size:12px;">Client ID</label>' +
@@ -194,10 +200,10 @@
                             '<input class="settings-input" type="password" value="' + escHtml(omsCfg.clientSecret) + '" onchange="updateOMSClientSecret(this.value)" ' +
                                 'placeholder="client_secret" style="width:100%;">' +
                         '</div>' +
-                        '<div class="form-group" style="margin-bottom:0;grid-column:span 2;">' +
-                            '<label style="font-size:12px;">授权 Token <span style="color:var(--text-muted);">OMS 后台生成的一次性 token</span></label>' +
+                        '<div class="form-group" style="margin-bottom:0;">' +
+                            '<label style="font-size:12px;">授权 Token（15分钟有效）</label>' +
                             '<input class="settings-input" type="password" value="' + escHtml(omsCfg.token) + '" onchange="updateOMSToken(this.value)" ' +
-                                'placeholder="授权一次性 token，使用后失效" style="width:100%;">' +
+                                'placeholder="OMS 后台生成 token" style="width:100%;">' +
                         '</div>' +
                     '</div>' +
                     '<details style="margin-top:8px;">' +
@@ -266,6 +272,10 @@
         // ===== OMS 同步配置更新函数 =====
         function updateOMSDomain(value) {
             systemSettings.omsSync.domain = value;
+            debouncedSaveSettings();
+        }
+        function updateOMSAuthDomain(value) {
+            systemSettings.omsSync.authDomain = value;
             debouncedSaveSettings();
         }
         function updateOMSEmail(value) {
