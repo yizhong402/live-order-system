@@ -384,11 +384,18 @@
             }
             
             if (filterNoImage) {
-                filtered = filtered.filter(p => !p.image && !productImagesCache[p.sku]);
+                filtered = filtered.filter(p => {
+                    var img = p.image_url || p.image || productImagesCache[p.sku] || '';
+                    return !img;
+                });
             }
             
             if (filterNoPrice) {
-                filtered = filtered.filter(p => !p.price_cny && !p.price_usd);
+                filtered = filtered.filter(p => {
+                    var cny = Number(p.price_cny || p.priceCny || 0);
+                    var usd = Number(p.price_usd || p.priceUsd || 0);
+                    return cny === 0 && usd === 0;
+                });
             }
             
             return filtered;
@@ -699,7 +706,10 @@
     
     function updateProductStats() {
             const total = products.length;
-            const noImage = products.filter(p => !productImagesCache[p.sku] || productImagesCache[p.sku] === '').length;
+            const noImage = products.filter(p => {
+                var img = p.image_url || productImagesCache[p.sku] || '';
+                return !img;
+            }).length;
             const noPrice = products.filter(p => (!p.priceCny || p.priceCny === 0) && (!p.priceUsd || p.priceUsd === 0)).length;
             const normalStock = products.filter(p => p.stock > 2).length;
             const lowStock = products.filter(p => p.stock > 0 && p.stock <= 2).length;
@@ -783,10 +793,13 @@
             alert(`已更新 ${skus.length} 个商品的库存`);
         }
         
-        function downloadProductsWithIssues() {
+                function downloadProductsWithIssues() {
             const issues = products.filter(p => {
-                const hasImage = productImagesCache[p.sku] && productImagesCache[p.sku] !== '';
-                const hasPrice = (p.priceCny && p.priceCny !== 0) || (p.priceUsd && p.priceUsd !== 0);
+                var img = p.image_url || p.image || productImagesCache[p.sku] || '';
+                const hasImage = !!img;
+                var cny = Number(p.price_cny || p.priceCny || 0);
+                var usd = Number(p.price_usd || p.priceUsd || 0);
+                const hasPrice = cny > 0 || usd > 0;
                 return !hasImage || !hasPrice;
             });
             
@@ -798,18 +811,19 @@
             let csv = 'SKU,名称,库存,人民币价格,美金价格,问题\n';
             issues.forEach(p => {
                 const problems = [];
-                const hasImage = productImagesCache[p.sku] && productImagesCache[p.sku] !== '';
-                const hasPrice = (p.priceCny && p.priceCny !== 0) || (p.priceUsd && p.priceUsd !== 0);
-                if (!hasImage) problems.push('无图片');
-                if (!hasPrice) problems.push('无价格');
+                var img = p.image_url || p.image || productImagesCache[p.sku] || '';
+                if (!img) problems.push('无图片');
+                var cny = Number(p.price_cny || p.priceCny || 0);
+                var usd = Number(p.price_usd || p.priceUsd || 0);
+                if (cny === 0 && usd === 0) problems.push('无价格');
                 
-                csv += `"${p.sku || ''}","${p.name || ''}",${p.stock || 0},${p.priceCny || 0},${p.priceUsd || 0},"${problems.join(';')}"\n`;
+                csv += \`"\${p.sku || ''}","\${p.name || ''}",\${p.stock || 0},\${p.priceCny || 0},\${p.priceUsd || 0},"\${problems.join(';')}"\n\`;
             });
             
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `问题商品_${new Date().toLocaleDateString()}.csv`;
+            link.download = \`问题商品_\${new Date().toLocaleDateString()}.csv\`;
             link.click();
         }
         
@@ -1037,7 +1051,7 @@
                     
                     for (let i = 0; i < batchProducts.length; i++) {
                         const p = batchProducts[i];
-                        const imageUrl = (p.image && p.image !== '') ? p.image : (productImagesCache[p.sku] || null);
+                        const imageUrl = p.image_url || p.image || productImagesCache[p.sku] || null;
                         const rowNum = i + 2;
                         
                         worksheet.addRow({
@@ -1163,7 +1177,7 @@
     <div class="product-grid">`;
             
             products.forEach(p => {
-                const imageUrl = (p.image && p.image !== '') ? p.image : (productImagesCache[p.sku] || null);
+                const imageUrl = p.image_url || p.image || productImagesCache[p.sku] || null;
                 const imageHtml = imageUrl ? `<img src="${imageUrl}" class="product-image" alt="${p.name || p.sku}" />` : '<div class="product-image" style="background:#eee;display:flex;align-items:center;justify-content:center;color:#999;">无图片</div>';
                 
                 html += `
@@ -1226,7 +1240,7 @@
             } else if (currentStockFilter === 'empty') {
                 filteredProducts = filteredProducts.filter(p => p.stock === 0);
             } else if (currentStockFilter === 'noImage') {
-                filteredProducts = filteredProducts.filter(p => !productImagesCache[p.sku] && (!p.image || p.image === ''));
+                filteredProducts = filteredProducts.filter(p => { var img = p.image_url || p.image || productImagesCache[p.sku] || ''; return !img; });
             } else if (currentStockFilter === 'noPrice') {
                 filteredProducts = filteredProducts.filter(p => !p.priceCny && !p.priceUsd);
             } else if (currentStockFilter === 'hasPrice') {
