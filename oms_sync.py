@@ -26,12 +26,20 @@ at, uid = "", 0
 # ==================== BaaS 工具 ====================
 
 def _baas_req(table, method, payload=None):
+    import time as _t
     url = f"{BAAS}/api/data/invoke?table={table}&method={method}"
-    r = requests.post(url, json=payload or {}, headers={"CODE_FLYING": BAAS_KEY, "Content-Type": "application/json"}, timeout=30)
-    j = r.json()
-    if not j.get("success"):
-        raise Exception(f"BaaS {method} [{table}] 失败: {j.get('message')}")
-    return j.get("data", [])
+    for _retry in range(5):
+        r = requests.post(url, json=payload or {}, headers={"CODE_FLYING": BAAS_KEY, "Content-Type": "application/json"}, timeout=30)
+        j = r.json()
+        if not j.get("success"):
+            msg = j.get("message", "")
+            if "Too many requests" in msg and _retry < 4:
+                _t.sleep(2 ** _retry)
+                continue
+            raise Exception(f"BaaS {method} [{table}] 失败: {msg}")
+        return j.get("data", [])
+    raise Exception(f"BaaS {method} [{table}] 失败: max retries")
+    return []
 
 def list_all(table, page_size=500):
     all_data, page = [], 1
@@ -39,11 +47,21 @@ def list_all(table, page_size=500):
         rows = _baas_req(table, "list", {"pageNo": page, "pageSize": page_size})
         if not rows:
             break
+        # BaaS API 不分页（总忽略 pageNo），所以只取第一页
+        if page > 1 and set(r.get("id") for r in rows) == set(r.get("id") for r in all_data[-len(rows):]):
+            break
         all_data.extend(rows)
         if len(rows) < page_size:
             break
         page += 1
-    return all_data
+    # 去重（BaaS 返回重复数据时的兜底）
+    seen = set()
+    deduped = []
+    for item in all_data:
+        if item.get("id") not in seen:
+            seen.add(item.get("id"))
+            deduped.append(item)
+    return deduped
 
 # ==================== 设置读写 ====================
 
@@ -210,29 +228,91 @@ def sync(fresh_token=None):
 
     # 4. 写入 BaaS oms_products
     print("  📡 写入 oms_products...", end=" ", flush=True)
+    import concurrent.futures
+
     existing = {}
     for item in list_all("oms_products"):
         existing[item["sku"]] = item["id"]
+    print(f"(已存{len(existing)}条)", end=" ", flush=True)
 
+    import time as _time
+    def _write_one(args):
+        sku, data = args
+        for retry in range(3):
+            try:
+                if sku in existing:
+                    _baas_req("oms_products", "update", {"id": existing[sku], **data})
+                    return "upd"
+                else:
+                    _baas_req("oms_products", "add", data)
+                    return "add"
+            except Exception as e:
+                if retry < 2:
+                    _time.sleep(1)
+                else:
+                    print(f"!{sku}!", end="", flush=True)
+                    return None
+
+    items = list(merged.items())
     add_c, upd_c = 0, 0
-    for sku, data in merged.items():
-        if sku in existing:
-            try:
-                _baas_req("oms_products", "update", {"id": existing[sku], **data})
-                upd_c += 1
-            except:
-                pass
-        else:
-            try:
-                _baas_req("oms_products", "add", data)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        for i, result in enumerate(pool.map(_write_one, items), 1):
+            if result == "add":
                 add_c += 1
-            except:
-                pass
-        if (add_c + upd_c) % 200 == 0:
-            print(".", end="", flush=True)
+            elif result == "upd":
+                upd_c += 1
+            if i % 200 == 0:
+                print(".", end="", flush=True)
     print(f" 新增{add_c} 更新{upd_c}")
 
-    # 5. 更新同步日志
+    # 5. 写入 products 表（商品管理）
+    print("  📡 写入 products...", end=" ", flush=True)
+    prod_existing = {}
+    for item in list_all("products"):
+        prod_existing[item["sku"]] = item
+    print(f"(已有{len(prod_existing)}条)", end=" ", flush=True)
+
+    def _write_product(args):
+        sku, data = args
+        try:
+            if sku in prod_existing:
+                old = prod_existing[sku]
+                # 跳过无变化的更新
+                if old.get("stock") == data["stock"] and old.get("name") == data["name"]:
+                    return "skip"
+                _baas_req("products", "update", {
+                    "id": old["id"],
+                    "stock": data["stock"],
+                    "original_stock": data["stock"],
+                    "name": data["name"],
+                    "image_url": data["imgUrl"]
+                })
+                return "upd"
+            else:
+                _baas_req("products", "add", {
+                    "sku": sku,
+                    "name": data["name"],
+                    "stock": data["stock"],
+                    "original_stock": data["stock"],
+                    "image_url": data["imgUrl"],
+                    "price_cny": 0,
+                    "price_usd": 0,
+                    "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+                return "add"
+        except Exception as e:
+            return None
+
+    prod_add, prod_upd, prod_skip = 0, 0, 0
+    prod_items = list(merged.items())
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        for result in pool.map(_write_product, prod_items):
+            if result == "add": prod_add += 1
+            elif result == "upd": prod_upd += 1
+            elif result == "skip": prod_skip += 1
+    print(f" 新增{prod_add} 更新{prod_upd} 跳过{prod_skip}")
+
+    # 6. 更新同步日志
     elapsed = time.time() - start
     log_entry = {"time": datetime.now().isoformat(timespec="seconds"),
                  "success": True, "total": len(merged),
