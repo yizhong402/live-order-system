@@ -177,7 +177,7 @@
                         '<div class="form-group" style="margin-bottom:0;">' +
                             '<label style="font-size:12px;">OMS 域名 <span style="color:var(--text-muted);">domain</span></label>' +
                             '<input class="settings-input" type="text" value="' + escHtml(omsCfg.domain) + '" onchange="updateOMSDomain(this.value)" ' +
-                                'placeholder="oms.example.com" style="width:100%;">' +
+                                'placeholder="ftnet.jfwms.com 或 https://ftnet.jfwms.com" style="width:100%;">' +
                         '</div>' +
                         '<div class="form-group" style="margin-bottom:0;">' +
                             '<label style="font-size:12px;">邮箱 <span style="color:var(--text-muted);">email</span></label>' +
