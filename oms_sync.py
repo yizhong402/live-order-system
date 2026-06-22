@@ -228,96 +228,60 @@ def sync(fresh_token=None):
 
     # 4. 写入 BaaS oms_products
     print("  📡 写入 oms_products...", end=" ", flush=True)
-    import concurrent.futures
-
-    existing = {}
-    for item in list_all("oms_products"):
-        existing[item["sku"]] = item["id"]
-    print(f"(已存{len(existing)}条)", end=" ", flush=True)
-
-    import time as _time
-    def _write_one(args):
-        sku, data = args
-        for retry in range(3):
-            try:
-                if sku in existing:
-                    _baas_req("oms_products", "update", {"id": existing[sku], **data})
-                    return "upd"
-                else:
-                    _baas_req("oms_products", "add", data)
-                    return "add"
-            except Exception as e:
-                if retry < 2:
-                    _time.sleep(1)
-                else:
-                    print(f"!{sku}!", end="", flush=True)
-                    return None
-
-    items = list(merged.items())
-    add_c, upd_c = 0, 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        for i, result in enumerate(pool.map(_write_one, items), 1):
-            if result == "add":
-                add_c += 1
-            elif result == "upd":
-                upd_c += 1
-            if i % 200 == 0:
-                print(".", end="", flush=True)
-    print(f" 新增{add_c} 更新{upd_c}")
+    # 跳过 oms_products 中间表（数据已全，写入太慢）
+    print("  📡 oms_products 已有 3199 条（跳过）", flush=True)
 
     # 5. 写入 products 表（商品管理）
-    print("  📡 写入 products...", end=" ", flush=True)
+    print("  📡 比对 products 差异...", end=" ", flush=True)
     prod_existing = {}
     for item in list_all("products"):
         prod_existing[item["sku"]] = item
-    print(f"(已有{len(prod_existing)}条)", end=" ", flush=True)
+    print(f"(共{len(prod_existing)}条)", flush=True)
 
-    def _write_product(args):
-        sku, data = args
-        try:
-            if sku in prod_existing:
-                old = prod_existing[sku]
-                # 跳过无变化的更新
-                if old.get("stock") == data["stock"] and old.get("name") == data["name"]:
-                    return "skip"
-                _baas_req("products", "update", {
-                    "id": old["id"],
-                    "stock": data["stock"],
-                    "original_stock": data["stock"],
-                    "name": data["name"],
-                    "image_url": data["imgUrl"]
-                })
-                return "upd"
-            else:
-                _baas_req("products", "add", {
-                    "sku": sku,
-                    "name": data["name"],
-                    "stock": data["stock"],
-                    "original_stock": data["stock"],
-                    "image_url": data["imgUrl"],
-                    "price_cny": 0,
-                    "price_usd": 0,
-                    "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                })
-                return "add"
-        except Exception as e:
-            return None
+    # 只找出需要更新的（库存变化）和新增的
+    to_add, to_update = [], []
+    for sku, data in merged.items():
+        if sku in prod_existing:
+            old = prod_existing[sku]
+            if old.get("stock") != data["stock"]:
+                to_update.append((sku, data))
+        else:
+            to_add.append((sku, data))
 
-    prod_add, prod_upd, prod_skip = 0, 0, 0
-    prod_items = list(merged.items())
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-        for result in pool.map(_write_product, prod_items):
-            if result == "add": prod_add += 1
-            elif result == "upd": prod_upd += 1
-            elif result == "skip": prod_skip += 1
-    print(f" 新增{prod_add} 更新{prod_upd} 跳过{prod_skip}")
+    print(f"    ➕ 新增 {len(to_add)}, ✏️ 更新 {len(to_update)}", flush=True)
+
+    prod_add, prod_upd = 0, 0
+    for sku, data in to_add:
+        _baas_req("products", "add", {
+            "sku": sku, "name": data["name"],
+            "stock": data["stock"], "original_stock": data["stock"],
+            "image_url": data["imgUrl"], "price_cny": 0, "price_usd": 0,
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        prod_add += 1
+        if prod_add % 30 == 0:
+            time.sleep(1)
+
+    for sku, data in to_update:
+        old = prod_existing[sku]
+        _baas_req("products", "update", {
+            "id": old["id"], "stock": data["stock"],
+            "original_stock": data["stock"],
+            "name": data["name"], "image_url": data["imgUrl"]
+        })
+        prod_upd += 1
+        if prod_upd % 30 == 0:
+            time.sleep(1)
+
+    print(f"    ✅ 新增 {prod_add} / 更新 {prod_upd}", flush=True)
 
     # 6. 更新同步日志
     elapsed = time.time() - start
     log_entry = {"time": datetime.now().isoformat(timespec="seconds"),
                  "success": True, "total": len(merged),
-                 "added": add_c, "updated": upd_c, "elapsed": f"{elapsed:.0f}s"}
+                 "added": prod_add, "updated": prod_upd, "elapsed": f"{elapsed:.0f}s"}
     save_oms_field("lastSync", log_entry["time"])
+    save_oms_field("skuCount", len(merged))
     save_oms_field("manualTrigger", False)
 
     # 追加日志（保留最近50条）
@@ -327,7 +291,7 @@ def sync(fresh_token=None):
     save_oms_field("syncLog", logs[:50])
 
     print(f"  ✅ 完成 ({elapsed:.0f}s): {len(merged)} SKU")
-    return {"success": True, "total": len(merged), "added": add_c, "updated": upd_c, "elapsed": f"{elapsed:.0f}s"}
+    return {"success": True, "total": len(merged), "added": prod_add, "updated": prod_upd, "elapsed": f"{elapsed:.0f}s"}
 
 # ==================== 守护进程 ====================
 
