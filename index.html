@@ -90,7 +90,10 @@
             <div class="panel">
                 <h2>📦 商品库存管理
                     <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(由 OMS 同步)</span>
-                    <button class="btn btn-primary" onclick="syncOMSProducts()" style="padding:3px 12px;font-size:11px;float:right;">🔄 同步 OMS 数据</button>
+                    <span style="float:right;display:flex;gap:6px;">
+                        <button class="btn btn-primary" onclick="syncOMSProducts()" style="padding:3px 12px;font-size:11px;">🔄 同步 OMS 数据</button>
+                        <button class="btn btn-warning" onclick="calibrateStock()" style="padding:3px 12px;font-size:11px;" title="开播前使用：用 OMS 库存覆盖系统库存">📊 库存校准</button>
+                    </span>
                 </h2>
                 
                 <!-- 折叠的添加商品区域 -->
@@ -429,6 +432,7 @@
                                             <div class="session-info-item">
                                                 <span class="session-info-label">主播:</span>
                                                 <span class="session-info-value" id="sessionAnchor">-</span>
+                                                <button onclick="changeAnchor()" style="margin-left:8px;padding:2px 8px;font-size:10px;border:1px solid var(--border);border-radius:4px;background:rgba(255,255,255,0.1);color:var(--text-muted);cursor:pointer;" title="切换主播">✏️</button>
                                             </div>
                                         </div>
                                     </div>

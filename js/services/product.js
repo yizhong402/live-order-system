@@ -168,6 +168,47 @@
             }.bind(this), 5000);
         }
 
+        function calibrateStock() {
+            if (!confirm('⚠️ 库存校准\n\n此操作将用 OMS 仓库库存直接覆盖系统库存！\n\n请在 **开播前** 使用，直播期间请勿操作。\n\n确定继续？')) {
+                return;
+            }
+            
+            var btn = document.querySelector('.btn-warning[onclick*="calibrateStock"]');
+            if (btn) {
+                btn.textContent = '⏳ 校准中...';
+                btn.disabled = true;
+            }
+            
+            // 触发校准标记（守护进程会执行全量覆盖同步）
+            systemSettings.omsSync.calibrateTrigger = true;
+            debouncedSaveSettings();
+            
+            showToast('📊 库存校准信号已发送，服务端执行中...', 'warning');
+            
+            // 等几秒后刷新商品列表
+            setTimeout(function() {
+                client.db.from('products').list().then(function(res) {
+                    if (res.success && res.data) {
+                        products = res.data.map(function(p) { return {
+                            sku: p.sku, name: p.name || '', stock: p.stock || 0,
+                            priceCny: p.price_cny || 0, priceUsd: p.price_usd || 0,
+                            originalStock: p.original_stock || p.stock || 0, 
+                            image: p.image_url || '',
+                            image_url: p.image_url || ''
+                        }; });
+                        updateProductList();
+                        updateProductListDisplay();
+                        updateProductStats();
+                        showToast('✅ 库存校准完成，已刷新: ' + products.length + ' 条', 'success');
+                    }
+                    if (btn) { btn.textContent = '📊 库存校准'; btn.disabled = false; }
+                }).catch(function(e) {
+                    showToast('❌ 校准刷新失败', 'error');
+                    if (btn) { btn.textContent = '📊 库存校准'; btn.disabled = false; }
+                });
+            }, 8000);
+        }
+
         let originalImages = [];
         
         function openImageMatchModal() {

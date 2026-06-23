@@ -365,6 +365,29 @@
             }
         }
         
+        function changeAnchor() {
+            const session = getCurrentSession();
+            if (!session) { alert('请先选择场次！'); return; }
+            const current = session.anchor || '';
+            const newAnchor = prompt(`当前主播：${current}\n\n输入新主播名字（中途换人，后续订单归属新主播）：`, current);
+            if (newAnchor && newAnchor.trim() && newAnchor.trim() !== current) {
+                session.anchor = newAnchor.trim();
+                document.getElementById('sessionAnchor').textContent = session.anchor;
+                // 更新场次列表显示
+                updateSessionList();
+                // 更新订单录入页头顶的场次标签
+                const lbl = document.getElementById('currentSessionLabel');
+                if (lbl) lbl.textContent = `${session.sessionTitle} (${session.anchor})`;
+                // 同步到 BaaS
+                if (session.id) {
+                    client.db.from('live_sessions').update(session.id, { anchor: session.anchor }).catch(()=>{});
+                }
+                syncGlobalsToSession();
+                saveSessionToLocalStorage();
+                showToast(`✅ 主播已切换为 ${session.anchor}`, 'success');
+            }
+        }
+        
         function saveSessionToLocalStorage() {
             syncGlobalsToSession();
         }

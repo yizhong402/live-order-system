@@ -231,11 +231,93 @@ def sync(fresh_token=None):
     # 跳过 oms_products 中间表（数据已全，写入太慢）
     print("  📡 oms_products 已有 3199 条（跳过）", flush=True)
 
-    # ❌ 不再自动写入 products 表（防止覆盖直播预扣库存）
-    # OMS 仓库发货滞后，直播预扣库存才是实时数据
-    # 手动同步时只更新 oms_products 表供参考，products 表库存不变
+    # ==================== 全量校准同步（覆盖 products 库存） ====================
+
+def calibrate(fresh_token=None):
+    """开播前库存校准：同步 OMS → 直接覆盖 products 表库存"""
+    global at, uid
+    start = time.time()
+
+    if not ensure_auth(fresh_token):
+        return {"success": False, "message": "认证失败，需要一次性授权 Token (--token)"}
+
+    print(f"[{datetime.now().isoformat()}] 📡 开始全量校准同步...")
+
+    # 1. 拉取 SKU 详情
+    print("  📡 拉取 SKU 详情...", end=" ", flush=True)
+    sku_data = fetch_sku_details()
+    print(f"{len(sku_data)} 条")
+
+    # 2. 拉取库存
+    print("  📡 拉取库存...", end=" ", flush=True)
+    inv_data = fetch_inventory()
+    print(f"{len(inv_data)} 条")
+
+    # 3. 合并
+    print("  📡 合并数据...", end=" ", flush=True)
+    merged = {}
+    all_skus = set(sku_data.keys()) | set(inv_data.keys())
+    for sku in sorted(all_skus):
+        sd = sku_data.get(sku, {})
+        iv = inv_data.get(sku, {})
+        merged[sku] = {
+            "sku": sku,
+            "skuNo": sd.get("skuNo", ""),
+            "name": sd.get("name", "") or sku,
+            "imgUrl": sd.get("imgUrl", "") or "",
+            "stock": iv.get("totalNum", 0) or 0,
+            "availableStock": iv.get("availableNum", 0) or 0,
+            "lockedStock": iv.get("lockedNum", 0) or 0,
+            "updatedAt": datetime.now().isoformat(timespec="seconds")
+        }
+    print(f"{len(merged)} 条")
+
+    # 4. 写入 products 表（覆盖库存！⚠️ 仅开盘前使用）
+    print("  📡 写入 products（覆盖库存）...", end=" ", flush=True)
+    prod_existing = {}
+    for item in list_all("products"):
+        prod_existing[item["sku"]] = item
+    print(f"(共{len(prod_existing)}条)", flush=True)
+
     prod_add, prod_upd = 0, 0
-    print(f"    ⏭️ 跳过 products 表写入（保护直播预扣库存）", flush=True)
+    for sku, data in merged.items():
+        if sku in prod_existing:
+            old = prod_existing[sku]
+            _baas_req("products", "update", {
+                "id": old["id"], "stock": data["stock"],
+                "original_stock": data["stock"],
+                "name": data["name"], "image_url": data["imgUrl"]
+            })
+            prod_upd += 1
+        else:
+            _baas_req("products", "add", {
+                "sku": sku, "name": data["name"],
+                "stock": data["stock"], "original_stock": data["stock"],
+                "image_url": data["imgUrl"], "price_cny": 0, "price_usd": 0,
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            })
+            prod_add += 1
+        if (prod_add + prod_upd) % 30 == 0:
+            time.sleep(1)
+
+    print(f"    ➕ 新增 {prod_add} / ✏️ 更新 {prod_upd}", flush=True)
+
+    # 5. 日志
+    elapsed = time.time() - start
+    log_entry = {"time": datetime.now().isoformat(timespec="seconds"),
+                 "success": True, "total": len(merged),
+                 "added": prod_add, "updated": prod_upd, "elapsed": f"{elapsed:.0f}s",
+                 "type": "calibrate"}
+    s = load_settings()
+    logs = s.get("syncLog", []) if s else []
+    logs.insert(0, log_entry)
+    save_oms_field("syncLog", logs[:50])
+    save_oms_field("skuCount", len(merged))
+    # 清除校准触发标记
+    save_oms_field("calibrateTrigger", False)
+
+    print(f"  ✅ 校准完成 ({elapsed:.0f}s): {len(merged)} SKU")
+    return {"success": True, "total": len(merged), "added": prod_add, "updated": prod_upd, "elapsed": f"{elapsed:.0f}s"}
 
     # 6. 更新同步日志
     elapsed = time.time() - start
@@ -275,6 +357,12 @@ def daemon():
                 save_oms_field("manualTrigger", False)
                 continue
 
+            if s and s.get("calibrateTrigger"):
+                print(f"[{datetime.now().isoformat()}] 🚀 库存校准触发")
+                calibrate()
+                save_oms_field("calibrateTrigger", False)
+                continue
+
         except KeyboardInterrupt:
             print("\n⏹️  停止")
             break
@@ -288,11 +376,15 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--token", help="一次性授权 Token")
     p.add_argument("--daemon", action="store_true", help="守护进程模式")
-    p.add_argument("--sync", action="store_true", help="立即同步")
+    p.add_argument("--sync", action="store_true", help="立即同步（只更新 oms_products，不覆盖库存）")
+    p.add_argument("--calibrate", action="store_true", help="完全校准（覆盖 products 表库存）")
     a = p.parse_args()
 
     if a.daemon:
         daemon()
+    elif a.calibrate:
+        r = calibrate(fresh_token=a.token)
+        print(json.dumps(r, indent=2, ensure_ascii=False))
     elif a.sync or a.token:
         r = sync(fresh_token=a.token)
         print(json.dumps(r, indent=2, ensure_ascii=False))

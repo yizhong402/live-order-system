@@ -114,7 +114,18 @@
         }
         
         function clearSkus() {
+            // 归还已预扣的库存
+            for (const sku in currentSkus) {
+                const qty = currentSkus[sku];
+                if (qty > 0) {
+                    const product = products.find(p => p.sku === sku);
+                    if (product) {
+                        product.stock += qty;
+                    }
+                }
+            }
             currentSkus = {};
+            saveProducts();
             updateSkuList();
         }
         
@@ -144,6 +155,18 @@
                 sku: sku,
                 quantity: currentSkus[sku]
             }));
+            
+            // 检查是否有零库存商品，如果有则弹出警告
+            const zeroStockSkus = [];
+            for (const sku of skuKeys) {
+                const product = products.find(p => p.sku === sku);
+                if (product && product.stock < 0) {
+                    zeroStockSkus.push(sku);
+                }
+            }
+            if (zeroStockSkus.length > 0) {
+                alert(`⚠️ 以下商品已超卖（库存为负数）：\n${zeroStockSkus.join('、')}\n\n请确认是否继续保存！`);
+            }
             
             const order = {
                 id: Date.now(),
@@ -707,6 +730,13 @@
                 alert('没有订单可导出！');
                 return;
             }
+            
+            // 按轮次升序排序
+            exportOrdersList = [...exportOrdersList].sort((a, b) => {
+                const ra = parseInt(a.round) || 0;
+                const rb = parseInt(b.round) || 0;
+                return ra - rb;
+            });
             
             let csv = '序号,轮次,标题,商品种类,SKU,数量,竞拍金额,备注,主播,直播日期,直播时间,时间,状态\n';
             exportOrdersList.forEach((order, index) => {
