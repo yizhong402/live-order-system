@@ -224,11 +224,15 @@ function toggleOMSSync(enabled) {
   }
 }
 
-function saveOMSSchedule() {
+async function saveOMSSchedule() {
   var val = document.getElementById('omsScheduleTime').value;
+  if (!val) {
+    showToast('请先选择时间', 'warning');
+    return;
+  }
   systemSettings.omsSync.scheduleTime = val;
-  debouncedSaveSettings();
-  showToast('定时同步已设为每天 ' + val, 'success');
+  await debouncedSaveSettings();
+  showToast('每日校准已设为 ' + val, 'success');
 }
 
 function refreshOMSSyncLog() {
