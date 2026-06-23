@@ -124,6 +124,7 @@
 
         function syncOMSProducts() {
             var btn = document.getElementById('omsSyncBtnText') || document.querySelector('.btn-primary[onclick*="triggerOMSSync"]');
+            if (!btn) btn = document.querySelector('.btn-primary[onclick*="syncOMSProducts"]');
             if (btn) {
                 btn.textContent = '⏳ 同步中...';
                 btn.disabled = true;
@@ -143,29 +144,27 @@
             }
             statusEl.textContent = '⏳ 同步信号已发送，等待服务端执行...';
             
-            // 等几秒后刷新商品列表
+            // 等几秒后刷新 OMS 面板（不刷新 products 表，防止覆盖直播预扣库存）
             setTimeout(function() {
-                // 重新从 BaaS 加载商品
-                client.db.from('products').list().then(function(res) {
-                    if (res.success && res.data) {
-                        products = res.data.map(function(p) { return {
-                            sku: p.sku, name: p.name || '', stock: p.stock || 0,
-                            priceCny: p.price_cny || 0, priceUsd: p.price_usd || 0,
-                            originalStock: p.original_stock || p.stock || 0, 
-                            image: p.image_url || '',
-                            image_url: p.image_url || ''
-                        }; });
-                        updateProductList();
-                        updateProductListDisplay();
-                        updateProductStats();
-                        statusEl.textContent = '✅ 已刷新: ' + products.length + ' 条';
-                    }
-                    if (btn) { btn.textContent = '🔄 同步 OMS 数据'; btn.disabled = false; }
-                }).catch(function(e) {
-                    statusEl.textContent = '❌ 刷新失败';
-                    if (btn) { btn.textContent = '🔄 同步 OMS 数据'; btn.disabled = false; }
-                });
-            }.bind(this), 5000);
+                // 刷新 oms_products 数据表（设置页里的 OMS 商品列表）
+                if (typeof loadBaaSProducts === 'function') {
+                    renderOMSProductsList(1);
+                }
+                // 刷新同步日志
+                if (typeof refreshOMSSyncLog === 'function') {
+                    // 加载最新的 settings
+                    client.db.from('settings').list().then(function(r) {
+                        if (r.success && r.data && r.data[0]) {
+                            var raw = r.data[0].omsSync || '{}';
+                            if (typeof raw === 'string') raw = JSON.parse(raw);
+                            systemSettings.omsSync = raw;
+                            if (typeof refreshOMSSyncLog === 'function') refreshOMSSyncLog();
+                        }
+                    }).catch(function(){});
+                }
+                statusEl.textContent = '✅ OMS 数据已同步（仅刷新参考数据，未覆盖系统库存）';
+                if (btn) { btn.textContent = '🔄 同步 OMS 数据'; btn.disabled = false; }
+            }.bind(this), 8000);
         }
 
         function calibrateStock() {

@@ -226,10 +226,51 @@ def sync(fresh_token=None):
         }
     print(f"{len(merged)} 条")
 
-    # 4. 写入 BaaS oms_products
+    # 4. 写入 BaaS oms_products（全量刷新，保留最新数据供前端参考）
     print("  📡 写入 oms_products...", end=" ", flush=True)
-    # 跳过 oms_products 中间表（数据已全，写入太慢）
-    print("  📡 oms_products 已有 3199 条（跳过）", flush=True)
+    # 先清空旧数据再逐条写入
+    existing_oms = {}
+    for item in list_all("oms_products"):
+        existing_oms[item["sku"]] = item
+    print(f"(旧{len(existing_oms)}条 → 新{len(merged)}条)", flush=True)
+
+    # 删除已不存在的 SKU 并更新已有的
+    del_count, add_count = 0, 0
+    for sku, item in existing_oms.items():
+        if sku not in merged:
+            _baas_req("oms_products", "delete", {"id": item["id"]})
+            del_count += 1
+        elif (item.get("name") != merged[sku]["name"] or
+              item.get("stock") != merged[sku]["stock"] or
+              item.get("availableStock") != merged[sku]["availableStock"]):
+            _baas_req("oms_products", "update", {
+                "id": item["id"],
+                "name": merged[sku]["name"],
+                "stock": merged[sku]["stock"],
+                "availableStock": merged[sku]["availableStock"],
+                "lockedStock": merged[sku]["lockedStock"],
+                "imgUrl": merged[sku]["imgUrl"],
+                "updatedAt": merged[sku]["updatedAt"]
+            })
+            add_count += 1
+        if (del_count + add_count) % 50 == 0:
+            time.sleep(1)
+
+    # 新增的 SKU
+    for sku, data in merged.items():
+        if sku not in existing_oms:
+            _baas_req("oms_products", "add", {
+                "sku": sku, "name": data["name"],
+                "stock": data["stock"], "availableStock": data["availableStock"],
+                "lockedStock": data["lockedStock"],
+                "imgUrl": data["imgUrl"],
+                "updatedAt": data["updatedAt"]
+            })
+            add_count += 1
+            if add_count % 30 == 0:
+                time.sleep(1)
+
+    print(f"    🗑️ 删除 {del_count} / 📝 更新 {add_count}", flush=True)
 
     # ==================== 全量校准同步（覆盖 products 库存） ====================
 
