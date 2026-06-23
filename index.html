@@ -772,8 +772,14 @@
                     <li><strong style="color:#ffffff;">🔗 毛利联动设置</strong>: 毛利计算页自动读取系统设置中的平台费率，无需手动输入</li>
                 </ul>
                 
-                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🔧 功能概览</h3>
-                <p style="color:#d0d0d0;">本工具用于管理直播拍卖订单，支持SKU管理、订单录入、场次管理、毛利统计、数据看板等功能。</p>
+                <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🆕 v4.0 更新 — 2026年6月24日</h3>
+                <ul style="color:#d0d0d0;">
+                    <li><strong style="color:#ffffff;">🔄 OMS 库存自动同步</strong>: 每3h自动从OMS同步商品数据，系统设置页可查看/同步</li>
+                    <li><strong style="color:#ffffff;">📊 库存校准</strong>: 用OMS可用库存覆盖系统库存，支持手动触发和每日定时自动校准</li>
+                    <li><strong style="color:#ffffff;">🔁 同步/校准分离</strong>: 同步只刷新oms_products（安全），校准才覆盖products库存</li>
+                    <li><strong style="color:#ffffff;">📱 负一屏推送</strong>: 校准完成后推送结果通知</li>
+                    <li><strong style="color:#ffffff;">⏰ 每日定时校准</strong>: 商品管理页或系统设置页设定每天校准时间</li>
+                </ul>
                 
                 <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">🏠 首页 / 数据看板</h3>
                 <ul style="color:#d0d0d0;">
@@ -842,6 +848,9 @@
                     <li><strong style="color:#ffffff;">运费模板</strong>: 按国家/地区设置基础运费和续重费用</li>
                     <li><strong style="color:#ffffff;">汇率设置</strong>: 美元兑人民币汇率配置</li>
                     <li><strong style="color:#ffffff;">自动保存</strong>: 修改后自动保存到云端，全局生效</li>
+                    <li><strong style="color:#ffffff;">OMS 库存同步</strong>: 配置OMS连接后自动每3h同步商品数据</li>
+                    <li><strong style="color:#ffffff;">每日定时校准</strong>: 设定时间后每天自动用OMS库存覆盖系统库存</li>
+                    <li><strong style="color:#ffffff;">立即同步/校准</strong>: 系统设置页可触发立即同步；商品管理页可手动库存校准</li>
                 </ul>
                 
                 <h3 style="color:#667eea;border-bottom:2px solid #667eea;padding-bottom:8px;margin-top:20px;">💾 数据管理</h3>
@@ -857,10 +866,13 @@
                     <li>超卖订单会自动标记红色，需及时处理</li>
                     <li>建议定期备份数据（数据管理 → 导出数据）</li>
                     <li>首次使用建议先导入商品数据</li>
+                    <li><strong style="color:#ffaa00;">库存校准</strong>只应在开播前使用，直播期间不要操作以免覆盖订单预扣库存</li>
+                    <li>每3h自动同步只刷新oms_products参考数据，不会影响商品管理库存</li>
+                    <li>设置每日校准时间后，等待守护进程检测触发，最快约30秒内执行</li>
                 </ul>
 <hr style="margin:20px 0;border-color:rgba(255,255,255,0.2);">
                 <p style="text-align:center;color:#888888;font-size:12px;">
-                    版本: 3.0 | 更新日期: 2026年6月22日
+                    版本: 4.0 | 更新日期: 2026年6月24日
                 </p>
             </div>
         </div>
