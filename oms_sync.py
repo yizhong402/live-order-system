@@ -6,8 +6,8 @@ OMS 库存同步守护脚本
 - 自动用 refreshToken 续期 AccessToken
 - 敏感凭证从 .env 文件读取，不硬编码在代码中
 """
-import requests, json, hashlib, hmac, random, time, sys, os, argparse
-from datetime import datetime
+import requests, json, hashlib, hmac, random, time, sys, os, argparse, subprocess
+from datetime import datetime, date, timedelta
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(BASE_DIR, "oms_token_cache.json")
@@ -404,28 +404,101 @@ def calibrate(fresh_token=None):
 
 # ==================== 守护进程 ====================
 
+TODAY_TASK_PUSH = os.path.join(BASE_DIR, "..", ".openclaw", "workspace", "skills", "today-task", "scripts", "task_push.py")
+LAST_SYNC_HOUR = None       # 记录上次自动同步的小时（YYYY-MM-DD HH 格式，防重复触发）
+LAST_CALIBRATE_DATE = None  # 记录上次自动校准日期（防重复触发）
+
+
+def _push_negative_screen(title, content):
+    """推送到负一屏（如可用）"""
+    if not os.path.exists(TODAY_TASK_PUSH):
+        print(f"  ⚠️ 负一屏推送脚本不存在: {TODAY_TASK_PUSH}")
+        return
+    try:
+        subprocess.run([sys.executable, TODAY_TASK_PUSH,
+            "--task_name", title,
+            "--content", content[:200]],
+            capture_output=True, timeout=10)
+        print(f"  ✅ 已推送负一屏: {title}")
+    except Exception as e:
+        print(f"  ⚠️ 负一屏推送失败: {e}")
+
+
 def daemon():
+    global LAST_SYNC_HOUR, LAST_CALIBRATE_DATE
+
     print(f"\n{'='*50}")
     print(f"  OMS 守护进程启动 @ {datetime.now().isoformat()}")
-    print(f"  说明: 仅响应手动触发，不做自动同步（保护直播预扣库存）")
+    print(f"  🔁 库存同步: 每3h自动执行")
+    print(f"  ⏰ 库存校准: 每日 scheduleTime 自动执行")
     print(f"{'='*50}")
+
+    # 初始化 - 记录当前小时，避免启动瞬间就触发
+    now = datetime.now()
+    LAST_SYNC_HOUR = now.strftime("%Y-%m-%d %H")
+    LAST_CALIBRATE_DATE = now.strftime("%Y-%m-%d")
+    
+    # 计算下一次自动同步时间
+    next_sync_hour = ((now.hour // 3) + 1) * 3
+    if next_sync_hour >= 24:
+        next_sync_hour = 0
+        next_sync_date = now + timedelta(days=1)
+    else:
+        next_sync_date = now
+    next_sync = next_sync_date.replace(hour=next_sync_hour, minute=0, second=0, microsecond=0)
+    print(f"  下次自动同步: {next_sync.strftime('%Y-%m-%d %H:%M')}")
 
     while True:
         try:
             time.sleep(30)
-            
-            # 只检查手动触发，不做自动同步
             s = load_settings()
-            if s and s.get("manualTrigger"):
-                print(f"[{datetime.now().isoformat()}] 🚀 手动触发同步")
-                sync()
-                save_oms_field("manualTrigger", False)
+            if not s:
                 continue
 
-            if s and s.get("calibrateTrigger"):
-                print(f"[{datetime.now().isoformat()}] 🚀 库存校准触发")
-                calibrate()
+            now = datetime.now()
+            today = now.strftime("%Y-%m-%d")
+
+            # ===== 1. 手动触发同步 =====
+            if s.get("manualTrigger"):
+                print(f"[{now.isoformat()}] 🚀 手动触发同步")
+                result = sync()
+                save_oms_field("manualTrigger", False)
+                LAST_SYNC_HOUR = now.strftime("%Y-%m-%d %H")
+                continue
+
+            # ===== 2. 手动触发校准 =====
+            if s.get("calibrateTrigger"):
+                print(f"[{now.isoformat()}] 🚀 库存校准触发")
+                result = calibrate()
                 save_oms_field("calibrateTrigger", False)
+                LAST_CALIBRATE_DATE = today
+                if result.get("success"):
+                    _push_negative_screen("OMS 库存校准完成",
+                        f"校准 {result.get('total',0)} SKU，新增 {result.get('added',0)} 更新 {result.get('updated',0)}")
+                continue
+
+            # ===== 3. 定时校准（每日 scheduleTime） =====
+            schedule_time = (s.get("scheduleTime") or "").strip()
+            if schedule_time and today != LAST_CALIBRATE_DATE:
+                try:
+                    sch_h, sch_m = [int(x) for x in schedule_time.split(":")]
+                    if now.hour == sch_h and now.minute == sch_m:
+                        print(f"[{now.isoformat()}] ⏰ 每日定时校准触发 ({schedule_time})")
+                        result = calibrate()
+                        LAST_CALIBRATE_DATE = today
+                        if result.get("success"):
+                            _push_negative_screen("OMS 每日库存校准",
+                                f"校准 {result.get('total',0)} SKU，新增 {result.get('added',0)} 更新 {result.get('updated',0)}")
+                        continue
+                except (ValueError, IndexError):
+                    pass
+
+            # ===== 4. 定时同步（每3h） =====
+            current_hour_tag = now.strftime("%Y-%m-%d %H")
+            if current_hour_tag != LAST_SYNC_HOUR and now.hour % 3 == 0 and now.minute == 0:
+                print(f"[{now.isoformat()}] 🔁 每3h自动同步触发")
+                result = sync()
+                LAST_SYNC_HOUR = current_hour_tag
                 continue
 
         except KeyboardInterrupt:

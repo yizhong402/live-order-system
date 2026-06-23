@@ -183,10 +183,11 @@
 
                 // 每日定时 + 配置展开
                 '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">' +
-                    '<span style="font-size:13px;">⏰ 每日定时:</span>' +
+                    '<span style="font-size:13px;">⏰ 每日校准:</span>' +
                     '<input type="time" id="omsScheduleTime" value="' + (omsCfg.scheduleTime || '') + '" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,0.3);color:#fff;font-size:13px;">' +
                     '<button class="btn btn-success" onclick="saveOMSSchedule()" style="padding:4px 10px;font-size:12px;">保存</button>' +
-                    (omsCfg.scheduleTime ? '<span style="font-size:11px;color:var(--text-muted);">每天 ' + omsCfg.scheduleTime + ' 自动同步</span>' : '') +
+                    '<span style="font-size:11px;color:#f59e0b;margin-left:4px;">🔁 库存同步每3h自动执行</span>' +
+                    (omsCfg.scheduleTime ? '<span style="font-size:11px;color:var(--text-muted);">每天 ' + omsCfg.scheduleTime + ' 自动校准库存</span>' : '') +
                 '</div>' +
 
                 '<details style="margin-bottom:10px;">' +
@@ -333,9 +334,12 @@
         var _saveTimer = null;
         function debouncedSaveSettings() {
             if (_saveTimer) clearTimeout(_saveTimer);
-            _saveTimer = setTimeout(async function() {
-                await saveSettings();
-            }, 800);
+            return new Promise(function(resolve) {
+                _saveTimer = setTimeout(async function() {
+                    await saveSettings();
+                    resolve();
+                }, 800);
+            });
         }
 
         // 辅助函数

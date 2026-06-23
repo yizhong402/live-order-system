@@ -377,6 +377,11 @@
             if (pageId === 'data') {
                 updateDataStats();
             }
+            if (pageId === 'product') {
+                if (typeof updateCalibrateTimeDisplay === 'function') {
+                    setTimeout(updateCalibrateTimeDisplay, 100);
+                }
+            }
         };
 
 

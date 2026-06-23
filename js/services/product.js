@@ -208,7 +208,26 @@
             }, 8000);
         }
 
-        let originalImages = [];
+        // 商品管理页显示校准时间
+function updateCalibrateTimeDisplay() {
+  var el = document.getElementById('calibrateTimeDisplay');
+  if (!el) return;
+  var t = (systemSettings.omsSync && systemSettings.omsSync.scheduleTime) || '';
+  el.textContent = t ? t : '未设置';
+}
+
+// 商品管理页-跳转到设置页
+function showCalibrateScheduleDialog() {
+  var st = document.getElementById('settingsTab');
+  if (st) st.click();
+  // 滚动到 OMS 设置
+  setTimeout(function() {
+    var inp = document.getElementById('omsScheduleTime');
+    if (inp) inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 300);
+}
+
+let originalImages = [];
         
         function openImageMatchModal() {
             const modal = document.getElementById('imageMatchModal');

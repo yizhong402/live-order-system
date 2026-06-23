@@ -78,7 +78,6 @@ function renderOMSSyncPanel() {
       '<span id="omsSyncStatus" style="font-size:12px;color:var(--text-muted);display:none;"></span>' +
     '</div>' +
 
-    // ⏰ 定时同步已移除（防止覆盖直播预扣库存）
     '</div>';
 }
 

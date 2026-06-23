@@ -91,8 +91,9 @@
                 <h2>📦 商品库存管理
                     <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(由 OMS 同步)</span>
                     <span style="float:right;display:flex;gap:6px;">
-                        <button class="btn btn-primary" onclick="syncOMSProducts()" style="padding:3px 12px;font-size:11px;">🔄 同步 OMS 数据</button>
-                        <button class="btn btn-warning" onclick="calibrateStock()" style="padding:3px 12px;font-size:11px;" title="开播前使用：用 OMS 库存覆盖系统库存">📊 库存校准</button>
+                        <button class="btn btn-warning" onclick="calibrateStock()" style="padding:3px 12px;font-size:11px;" title="开播前使用：用 OMS 可用库存覆盖系统库存">📊 库存校准</button>
+                        <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">⏰ 每天 <span id="calibrateTimeDisplay">未设置</span>
+                        <button class="btn btn-secondary" onclick="showCalibrateScheduleDialog()" style="padding:2px 8px;font-size:10px;margin-left:4px;">设置</button></span>
                     </span>
                 </h2>
                 
