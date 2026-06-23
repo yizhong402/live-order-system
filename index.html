@@ -131,14 +131,28 @@
                     </div>
                 </div>
 
-                                <div id="productSearchBar" style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                                <!-- 🔍 搜索 + 筛选 + 排序 栏 -->
+                <div id="productSearchBar" style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                     <input type="text" id="productSearchInput" placeholder="🔍 搜索SKU或商品名称..." oninput="onProductSearchInput()" style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:rgba(0,0,0,0.2);color:#fff;font-size:13px;">
+                    <select id="filterStockStatus" onchange="onProductFilterChange()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:rgba(0,0,0,0.2);color:#fff;font-size:12px;">
+                        <option value="all">📦 库存：全部</option>
+                        <option value="inStock">🟢 有货</option>
+                        <option value="outOfStock">🔴 缺货</option>
+                        <option value="lowStock">🟡 低库存</option>
+                    </select>
                     <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
                         <input type="checkbox" id="filterNoImage" onchange="onProductFilterChange()"> 仅缺图
                     </label>
                     <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;">
                         <input type="checkbox" id="filterNoPrice" onchange="onProductFilterChange()"> 仅缺价
                     </label>
+                </div>
+                <!-- 🔄 排序栏 -->
+                <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <span style="font-size:12px;color:var(--text-muted);">排序：</span>
+                    <button id="sortStockBtn" class="btn btn-secondary" onclick="toggleSort('stock')" style="padding:3px 10px;font-size:11px;">📦 库存 ↕</button>
+                    <button id="sortPriceBtn" class="btn btn-secondary" onclick="toggleSort('price')" style="padding:3px 10px;font-size:11px;">💰 采购价 ↕</button>
+                    <span id="sortIndicator" style="font-size:11px;color:var(--text-muted);"></span>
                 </div>
                 <div id="productStats" style="margin-top:10px;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px;">
                     <div style="display:flex;flex-wrap:wrap;gap:20px;font-size:13px;">

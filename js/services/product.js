@@ -1,5 +1,44 @@
 // product.js
 
+        // ============ 排序状态 ============
+        let sortField = '';       // 'stock' | 'price' | ''
+        let sortOrder = 'asc';    // 'asc' | 'desc'
+        
+        function toggleSort(field) {
+          if (sortField === field) {
+            // 切换升降序
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortField = field;
+            sortOrder = 'asc';
+          }
+          updateSortButtons();
+          updateProductList();
+        }
+        
+        function updateSortButtons() {
+          const stockBtn = document.getElementById('sortStockBtn');
+          const priceBtn = document.getElementById('sortPriceBtn');
+          const indicator = document.getElementById('sortIndicator');
+          if (sortField === 'stock') {
+            stockBtn.textContent = '📦 库存 ' + (sortOrder === 'asc' ? '↑' : '↓');
+            stockBtn.style.borderColor = '#667eea';
+            stockBtn.style.color = '#667eea';
+            if (priceBtn) { priceBtn.textContent = '💰 采购价 ↕'; priceBtn.style.borderColor = ''; priceBtn.style.color = ''; }
+            if (indicator) indicator.textContent = sortOrder === 'asc' ? '库存 低→高' : '库存 高→低';
+          } else if (sortField === 'price') {
+            priceBtn.textContent = '💰 采购价 ' + (sortOrder === 'asc' ? '↑' : '↓');
+            priceBtn.style.borderColor = '#667eea';
+            priceBtn.style.color = '#667eea';
+            if (stockBtn) { stockBtn.textContent = '📦 库存 ↕'; stockBtn.style.borderColor = ''; stockBtn.style.color = ''; }
+            if (indicator) indicator.textContent = sortOrder === 'asc' ? '采购价 低→高' : '采购价 高→低';
+          } else {
+            if (stockBtn) { stockBtn.textContent = '📦 库存 ↕'; stockBtn.style.borderColor = ''; stockBtn.style.color = ''; }
+            if (priceBtn) { priceBtn.textContent = '💰 采购价 ↕'; priceBtn.style.borderColor = ''; priceBtn.style.color = ''; }
+            if (indicator) indicator.textContent = '';
+          }
+        }
+        
         // ============ 库存实时轮询 ============
         let stockPollTimer = null;
         
@@ -434,6 +473,7 @@
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const filterNoImage = document.getElementById('filterNoImage')?.checked || false;
             const filterNoPrice = document.getElementById('filterNoPrice')?.checked || false;
+            const stockFilter = document.getElementById('filterStockStatus')?.value || 'all';
             
             let filtered = products;
             
@@ -442,6 +482,15 @@
                     p.sku.toLowerCase().includes(searchTerm) || 
                     (p.name && p.name.toLowerCase().includes(searchTerm))
                 );
+            }
+            
+            // 🏷️ 库存状态筛选
+            if (stockFilter === 'inStock') {
+                filtered = filtered.filter(p => p.stock > 0);
+            } else if (stockFilter === 'outOfStock') {
+                filtered = filtered.filter(p => p.stock === 0);
+            } else if (stockFilter === 'lowStock') {
+                filtered = filtered.filter(p => p.stock > 0 && p.stock <= 3);
             }
             
             if (filterNoImage) {
@@ -456,6 +505,19 @@
                     var cny = Number(p.price_cny || p.priceCny || 0);
                     var usd = Number(p.price_usd || p.priceUsd || 0);
                     return cny === 0 && usd === 0;
+                });
+            }
+            
+            // 🔄 排序
+            if (sortField === 'stock') {
+                filtered = [...filtered].sort((a, b) => {
+                    return sortOrder === 'asc' ? a.stock - b.stock : b.stock - a.stock;
+                });
+            } else if (sortField === 'price') {
+                filtered = [...filtered].sort((a, b) => {
+                    var pa = Number(a.priceCny || a.price_cny || 0);
+                    var pb = Number(b.priceCny || b.price_cny || 0);
+                    return sortOrder === 'asc' ? pa - pb : pb - pa;
                 });
             }
             
