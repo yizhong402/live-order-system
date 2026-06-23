@@ -242,10 +242,61 @@ def sync(fresh_token=None):
         }
     print(f"{len(merged)} 条")
 
-    # 4. 更新日志和统计（不逐条写入 products，由 calibrate 处理）
+    # 4. 写入 oms_products（差异更新：仅新增/变化的 SKU，不变的跳过）
+    print("  📡 同步 oms_products（差异更新）...", end=" ", flush=True)
+    existing = {}
+    for item in list_all("oms_products"):
+        existing[item["sku"]] = item
+    print(f"(现有{len(existing)}条)", flush=True)
+
+    added, updated, skipped = 0, 0, 0
+    for sku, data in sorted(merged.items()):
+        if sku in existing:
+            old = existing[sku]
+            # 逐个字段对比，有变化才更新
+            changed = False
+            for field in ("name", "stock", "availableStock", "lockedStock", "imgUrl", "skuNo"):
+                if str(data.get(field, "")) != str(old.get(field, "")):
+                    changed = True
+                    break
+            if changed:
+                _baas_req("oms_products", "update", {
+                    "id": old["id"],
+                    "name": data["name"],
+                    "stock": data["stock"],
+                    "availableStock": data["availableStock"],
+                    "lockedStock": data["lockedStock"],
+                    "imgUrl": data["imgUrl"],
+                    "skuNo": data["skuNo"],
+                    "updatedAt": data["updatedAt"]
+                })
+                updated += 1
+            else:
+                skipped += 1
+        else:
+            # 新增 SKU
+            _baas_req("oms_products", "add", {
+                "sku": sku, "skuNo": data["skuNo"],
+                "name": data["name"],
+                "stock": data["stock"],
+                "availableStock": data["availableStock"],
+                "lockedStock": data["lockedStock"],
+                "imgUrl": data["imgUrl"],
+                "updatedAt": data["updatedAt"]
+            })
+            added += 1
+        # BaaS 限流保护
+        total_writes = added + updated
+        if total_writes > 0 and total_writes % 50 == 0:
+            time.sleep(1)
+
+    print(f"      ➕ 新增 {added} / ✏️ 更新 {updated} / ⏭️ 跳过 {skipped}")
+
+    # 5. 更新日志和统计
     elapsed = time.time() - start
     log_entry = {"time": datetime.now().isoformat(timespec="seconds"),
                  "success": True, "total": len(merged),
+                 "added": added, "updated": updated, "skipped": skipped,
                  "elapsed": f"{elapsed:.0f}s"}
     save_oms_field("lastSync", log_entry["time"])
     save_oms_field("skuCount", len(merged))
@@ -257,7 +308,7 @@ def sync(fresh_token=None):
     save_oms_field("syncLog", logs[:50])
 
     print(f"  ✅ 同步完成 ({elapsed:.0f}s): {len(merged)} SKU")
-    return {"success": True, "total": len(merged), "elapsed": f"{elapsed:.0f}s"}
+    return {"success": True, "total": len(merged), "added": added, "updated": updated, "skipped": skipped, "elapsed": f"{elapsed:.0f}s"}
 
 # ==================== 全量校准同步（覆盖 products 库存） ====================
 
