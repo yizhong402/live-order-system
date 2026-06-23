@@ -132,11 +132,13 @@ def ensure_auth(fresh_token=None):
             d = r.json().get("data", {})
             if d.get("accessToken"):
                 at, uid = d["accessToken"], d.get("userId", 0)
+                # expireIn 是有效秒数，需转为绝对时间戳
+                expire_seconds = d.get("expireIn", 3600)
                 _save_cache({"accessToken": at, "refreshToken": d.get("refreshToken", cache["refreshToken"]),
-                             "userId": uid, "expireAt": d.get("expireIn", now_ms + 3600000)})
+                             "userId": uid, "expireAt": now_ms + expire_seconds * 1000})
                 return True
-        except:
-            pass
+        except Exception as e_refresh:
+            print(f"  ⚠️ refreshToken 续期失败: {e_refresh}")
 
     if not fresh_token:
         return False
@@ -151,8 +153,10 @@ def ensure_auth(fresh_token=None):
         timeout=15, verify=False)
     d = r.json()["data"]
     at, uid = d["accessToken"], d.get("userId", 0)
+    # expireIn 是有效秒数，需转为绝对时间戳
+    expire_seconds = d.get("expireIn", 3600)
     _save_cache({"accessToken": at, "refreshToken": d.get("refreshToken", ""),
-                 "userId": uid, "expireAt": d.get("expireIn", now_ms + 3600000)})
+                 "userId": uid, "expireAt": now_ms + expire_seconds * 1000})
     return True
 
 def _sign(path):
