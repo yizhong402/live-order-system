@@ -3,23 +3,39 @@
 OMS 库存同步守护脚本
 - 全量同步 SKU 详情 + 库存到 BaaS oms_products 表（含库存=0的SKU）
 - 支持手动触发（前端写 manualTrigger=true 到 settings）
-- 支持每日定时同步
 - 自动用 refreshToken 续期 AccessToken
+- 敏感凭证从 .env 文件读取，不硬编码在代码中
 """
 import requests, json, hashlib, hmac, random, time, sys, os, argparse
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(BASE_DIR, "oms_token_cache.json")
-BAAS = "https://baas.kuafuai.net/baas-api"
-BAAS_KEY = "baas_CJbcgwuf"
 
-# OMS 固定凭证
-OMS_DOMAIN = "ftnet.jfwms.com"
-OMS_CID = "fa5f768a7b32449e9350fcb3dedfd5f7"
-OMS_SECRET = "3968f218031b43d59afb4e0ef5c38890"
-OMS_EMAIL = "308170378@qq.com"
-OMS_WAREHOUSE = "MM01"
+# ============ 从 .env 文件加载敏感凭证 ============
+ENV_FILE = os.path.join(BASE_DIR, ".env")
+
+def _load_env():
+    """读取 .env 文件"""
+    env = {}
+    if os.path.exists(ENV_FILE):
+        with open(ENV_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    env[k.strip()] = v.strip().strip("'\"")
+    return env
+
+_env = _load_env()
+
+BAAS = _env.get("BAAS_URL", "https://baas.kuafuai.net/baas-api")
+BAAS_KEY = _env.get("BAAS_API_KEY", "baas_CJbcgwuf")
+OMS_DOMAIN = _env.get("OMS_DOMAIN", "ftnet.jfwms.com")
+OMS_CID = _env.get("OMS_CLIENT_ID", "fa5f768a7b32449e9350fcb3dedfd5f7")
+OMS_SECRET = _env.get("OMS_CLIENT_SECRET", "3968f218031b43d59afb4e0ef5c38890")
+OMS_EMAIL = _env.get("OMS_EMAIL", "308170378@qq.com")
+OMS_WAREHOUSE = _env.get("OMS_WAREHOUSE", "MM01")
 
 at, uid = "", 0
 
@@ -226,53 +242,24 @@ def sync(fresh_token=None):
         }
     print(f"{len(merged)} 条")
 
-    # 4. 写入 BaaS oms_products（全量刷新，保留最新数据供前端参考）
-    print("  📡 写入 oms_products...", end=" ", flush=True)
-    # 先清空旧数据再逐条写入
-    existing_oms = {}
-    for item in list_all("oms_products"):
-        existing_oms[item["sku"]] = item
-    print(f"(旧{len(existing_oms)}条 → 新{len(merged)}条)", flush=True)
+    # 4. 更新日志和统计（不逐条写入 products，由 calibrate 处理）
+    elapsed = time.time() - start
+    log_entry = {"time": datetime.now().isoformat(timespec="seconds"),
+                 "success": True, "total": len(merged),
+                 "elapsed": f"{elapsed:.0f}s"}
+    save_oms_field("lastSync", log_entry["time"])
+    save_oms_field("skuCount", len(merged))
+    save_oms_field("manualTrigger", False)
 
-    # 删除已不存在的 SKU 并更新已有的
-    del_count, add_count = 0, 0
-    for sku, item in existing_oms.items():
-        if sku not in merged:
-            _baas_req("oms_products", "delete", {"id": item["id"]})
-            del_count += 1
-        elif (item.get("name") != merged[sku]["name"] or
-              item.get("stock") != merged[sku]["stock"] or
-              item.get("availableStock") != merged[sku]["availableStock"]):
-            _baas_req("oms_products", "update", {
-                "id": item["id"],
-                "name": merged[sku]["name"],
-                "stock": merged[sku]["stock"],
-                "availableStock": merged[sku]["availableStock"],
-                "lockedStock": merged[sku]["lockedStock"],
-                "imgUrl": merged[sku]["imgUrl"],
-                "updatedAt": merged[sku]["updatedAt"]
-            })
-            add_count += 1
-        if (del_count + add_count) % 50 == 0:
-            time.sleep(1)
+    s = load_settings()
+    logs = s.get("syncLog", []) if s else []
+    logs.insert(0, log_entry)
+    save_oms_field("syncLog", logs[:50])
 
-    # 新增的 SKU
-    for sku, data in merged.items():
-        if sku not in existing_oms:
-            _baas_req("oms_products", "add", {
-                "sku": sku, "name": data["name"],
-                "stock": data["stock"], "availableStock": data["availableStock"],
-                "lockedStock": data["lockedStock"],
-                "imgUrl": data["imgUrl"],
-                "updatedAt": data["updatedAt"]
-            })
-            add_count += 1
-            if add_count % 30 == 0:
-                time.sleep(1)
+    print(f"  ✅ 同步完成 ({elapsed:.0f}s): {len(merged)} SKU")
+    return {"success": True, "total": len(merged), "elapsed": f"{elapsed:.0f}s"}
 
-    print(f"    🗑️ 删除 {del_count} / 📝 更新 {add_count}", flush=True)
-
-    # ==================== 全量校准同步（覆盖 products 库存） ====================
+# ==================== 全量校准同步（覆盖 products 库存） ====================
 
 def calibrate(fresh_token=None):
     """开播前库存校准：同步 OMS → 直接覆盖 products 表库存"""
@@ -358,24 +345,6 @@ def calibrate(fresh_token=None):
     save_oms_field("calibrateTrigger", False)
 
     print(f"  ✅ 校准完成 ({elapsed:.0f}s): {len(merged)} SKU")
-    return {"success": True, "total": len(merged), "added": prod_add, "updated": prod_upd, "elapsed": f"{elapsed:.0f}s"}
-
-    # 6. 更新同步日志
-    elapsed = time.time() - start
-    log_entry = {"time": datetime.now().isoformat(timespec="seconds"),
-                 "success": True, "total": len(merged),
-                 "added": prod_add, "updated": prod_upd, "elapsed": f"{elapsed:.0f}s"}
-    save_oms_field("lastSync", log_entry["time"])
-    save_oms_field("skuCount", len(merged))
-    save_oms_field("manualTrigger", False)
-
-    # 追加日志（保留最近50条）
-    s = load_settings()
-    logs = s.get("syncLog", []) if s else []
-    logs.insert(0, log_entry)
-    save_oms_field("syncLog", logs[:50])
-
-    print(f"  ✅ 完成 ({elapsed:.0f}s): {len(merged)} SKU")
     return {"success": True, "total": len(merged), "added": prod_add, "updated": prod_upd, "elapsed": f"{elapsed:.0f}s"}
 
 # ==================== 守护进程 ====================

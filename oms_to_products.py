@@ -3,20 +3,36 @@
 一次性的 OMS → products 表同步工具
 - 从 OMS API 拉 SKU 详情 + 库存
 - 合并数据后写入 BaaS products 表（商品管理）
-- 已有 996 条，新增 ~2000+ 条
 """
 import requests, json, hashlib, hmac, random, time, sys, os
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(BASE_DIR, "oms_token_cache.json")
-BAAS = "https://baas.kuafuai.net/baas-api"
-BAAS_KEY = "baas_CJbcgwuf"
-OMS_DOMAIN = "ftnet.jfwms.com"
-OMS_CID = "fa5f768a7b32449e9350fcb3dedfd5f7"
-OMS_SECRET = "3968f218031b43d59afb4e0ef5c38890"
-OMS_EMAIL = "308170378@qq.com"
-OMS_WAREHOUSE = "MM01"
+
+# ============ 从 .env 文件加载敏感凭证 ============
+ENV_FILE = os.path.join(BASE_DIR, ".env")
+
+def _load_env():
+    env = {}
+    if os.path.exists(ENV_FILE):
+        with open(ENV_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    env[k.strip()] = v.strip().strip("'\"")
+    return env
+
+_env = _load_env()
+
+BAAS = _env.get("BAAS_URL", "https://baas.kuafuai.net/baas-api")
+BAAS_KEY = _env.get("BAAS_API_KEY", "baas_CJbcgwuf")
+OMS_DOMAIN = _env.get("OMS_DOMAIN", "ftnet.jfwms.com")
+OMS_CID = _env.get("OMS_CLIENT_ID", "fa5f768a7b32449e9350fcb3dedfd5f7")
+OMS_SECRET = _env.get("OMS_CLIENT_SECRET", "3968f218031b43d59afb4e0ef5c38890")
+OMS_EMAIL = _env.get("OMS_EMAIL", "308170378@qq.com")
+OMS_WAREHOUSE = _env.get("OMS_WAREHOUSE", "MM01")
 
 at, uid = "", 0
 

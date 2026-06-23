@@ -3,3 +3,12 @@ oms_token_cache.json
 __pycache__/
 baas-config.json
 project.zip
+
+# 敏感凭证 - 不提交到 Git
+.env
+oms_config.json
+oms_watchdog.log
+
+# 运行时文件
+oms_watchdog.sh
+oms_token_cache.json
