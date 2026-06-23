@@ -351,8 +351,10 @@ def calibrate(fresh_token=None):
         }
     print(f"{len(merged)} 条")
 
-    # 4. 写入 products 表（覆盖库存！⚠️ 仅开盘前使用）
-    print("  📡 写入 products（覆盖库存）...", end=" ", flush=True)
+    # 4. 写入 products 表（覆盖可用库存！⚠️ 仅开播前使用）
+    #    stock = availableNum（可用库存），不是 totalNum（总库存）
+    #    因为发货会占用库存，总库存中已锁定的部分不可售
+    print("  📡 写入 products（覆盖可用库存）...", end=" ", flush=True)
     prod_existing = {}
     for item in list_all("products"):
         prod_existing[item["sku"]] = item
@@ -363,15 +365,17 @@ def calibrate(fresh_token=None):
         if sku in prod_existing:
             old = prod_existing[sku]
             _baas_req("products", "update", {
-                "id": old["id"], "stock": data["stock"],
-                "original_stock": data["stock"],
+                "id": old["id"],
+                "stock": data["availableStock"],
+                "original_stock": data["availableStock"],
                 "name": data["name"], "image_url": data["imgUrl"]
             })
             prod_upd += 1
         else:
             _baas_req("products", "add", {
                 "sku": sku, "name": data["name"],
-                "stock": data["stock"], "original_stock": data["stock"],
+                "stock": data["availableStock"],
+                "original_stock": data["availableStock"],
                 "image_url": data["imgUrl"], "price_cny": 0, "price_usd": 0,
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
