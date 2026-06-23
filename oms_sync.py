@@ -231,53 +231,11 @@ def sync(fresh_token=None):
     # 跳过 oms_products 中间表（数据已全，写入太慢）
     print("  📡 oms_products 已有 3199 条（跳过）", flush=True)
 
-    # 5. 写入 products 表（商品管理）
-    print("  📡 比对 products 差异...", end=" ", flush=True)
-    prod_existing = {}
-    for item in list_all("products"):
-        prod_existing[item["sku"]] = item
-    print(f"(共{len(prod_existing)}条)", flush=True)
-
-    # 只找出需要更新的（库存变化）和新增的
-    to_add, to_update = [], []
-    for sku, data in merged.items():
-        if sku in prod_existing:
-            old = prod_existing[sku]
-            # 库存变化 OR 数据不全（缺图缺名）都更新
-            if old.get("stock") != data["stock"] \
-                or not old.get("image_url") \
-                or not old.get("name") \
-                or (old.get("name","") == old.get("sku","")):
-                to_update.append((sku, data))
-        else:
-            to_add.append((sku, data))
-
-    print(f"    ➕ 新增 {len(to_add)}, ✏️ 更新 {len(to_update)}", flush=True)
-
+    # ❌ 不再自动写入 products 表（防止覆盖直播预扣库存）
+    # OMS 仓库发货滞后，直播预扣库存才是实时数据
+    # 手动同步时只更新 oms_products 表供参考，products 表库存不变
     prod_add, prod_upd = 0, 0
-    for sku, data in to_add:
-        _baas_req("products", "add", {
-            "sku": sku, "name": data["name"],
-            "stock": data["stock"], "original_stock": data["stock"],
-            "image_url": data["imgUrl"], "price_cny": 0, "price_usd": 0,
-            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        })
-        prod_add += 1
-        if prod_add % 30 == 0:
-            time.sleep(1)
-
-    for sku, data in to_update:
-        old = prod_existing[sku]
-        _baas_req("products", "update", {
-            "id": old["id"], "stock": data["stock"],
-            "original_stock": data["stock"],
-            "name": data["name"], "image_url": data["imgUrl"]
-        })
-        prod_upd += 1
-        if prod_upd % 30 == 0:
-            time.sleep(1)
-
-    print(f"    ✅ 新增 {prod_add} / 更新 {prod_upd}", flush=True)
+    print(f"    ⏭️ 跳过 products 表写入（保护直播预扣库存）", flush=True)
 
     # 6. 更新同步日志
     elapsed = time.time() - start
@@ -301,38 +259,21 @@ def sync(fresh_token=None):
 
 def daemon():
     print(f"\n{'='*50}")
-    print(f"  OMS 同步守护进程启动 @ {datetime.now().isoformat()}")
+    print(f"  OMS 守护进程启动 @ {datetime.now().isoformat()}")
+    print(f"  说明: 仅响应手动触发，不做自动同步（保护直播预扣库存）")
     print(f"{'='*50}")
 
-    # 首次同步
-    sync()
-
-    last_auto = time.time()
     while True:
         try:
             time.sleep(30)
             
-            # 检查手动触发
+            # 只检查手动触发，不做自动同步
             s = load_settings()
             if s and s.get("manualTrigger"):
                 print(f"[{datetime.now().isoformat()}] 🚀 手动触发同步")
                 sync()
+                save_oms_field("manualTrigger", False)
                 continue
-
-            # 每日定时
-            if s and s.get("scheduleTime"):
-                now = datetime.now()
-                if now.strftime("%H:%M") == s["scheduleTime"] and s.get("lastScheduledDate") != now.strftime("%Y-%m-%d"):
-                    print(f"[{datetime.now().isoformat()}] ⏰ 定时同步: {s['scheduleTime']}")
-                    sync()
-                    save_oms_field("lastScheduledDate", now.strftime("%Y-%m-%d"))
-                    continue
-
-            # 每 3 小时自动同步
-            if time.time() - last_auto >= 10800:
-                print(f"[{datetime.now().isoformat()}] ⏰ 3小时同步")
-                sync()
-                last_auto = time.time()
 
         except KeyboardInterrupt:
             print("\n⏹️  停止")
@@ -343,6 +284,7 @@ def daemon():
 
 
 if __name__ == "__main__":
+    import argparse
     p = argparse.ArgumentParser()
     p.add_argument("--token", help="一次性授权 Token")
     p.add_argument("--daemon", action="store_true", help="守护进程模式")

@@ -78,15 +78,7 @@ function renderOMSSyncPanel() {
       '<span id="omsSyncStatus" style="font-size:12px;color:var(--text-muted);display:none;"></span>' +
     '</div>' +
 
-    // 每日定时设置
-    '<div style="margin-bottom:15px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;">' +
-      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-        '<span style="font-size:13px;">⏰ 每日定时同步:</span>' +
-        '<input type="time" id="omsScheduleTime" value="' + scheduleTime + '" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:rgba(0,0,0,0.3);color:#fff;font-size:13px;">' +
-        '<button class="btn btn-success" onclick="saveOMSSchedule()" style="padding:4px 10px;font-size:12px;">保存</button>' +
-      '</div>' +
-      '<div style="margin-top:5px;font-size:11px;color:var(--text-muted);">设置后每天该时间自动触发一次同步（需要守护进程运行）</div>' +
-    '</div>' +
+    // ⏰ 定时同步已移除（防止覆盖直播预扣库存）
     '</div>';
 }
 
