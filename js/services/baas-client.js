@@ -52,7 +52,22 @@
                 }));
 
                 const oRes = await client.db.from('orders').list();
-                if (oRes.success) orders = oRes.data || [];
+                if (oRes.success) {
+                    orders = (oRes.data || []).map(function(o){ return {
+                        id: o.id,
+                        round: o.round,
+                        title: o.title,
+                        skus: (function(){ try { var j = JSON.parse(o.skus_json||'[]'); return Array.isArray(j) ? j : (j.skus||[]); } catch(e){ return []; } })(),
+                        auctionPrice: (function(){ try { var j = JSON.parse(o.skus_json||'{}'); return Array.isArray(j) ? 0 : (j.auctionPrice||0); } catch(e){ return 0; } })(),
+                        note: (function(){ try { var j = JSON.parse(o.skus_json||'{}'); return Array.isArray(j) ? '' : (j.note||''); } catch(e){ return ''; } })(),
+                        sessionId: o.session_id || null,
+                        sessionDate: o.session_date || '',
+                        sessionTime: o.session_time || '',
+                        sessionAnchor: o.session_anchor || '',
+                        timestamp: o.created_at ? o.created_at.replace('T',' ').substring(0,19) : new Date().toLocaleString('zh-CN'),
+                        isOverSold: false
+                    };});
+                }
 
                 const hRes = await client.db.from('live_sessions').list().order('created_at', 'desc');
                 if (hRes.success) liveHistory = hRes.data || [];

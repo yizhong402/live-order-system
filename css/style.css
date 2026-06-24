@@ -172,8 +172,6 @@
         }
         .page.active {
             display: block;
-            height: 100%;
-            overflow-y: auto;
         }
 
         /* ==================== PANELS / CARDS ==================== */

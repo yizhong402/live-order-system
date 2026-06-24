@@ -224,19 +224,19 @@
         function refreshActiveSessionsFromCloud() {
             // 从云端加载活跃场次
             try {
-                client.db.from('active_sessions').list().then(res => {
+                client.db.from('live_sessions').list().then(res => {
                     if (res.success && res.data) {
                         res.data.forEach(s => {
-                            if (!activeSessions[s.id] && s.sessionId) {
-                                // 重建场次对象（主要字段）
-                                activeSessions[s.sessionId] = {
-                                    id: s.sessionId,
+                            if (s.status === 'active' && !activeSessions[s.id]) {
+                                const sid = Date.now() + Math.floor(Math.random() * 1000);
+                                activeSessions[sid] = {
+                                    id: sid,
                                     sessionTitle: s.title || '',
                                     date: s.date || '',
                                     time: s.time || '',
                                     anchor: s.anchor || '',
-                                    sessionNumber: s.session_no || 1,
-                                    title: s.sessionTitle || s.title || '',
+                                    sessionNumber: s.session_no || s.id || 1,
+                                    title: s.title || '',
                                     startTime: s.created_at || '',
                                     created_at: s.created_at || '',
                                     currentRound: 1,
@@ -669,8 +669,12 @@
                 const existingOrder = orders.find(o => o.round === currentRound && o.title.startsWith(baseTitle));
                 
                 if (existingOrder) {
-                    skuKeys.forEach(sku => {
-                        const existing = existingOrder.skus.find(item => item.sku === sku);
+                    var auctionPrice = parseFloat(document.getElementById('auctionPrice').value) || 0;
+                    var orderNote = document.getElementById('orderNote').value.trim();
+                    if (auctionPrice > 0) existingOrder.auctionPrice = auctionPrice;
+                    if (orderNote) existingOrder.note = orderNote;
+                    skuKeys.forEach(function(sku){
+                        var existing = existingOrder.skus.find(function(item){ return item.sku === sku; });
                         if (existing) {
                             existing.quantity += currentSkus[sku];
                         } else {
@@ -681,6 +685,10 @@
                         if (p) p.stock -= currentSkus[sku];
                     });
                     existingOrder.timestamp = new Date().toLocaleString('zh-CN');
+                    // 更新 BaaS（异步，不阻塞前端）
+                    client.db.from('orders').update(existingOrder.id, {
+                        skus_json: JSON.stringify({skus: existingOrder.skus || [], auctionPrice: existingOrder.auctionPrice || 0, note: existingOrder.note || ''})
+                    }).then(function(){}, function(e){ console.error('☁️ 合并更新失败:', e); });
                     const indicator = document.getElementById('scanIndicator');
                     indicator.innerHTML = `<p style="color:#10b981;">✅ ${existingOrder.title} 已合并保存！</p>`;
                     indicator.classList.add('active');
@@ -689,16 +697,17 @@
                         indicator.innerHTML = '<p>🎯 准备好扫码枪，将光标放在输入框中扫描</p>';
                     }, 2000);
                 } else {
-                    const skuItems = skuKeys.map(sku => ({
-                        sku: sku,
-                        quantity: currentSkus[sku]
-                    }));
+                    var auctionPrice = parseFloat(document.getElementById('auctionPrice').value) || 0;
+                    var orderNote = document.getElementById('orderNote').value.trim();
+                    var skuItems = skuKeys.map(function(sku){ return { sku: sku, quantity: currentSkus[sku] }; });
                     
-                    const order = {
+                    var order = {
                         id: Date.now(),
                         round: currentRound,
-                        title: `${baseTitle} ${currentRound}#`,
+                        title: baseTitle + ' ' + currentRound + '#',
                         skus: skuItems,
+                        auctionPrice: auctionPrice,
+                        note: orderNote,
                         timestamp: new Date().toLocaleString('zh-CN'),
                         sessionId: currentSession ? currentSession.id : null,
                         sessionDate: currentSession ? currentSession.date : null,
@@ -706,7 +715,13 @@
                         sessionAnchor: currentSession ? currentSession.anchor : null
                     };
                     
-                    orders.unshift(order); client.db.from("orders").insert().values({ round: order.round, title: order.title, skus_json: JSON.stringify(order.skus||[]), session_id: order.sessionId||0, created_at: new Date().toISOString().slice(0,19).replace("T"," ") }).then(function(){}, function(e){ console.error('☁️ nextRound保存失败:', e); });
+                    orders.unshift(order);
+                    client.db.from('orders').insert().values({
+                        round: order.round, title: order.title,
+                        skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''}),
+                        session_id: order.sessionId||0,
+                        created_at: new Date().toISOString().slice(0,19).replace('T',' ')
+                    }).then(function(){}, function(e){ console.error('☁️ nextRound保存失败:', e); });
                     // 虚拟扣库存
                     skuKeys.forEach(function(sku){
                         var p = products.find(function(x){ return x.sku === sku; });
@@ -732,7 +747,7 @@
             document.getElementById('orderNote').value = '';
             updateOrderList();
             updateRealTimeOrderList();  // 更新实时订单记录面板
-            if (typeof updateDashboard === 'function') updateDashboard();
+            if (typeof renderDashboard === 'function') renderDashboard();
             document.getElementById('skuInput').focus();
         }
         
@@ -742,8 +757,12 @@
                 if (baseTitle && Object.keys(currentSkus).length > 0) {
                     const existingOrder = orders.find(o => o.round === currentRound && o.title.startsWith(baseTitle));
                     if (existingOrder) {
-                        Object.keys(currentSkus).forEach(sku => {
-                            const existing = existingOrder.skus.find(item => item.sku === sku);
+                        var auctionPrice = parseFloat(document.getElementById('auctionPrice').value) || 0;
+                        var orderNote = document.getElementById('orderNote').value.trim();
+                        if (auctionPrice > 0) existingOrder.auctionPrice = auctionPrice;
+                        if (orderNote) existingOrder.note = orderNote;
+                        Object.keys(currentSkus).forEach(function(sku){
+                            var existing = existingOrder.skus.find(function(item){ return item.sku === sku; });
                             if (existing) {
                                 existing.quantity += currentSkus[sku];
                             } else {
@@ -751,27 +770,40 @@
                             }
                         });
                         existingOrder.timestamp = new Date().toLocaleString('zh-CN');
+                        // 更新 BaaS
+                        client.db.from('orders').update(existingOrder.id, {
+                            skus_json: JSON.stringify({skus: existingOrder.skus || [], auctionPrice: existingOrder.auctionPrice || 0, note: existingOrder.note || ''})
+                        }).then(function(){}, function(e){ console.error('☁️ prevRound合并更新失败:', e); });
                     } else {
-                        const skuItems = Object.keys(currentSkus).map(sku => ({
-                            sku: sku,
-                            quantity: currentSkus[sku]
-                        }));
-                        orders.unshift({
-                            id: Date.now(),
+                        var auctionPrice2 = parseFloat(document.getElementById('auctionPrice').value) || 0;
+                        var orderNote2 = document.getElementById('orderNote').value.trim();
+                        var skuItems = Object.keys(currentSkus).map(function(sku){ return { sku: sku, quantity: currentSkus[sku] }; });
+                        var oid3 = Date.now();
+                        var newOrder = {
+                            id: oid3,
                             round: currentRound,
-                            title: `${baseTitle} ${currentRound}#`,
+                            title: baseTitle + ' ' + currentRound + '#',
                             skus: skuItems,
+                            auctionPrice: auctionPrice2,
+                            note: orderNote2,
                             timestamp: new Date().toLocaleString('zh-CN'),
                             sessionId: currentSession ? currentSession.id : null,
                             sessionDate: currentSession ? currentSession.date : null,
                             sessionTime: currentSession ? currentSession.time : null,
                             sessionAnchor: currentSession ? currentSession.anchor : null
-                        });
+                        };
+                        orders.unshift(newOrder);
+                        client.db.from('orders').insert().values({
+                            round: currentRound, title: baseTitle + ' ' + currentRound + '#',
+                            skus_json: JSON.stringify({skus: skuItems, auctionPrice: auctionPrice2||0, note: orderNote2||''}),
+                            session_id: currentSession ? currentSession.id : 0,
+                            created_at: new Date().toISOString().slice(0,19).replace('T',' ')
+                        }).then(function(){}, function(e){ console.error('☁️ prevRound保存失败:', e); });
                     }
                     saveToLocalStorage();
                     updateOrderList();
                     updateRealTimeOrderList();
-                    if (typeof updateDashboard === 'function') updateDashboard();
+                    if (typeof renderDashboard === 'function') renderDashboard();
                 }
                 
                 currentRound--;

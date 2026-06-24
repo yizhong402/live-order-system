@@ -146,12 +146,8 @@
                 // 异步写 BaaS，不阻塞
                 client.db.from('orders').insert().values({
                     round: order.round, title: order.title,
-                    skus_json: JSON.stringify(order.skus||[]),
+                    skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''}),
                     session_id: order.sessionId||0,
-                    auction_price: order.auctionPrice||0,
-                    note: order.note||'',
-                    session_date: order.sessionDate||'',
-                    session_anchor: order.sessionAnchor||'',
                     created_at: new Date().toISOString().slice(0,19).replace('T',' ')
                 }).then(function(){}, function(e){ console.error('☁️ 订单保存失败:', e); });
                 
@@ -165,7 +161,7 @@
                 updateOrderList();
                 updateRealTimeOrderList();
                 saveToLocalStorage();
-                if (typeof updateDashboard === 'function') updateDashboard();
+                if (typeof renderDashboard === 'function') renderDashboard();
                 
                 // 清空输入
                 document.getElementById('auctionPrice').value = '';
@@ -267,14 +263,30 @@
         
         function saveQuickAuctionPrice(index, value) {
             const price = parseFloat(value) || 0;
-            orders[index].auctionPrice = price;
+            const order = orders[index];
+            if (!order) return;
+            order.auctionPrice = price;
             saveToLocalStorage();
+            // 同步到 BaaS (嵌入skus_json)
+            if (order.id) {
+                client.db.from('orders').update(order.id, {
+                    skus_json: JSON.stringify({skus: order.skus || [], auctionPrice: order.auctionPrice || 0, note: order.note || ''})
+                }).then(function(){}, function(e){ console.error('☁️ 快速更新金额失败:', e); });
+            }
         }
         
         function saveQuickNote(index, value) {
-            orders[index].note = value.trim();
+            const order = orders[index];
+            if (!order) return;
+            order.note = value.trim();
             saveToLocalStorage();
             updateOrderList();
+            // 同步到 BaaS (嵌入skus_json)
+            if (order.id) {
+                client.db.from('orders').update(order.id, {
+                    skus_json: JSON.stringify({skus: order.skus || [], auctionPrice: order.auctionPrice || 0, note: order.note || ''})
+                }).then(function(){}, function(e){ console.error('☁️ 快速更新备注失败:', e); });
+            }
         }
         
         function checkOverSold(order) {
@@ -436,6 +448,12 @@
             const amount = parseFloat(value) || 0;
             order.auctionPrice = amount;
             saveToLocalStorage();
+            // 同步到 BaaS (嵌入skus_json)
+            if (order.id) {
+                client.db.from('orders').update(order.id, {
+                    skus_json: JSON.stringify({skus: order.skus || [], auctionPrice: order.auctionPrice || 0, note: order.note || ''})
+                }).then(function(){}, function(e){ console.error('☁️ 实时订单金额更新失败:', e); });
+            }
         }
         
         function saveOrderNote(index, value) {
@@ -444,6 +462,12 @@
             
             order.note = value.trim();
             saveToLocalStorage();
+            // 同步到 BaaS (嵌入skus_json)
+            if (order.id) {
+                client.db.from('orders').update(order.id, {
+                    skus_json: JSON.stringify({skus: order.skus || [], auctionPrice: order.auctionPrice || 0, note: order.note || ''})
+                }).then(function(){}, function(e){ console.error('☁️ 实时订单备注更新失败:', e); });
+            }
         }
         
         function copySingleSku(sku) {
