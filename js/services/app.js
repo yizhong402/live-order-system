@@ -424,8 +424,14 @@
             // 兼容两种 timestamp 格式: ISO日期开头 或 本地日期开头(2026/6/24)
             function isToday(timestamp) {
                 if (!timestamp) return false;
-                return timestamp.substring(0, 10) === todayStr ||
-                       timestamp.replace(/\//g, '-').substring(0, 10) === todayStr;
+                // 标准化日期: 统一转为 YYYY-MM-DD 格式
+                var norm = timestamp.replace(/\//g, '-');
+                var parts = norm.substring(0, 10).split('-');
+                if (parts.length === 3) {
+                    var y = parts[0], m = String(parseInt(parts[1])).padStart(2,'0'), d = String(parseInt(parts[2])).padStart(2,'0');
+                    return (y + '-' + m + '-' + d) === todayStr;
+                }
+                return norm.substring(0, 10) === todayStr;
             }
             const todayOrders = orders.filter(o => isToday(o.timestamp)).length;
             document.getElementById('dashTodayOrders').textContent = todayOrders;
@@ -579,7 +585,12 @@
             
             function normDate(ts) {
                 if (!ts) return '';
-                return ts.replace(/\//g, '-').substring(0, 10);
+                var norm = ts.replace(/\//g, '-').substring(0, 10);
+                var parts = norm.split('-');
+                if (parts.length === 3) {
+                    return parts[0] + '-' + String(parseInt(parts[1])).padStart(2,'0') + '-' + String(parseInt(parts[2])).padStart(2,'0');
+                }
+                return norm;
             }
             orders.forEach(o => {
                 if (!o.timestamp) return;
