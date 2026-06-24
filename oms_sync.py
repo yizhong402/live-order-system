@@ -132,13 +132,18 @@ def ensure_auth(fresh_token=None):
             d = r.json().get("data", {})
             if d.get("accessToken"):
                 at, uid = d["accessToken"], d.get("userId", 0)
-                # expireIn 是有效秒数，需转为绝对时间戳
-                expire_seconds = d.get("expireIn", 3600)
+                expire_val = d.get("expireIn", now_ms + 3600000)
+                # OMS API: expireIn 是绝对毫秒时间戳，直接使用；若不是则退化为 now+1h
+                expireAt = expire_val if expire_val > 10000000000000 else now_ms + expire_val * 1000
                 _save_cache({"accessToken": at, "refreshToken": d.get("refreshToken", cache["refreshToken"]),
-                             "userId": uid, "expireAt": now_ms + expire_seconds * 1000})
+                             "userId": uid, "expireAt": expireAt})
                 return True
+            else:
+                print(f"  ⚠️ refreshToken 续期失败: 返回无accessToken")
         except Exception as e_refresh:
             print(f"  ⚠️ refreshToken 续期失败: {e_refresh}")
+    else:
+        print(f"  ⚠️ 缓存中无 refreshToken，需要手动 --token 重新授权")
 
     if not fresh_token:
         return False
@@ -153,10 +158,11 @@ def ensure_auth(fresh_token=None):
         timeout=15, verify=False)
     d = r.json()["data"]
     at, uid = d["accessToken"], d.get("userId", 0)
-    # expireIn 是有效秒数，需转为绝对时间戳
-    expire_seconds = d.get("expireIn", 3600)
+    expire_val = d.get("expireIn", now_ms + 3600000)
+    # OMS API: expireIn 是绝对毫秒时间戳，直接使用
+    expireAt = expire_val if expire_val > 10000000000000 else now_ms + expire_val * 1000
     _save_cache({"accessToken": at, "refreshToken": d.get("refreshToken", ""),
-                 "userId": uid, "expireAt": now_ms + expire_seconds * 1000})
+                 "userId": uid, "expireAt": expireAt})
     return True
 
 def _sign(path):
@@ -467,7 +473,10 @@ def daemon():
                 print(f"[{now.isoformat()}] 🚀 手动触发同步")
                 result = sync()
                 save_oms_field("manualTrigger", False)
-                LAST_SYNC_HOUR = now.strftime("%Y-%m-%d %H")
+                if result.get("success"):
+                    LAST_SYNC_HOUR = now.strftime("%Y-%m-%d %H")
+                else:
+                    print(f"  ❌ 手动同步失败: {result.get('message', '未知错误')}")
                 continue
 
             # ===== 2. 手动触发校准 =====
@@ -475,10 +484,12 @@ def daemon():
                 print(f"[{now.isoformat()}] 🚀 库存校准触发")
                 result = calibrate()
                 save_oms_field("calibrateTrigger", False)
-                LAST_CALIBRATE_DATE = today
                 if result.get("success"):
+                    LAST_CALIBRATE_DATE = today
                     _push_negative_screen("OMS 库存校准完成",
                         f"校准 {result.get('total',0)} SKU，新增 {result.get('added',0)} 更新 {result.get('updated',0)}")
+                else:
+                    print(f"  ❌ 校准失败: {result.get('message', '未知错误')}")
                 continue
 
             # ===== 3. 定时校准（每日 scheduleTime） =====
@@ -489,10 +500,12 @@ def daemon():
                     if now.hour == sch_h and now.minute == sch_m:
                         print(f"[{now.isoformat()}] ⏰ 每日定时校准触发 ({schedule_time})")
                         result = calibrate()
-                        LAST_CALIBRATE_DATE = today
                         if result.get("success"):
+                            LAST_CALIBRATE_DATE = today
                             _push_negative_screen("OMS 每日库存校准",
                                 f"校准 {result.get('total',0)} SKU，新增 {result.get('added',0)} 更新 {result.get('updated',0)}")
+                        else:
+                            print(f"  ❌ 定时校准失败: {result.get('message', '未知错误')}")
                         continue
                 except (ValueError, IndexError):
                     pass
@@ -502,7 +515,10 @@ def daemon():
             if current_hour_tag != LAST_SYNC_HOUR and now.hour % 3 == 0 and now.minute == 0:
                 print(f"[{now.isoformat()}] 🔁 每3h自动同步触发")
                 result = sync()
-                LAST_SYNC_HOUR = current_hour_tag
+                if result.get("success"):
+                    LAST_SYNC_HOUR = current_hour_tag
+                else:
+                    print(f"  ❌ 定时同步失败: {result.get('message', '未知错误')} (下次重试)")
                 continue
 
         except KeyboardInterrupt:
