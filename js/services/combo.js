@@ -375,8 +375,6 @@
                     currentSkus[sku] = 1;
                 }
                 
-                product.stock--;
-                
                 if (product.stock < 3 && product.stock > 0) {
                     alert(`⚠️ ${sku} 即将售罄！剩余库存: ${product.stock}`);
                 }

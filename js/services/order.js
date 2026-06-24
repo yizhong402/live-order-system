@@ -56,74 +56,28 @@
         }
 
         function increaseQty(sku) {
-            const oldQty = currentSkus[sku];
             currentSkus[sku]++;
-            
-            const product = products.find(p => p.sku === sku);
-            if (product) {
-                product.stock--;
-                saveProducts();
-            }
-            
             updateSkuList();
         }
         
         function decreaseQty(sku) {
             if (currentSkus[sku] > 1) {
-                const oldQty = currentSkus[sku];
                 currentSkus[sku]--;
-                
-                const product = products.find(p => p.sku === sku);
-                if (product) {
-                    product.stock++;
-                    saveProducts();
-                }
-                
                 updateSkuList();
             }
         }
         
         function updateQty(sku, value) {
-            const oldQty = currentSkus[sku] || 0;
-            const newQty = Math.max(1, parseInt(value) || 1);
-            const diff = newQty - oldQty;
-            
-            if (diff !== 0) {
-                const product = products.find(p => p.sku === sku);
-                if (product) {
-                    product.stock -= diff;
-                    saveProducts();
-                }
-            }
-            
-            currentSkus[sku] = newQty;
+            currentSkus[sku] = Math.max(1, parseInt(value) || 1);
             updateSkuList();
         }
         
         function removeSku(sku) {
-            const qty = currentSkus[sku] || 0;
-            
-            const product = products.find(p => p.sku === sku);
-            if (product) {
-                product.stock += qty;
-                saveProducts();
-            }
-            
             delete currentSkus[sku];
             updateSkuList();
         }
         
         function clearSkus() {
-            // 归还已预扣的库存
-            for (const sku in currentSkus) {
-                const qty = currentSkus[sku];
-                if (qty > 0) {
-                    const product = products.find(p => p.sku === sku);
-                    if (product) {
-                        product.stock += qty;
-                    }
-                }
-            }
             currentSkus = {};
             saveProducts();
             updateSkuList();
@@ -818,11 +772,6 @@
                 currentSkus[sku]++;
             } else {
                 currentSkus[sku] = 1;
-            }
-            
-            if (product) {
-                product.stock--;
-                saveProducts();
             }
             
             updateSkuList();
