@@ -169,9 +169,9 @@
                     client_id: localId,
                     status: "active"
                 });
-                if (insResult && insResult.data && insResult.data.id) {
-                    // 使用BaaS ID作为session.id，确保刷新后一致
-                    var baasId = insResult.data.id;
+                if (insResult && insResult.data) {
+                    // BaaS insert 返回 data 为数字ID
+                    var baasId = typeof insResult.data === 'number' ? insResult.data : (insResult.data.id || insResult.data);
                     delete activeSessions[session.id];
                     session.id = baasId;
                     // 更新已有订单的sessionId
@@ -738,8 +738,8 @@
                                 session_id: order.sessionId||0,
                                 created_at: new Date().toISOString().slice(0,19).replace('T',' ')
                             });
-                            if (insResult && insResult.data && insResult.data.id) {
-                                order.id = insResult.data.id;
+                            if (insResult && insResult.data) {
+                                order.id = typeof insResult.data === 'number' ? insResult.data : (insResult.data.id || insResult.data);
                             }
                         } catch(e) { console.error('☁️ nextRound保存失败:', e); }
                         skuKeys.forEach(function(sku){

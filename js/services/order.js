@@ -149,7 +149,7 @@
                     skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''}),
                     session_id: order.sessionId||0,
                     created_at: new Date().toISOString().slice(0,19).replace('T',' ')
-                }).then(function(r){ if(r && r.data && r.data.id) order.id = r.data.id; }, function(e){ console.error('☁️ 订单保存失败:', e); });
+                }).then(function(r){ if(r && r.data) { order.id = typeof r.data === 'number' ? r.data : (r.data.id || r.data); } }, function(e){ console.error('☁️ 订单保存失败:', e); });
                 
                 // 虚拟扣库存
                 for (const sku of skuKeys) {
