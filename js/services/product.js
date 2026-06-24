@@ -186,6 +186,14 @@
             
             // 等几秒后刷新商品列表
             setTimeout(function() {
+                // 先更新 settings（包含 lastError）
+                client.db.from('settings').list().then(function(sr) {
+                    if (sr.success && sr.data && sr.data[0]) {
+                        var rawOms = sr.data[0].omsSync || '{}';
+                        try { systemSettings.omsSync = typeof rawOms === 'string' ? JSON.parse(rawOms) : rawOms; } catch(e) {}
+                        if (typeof updateCalibrateTimeDisplay === 'function') updateCalibrateTimeDisplay();
+                    }
+                }).catch(function(){});
                 client.db.from('products').list().then(function(res) {
                     if (res.success && res.data) {
                         products = res.data.map(function(p) { return {
@@ -212,8 +220,51 @@
 function updateCalibrateTimeDisplay() {
   var el = document.getElementById('calibrateTimeDisplay');
   if (!el) return;
-  var t = (systemSettings.omsSync && systemSettings.omsSync.scheduleTime) || '';
+  var oms = systemSettings.omsSync || {};
+  var t = oms.scheduleTime || '';
   el.textContent = t ? t : '未设置';
+
+  // ===== OMS 同步/校准状态显示 =====
+  var statusEl = document.getElementById('omsSyncStatus');
+  if (!statusEl) return;
+
+  var lastSync = oms.lastSync || '';
+  var lastError = oms.lastError;
+  var now = new Date();
+
+  // 1. 有未清除的错误 → 红色
+  if (lastError && lastError.message && lastError.message !== 'None') {
+    var errType = lastError.type === 'calibrate' ? '校准' : '同步';
+    var errTime = '';
+    if (lastError.time) {
+      try {
+        var d = new Date(lastError.time.replace(' ', 'T'));
+        errTime = d.toLocaleString('zh-CN');
+      } catch(e) { errTime = lastError.time; }
+    }
+    statusEl.innerHTML = '<span style="color:#ff4444;margin-left:8px;" title="' + lastError.time + '">⚠️ OMS ' + errType + '失败 (' + errTime + '): ' + escapeHtml(lastError.message) + '</span>';
+    return;
+  }
+
+  // 2. 检查是否有过 sync（没有 lastSync 说明从未成功同步过）
+  if (!lastSync) {
+    statusEl.innerHTML = '<span style="color:#ffaa00;margin-left:8px;">⚠️ OMS 未同步，请在系统设置页配置</span>';
+    return;
+  }
+
+  // 3. 检查是否超过 4h 未同步
+  try {
+    var lastSyncDate = new Date(lastSync.replace(' ', 'T'));
+    var hoursSinceSync = (now - lastSyncDate) / 3600000;
+    if (hoursSinceSync > 4) {
+      var h = Math.floor(hoursSinceSync);
+      statusEl.innerHTML = '<span style="color:#ffaa00;margin-left:8px;" title="上次同步: ' + lastSync + '">⚠️ OMS 已 ' + h + 'h 未同步</span>';
+      return;
+    }
+  } catch(e) { /* ignore date parse errors */ }
+
+  // 4. 一切正常
+  statusEl.innerHTML = '<span style="color:#66cc66;margin-left:8px;">✅ OMS 正常</span>';
 }
 
 // 商品管理页-跳转到设置页

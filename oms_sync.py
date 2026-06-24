@@ -219,7 +219,10 @@ def sync(fresh_token=None):
     start = time.time()
 
     if not ensure_auth(fresh_token):
-        return {"success": False, "message": "认证失败，需要一次性授权 Token (--token)"}
+        err_msg = "认证失败：OMS token 无效或过期"
+        save_oms_field("lastError", {"time": datetime.now().isoformat(timespec="seconds"),
+                                      "type": "sync", "message": err_msg})
+        return {"success": False, "message": err_msg}
 
     print(f"[{datetime.now().isoformat()}] 开始全量同步...")
 
@@ -317,6 +320,9 @@ def sync(fresh_token=None):
     logs.insert(0, log_entry)
     save_oms_field("syncLog", logs[:50])
 
+    # 成功时清除上次错误
+    save_oms_field("lastError", None)
+
     print(f"  ✅ 同步完成 ({elapsed:.0f}s): {len(merged)} SKU")
     return {"success": True, "total": len(merged), "added": added, "updated": updated, "skipped": skipped, "elapsed": f"{elapsed:.0f}s"}
 
@@ -328,7 +334,10 @@ def calibrate(fresh_token=None):
     start = time.time()
 
     if not ensure_auth(fresh_token):
-        return {"success": False, "message": "认证失败，需要一次性授权 Token (--token)"}
+        err_msg = "认证失败：OMS token 无效或过期"
+        save_oms_field("lastError", {"time": datetime.now().isoformat(timespec="seconds"),
+                                      "type": "calibrate", "message": err_msg})
+        return {"success": False, "message": err_msg}
 
     print(f"[{datetime.now().isoformat()}] 📡 开始全量校准同步...")
 
@@ -409,6 +418,9 @@ def calibrate(fresh_token=None):
     # 清除校准触发标记
     save_oms_field("calibrateTrigger", False)
 
+    # 成功时清除上次错误
+    save_oms_field("lastError", None)
+
     print(f"  ✅ 校准完成 ({elapsed:.0f}s): {len(merged)} SKU")
     return {"success": True, "total": len(merged), "added": prod_add, "updated": prod_upd, "elapsed": f"{elapsed:.0f}s"}
 
@@ -476,7 +488,10 @@ def daemon():
                 if result.get("success"):
                     LAST_SYNC_HOUR = now.strftime("%Y-%m-%d %H")
                 else:
-                    print(f"  ❌ 手动同步失败: {result.get('message', '未知错误')}")
+                    err_msg = result.get('message', '未知错误')
+                    print(f"  ❌ 手动同步失败: {err_msg}")
+                    save_oms_field("lastError", {"time": now.isoformat(timespec="seconds"),
+                                                  "type": "sync", "message": err_msg})
                 continue
 
             # ===== 2. 手动触发校准 =====
@@ -489,7 +504,10 @@ def daemon():
                     _push_negative_screen("OMS 库存校准完成",
                         f"校准 {result.get('total',0)} SKU，新增 {result.get('added',0)} 更新 {result.get('updated',0)}")
                 else:
-                    print(f"  ❌ 校准失败: {result.get('message', '未知错误')}")
+                    err_msg = result.get('message', '未知错误')
+                    print(f"  ❌ 校准失败: {err_msg}")
+                    save_oms_field("lastError", {"time": now.isoformat(timespec="seconds"),
+                                                  "type": "calibrate", "message": err_msg})
                 continue
 
             # ===== 3. 定时校准（每日 scheduleTime） =====
@@ -505,7 +523,10 @@ def daemon():
                             _push_negative_screen("OMS 每日库存校准",
                                 f"校准 {result.get('total',0)} SKU，新增 {result.get('added',0)} 更新 {result.get('updated',0)}")
                         else:
-                            print(f"  ❌ 定时校准失败: {result.get('message', '未知错误')}")
+                            err_msg = result.get('message', '未知错误')
+                            print(f"  ❌ 定时校准失败: {err_msg}")
+                            save_oms_field("lastError", {"time": now.isoformat(timespec="seconds"),
+                                                          "type": "calibrate", "message": err_msg})
                         continue
                 except (ValueError, IndexError):
                     pass
@@ -518,7 +539,10 @@ def daemon():
                 if result.get("success"):
                     LAST_SYNC_HOUR = current_hour_tag
                 else:
-                    print(f"  ❌ 定时同步失败: {result.get('message', '未知错误')} (下次重试)")
+                    err_msg = result.get('message', '未知错误')
+                    print(f"  ❌ 定时同步失败: {err_msg} (下次重试)")
+                    save_oms_field("lastError", {"time": now.isoformat(timespec="seconds"),
+                                                  "type": "sync", "message": err_msg})
                 continue
 
         except KeyboardInterrupt:
@@ -526,6 +550,8 @@ def daemon():
             break
         except Exception as e:
             print(f"  ⚠️ {e}")
+            save_oms_field("lastError", {"time": now.isoformat(timespec="seconds"),
+                                          "type": "daemon", "message": str(e)[:200]})
             time.sleep(30)
 
 
