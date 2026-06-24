@@ -13,7 +13,7 @@
             
             skuListEl.innerHTML = skuKeys.map((sku, index) => {
                 const product = products.find(p => p.sku === sku);
-                const image = productImagesCache[sku];
+                const image = productImagesCache[sku] || (product && (product.image_url || product.image)) || '';
                 return `
                 <div class="sku-item" style="display:flex;align-items:center;gap:12px;">
                     ${image ? `<img src="${image}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" alt="${sku}">` : '<div style="width:50px;height:50px;background:rgba(255,255,255,0.1);border-radius:4px;"></div>'}
@@ -186,7 +186,7 @@
             
             checkOverSold(order);
             
-            orders.unshift(order); client.db.from("orders").insert().values({ round: order.round, title: order.title, skus_json: JSON.stringify(order.skus||[]), session_id: order.sessionId||0, created_at: new Date().toISOString().slice(0,19).replace("T"," ") }).catch(e=>{});
+            orders.unshift(order); client.db.from("orders").insert().values({ round: order.round, title: order.title, skus_json: JSON.stringify(order.skus||[]), session_id: order.sessionId||0, auction_price: order.auctionPrice||0, note: order.note||'', session_date: order.sessionDate||'', session_anchor: order.sessionAnchor||'', created_at: new Date().toISOString().slice(0,19).replace("T"," ") }).then(function(){}, function(e){ console.error('☁️ 订单保存失败:', e); });
             updateOrderList();
             updateRealTimeOrderList();
             saveToLocalStorage();
