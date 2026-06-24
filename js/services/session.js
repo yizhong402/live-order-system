@@ -699,11 +699,10 @@
                             if (p) p.stock -= currentSkus[sku];
                         });
                         existingOrder.timestamp = new Date().toLocaleString('zh-CN');
-                        try {
-                            await client.db.from('orders').update(existingOrder.id, {
-                                skus_json: JSON.stringify({skus: existingOrder.skus || [], auctionPrice: existingOrder.auctionPrice || 0, note: existingOrder.note || ''})
-                            });
-                        } catch(e) { console.error('☁️ 合并更新失败:', e); }
+                        // 异步更新BaaS，不阻塞
+                        client.db.from('orders').update(existingOrder.id, {
+                            skus_json: JSON.stringify({skus: existingOrder.skus || [], auctionPrice: existingOrder.auctionPrice || 0, note: existingOrder.note || ''})
+                        }).catch(function(e){ console.error('☁️ 合并更新失败:', e); });
                         const indicator = document.getElementById('scanIndicator');
                         indicator.innerHTML = `<p style="color:#10b981;">✅ ${existingOrder.title} 已合并保存！</p>`;
                         indicator.classList.add('active');
@@ -731,17 +730,15 @@
                         };
                         
                         orders.unshift(order);
-                        try {
-                            var insResult = await client.db.from('orders').insert().values({
-                                round: order.round, title: order.title,
-                                skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''}),
-                                session_id: order.sessionId||0,
-                                created_at: new Date().toISOString().slice(0,19).replace('T',' ')
-                            });
-                            if (insResult && insResult.data) {
-                                order.id = typeof insResult.data === 'number' ? insResult.data : (insResult.data.id || insResult.data);
-                            }
-                        } catch(e) { console.error('☁️ nextRound保存失败:', e); }
+                        // 异步写BaaS，不阻塞直播流程（0等待）
+                        client.db.from('orders').insert().values({
+                            round: order.round, title: order.title,
+                            skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''}),
+                            session_id: order.sessionId||0,
+                            created_at: new Date().toISOString().slice(0,19).replace('T',' ')
+                        }).then(function(r){
+                            if(r && r.data) { order.id = typeof r.data === 'number' ? r.data : (r.data.id || r.data); }
+                        }, function(e){ console.error('☁️ BaaS异步写失败:', e); });
                         skuKeys.forEach(function(sku){
                             var p = products.find(function(x){ return x.sku === sku; });
                             if (p) p.stock -= currentSkus[sku];
