@@ -125,7 +125,7 @@
         }
         
         // 创建新场次
-        function createSession() {
+        async function createSession() {
             const sessionTitle = document.getElementById('sessionTitle').value.trim();
             const date = document.getElementById('sessionDate').value;
             const time = document.getElementById('sessionTimeInput').value;
@@ -139,8 +139,9 @@
             const sessionNumber = todaySessions.length + 1;
             
             const startTime = new Date().toLocaleString('zh-CN');
+            const localId = Date.now();
             const session = {
-                id: Date.now(),
+                id: localId,
                 sessionTitle: sessionTitle,
                 date: date,
                 time: time || '00:00',
@@ -158,24 +159,36 @@
                 isActive: true
             };
             
+            // 保存到云端并捕获BaaS返回的ID
+            try {
+                var insResult = await client.db.from("live_sessions").insert().values({
+                    title: session.sessionTitle,
+                    date: session.date,
+                    time: session.time,
+                    anchor: session.anchor,
+                    client_id: localId,
+                    status: "active"
+                });
+                if (insResult && insResult.data && insResult.data.id) {
+                    // 使用BaaS ID作为session.id，确保刷新后一致
+                    var baasId = insResult.data.id;
+                    delete activeSessions[session.id];
+                    session.id = baasId;
+                    // 更新已有订单的sessionId
+                    if (typeof orders !== 'undefined') {
+                        orders.forEach(function(o) {
+                            if (o.sessionId == localId) o.sessionId = baasId;
+                        });
+                    }
+                }
+            } catch(e) { console.error('☁️ 场次保存失败:', e); }
+            
             activeSessions[session.id] = session;
             
             // 切到新场次
             switchSession(session.id);
             
             closeSessionModal();
-            
-            // 保存到云端
-            try {
-                client.db.from("live_sessions").insert().values({
-                    title: session.sessionTitle,
-                    date: session.date,
-                    time: session.time,
-                    anchor: session.anchor,
-                    status: "active"
-                }).catch(e => {});
-            } catch(e) {}
-            
             console.log('创建场次:', session);
         }
 
@@ -222,21 +235,20 @@
         }
         
         function refreshActiveSessionsFromCloud() {
-            // 从云端加载活跃场次
             try {
                 client.db.from('live_sessions').list().then(res => {
                     if (res.success && res.data) {
                         res.data.forEach(s => {
                             if (s.status === 'active' && !activeSessions[s.id]) {
-                                const sid = Date.now() + Math.floor(Math.random() * 1000);
-                                activeSessions[sid] = {
-                                    id: sid,
+                                // 直接用BaaS的ID作为session.id，确保与订单的sessionId一致
+                                activeSessions[s.id] = {
+                                    id: s.id,
                                     sessionTitle: s.title || '',
                                     date: s.date || '',
                                     time: s.time || '',
                                     anchor: s.anchor || '',
-                                    sessionNumber: s.session_no || s.id || 1,
-                                    title: s.title || '',
+                                    sessionNumber: s.session_no || 1,
+                                    title: `${s.title || ''} | 第${s.session_no || 1}场 | ${s.date || ''} ${s.time || ''} | ${s.anchor || ''}`,
                                     startTime: s.created_at || '',
                                     created_at: s.created_at || '',
                                     currentRound: 1,
@@ -347,7 +359,7 @@
                     <div style="font-size:13px;color:rgba(255,255,255,0.7);">
                         <div>🎤 ${s.anchor}</div>
                         <div>🕐 ${s.date || ''} ${s.time || ''}</div>
-                        <div style="margin-top:6px;">轮次: ${s.currentRound || 1} | 订单: ${(s.orders||[]).length}</div>
+                        <div style="margin-top:6px;">轮次: ${s.currentRound || 1} | 订单: ${(typeof orders !== 'undefined' ? orders.filter(function(o){ return o.sessionId == s.id; }).length : 0)}</div>
                     </div>
                 </div>
             `).join('');
