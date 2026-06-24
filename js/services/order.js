@@ -129,7 +129,9 @@
             updateSkuList();
         }
         
+        let _savingOrder = false;
         function saveOrder() {
+            if (_savingOrder) { console.warn('⚠️ 订单保存中，请勿重复点击'); return; }
             const baseTitle = document.getElementById('baseTitle').value.trim();
             if (!currentSession) {
                 alert('请先创建直播场次！');
@@ -147,6 +149,7 @@
                 alert('请先扫描至少一个SKU！');
                 return;
             }
+            _savingOrder = true;
             
             const auctionPrice = parseFloat(document.getElementById('auctionPrice').value) || 0;
             const orderNote = document.getElementById('orderNote').value.trim();
@@ -186,7 +189,16 @@
             
             checkOverSold(order);
             
-            orders.unshift(order); client.db.from("orders").insert().values({ round: order.round, title: order.title, skus_json: JSON.stringify(order.skus||[]), session_id: order.sessionId||0, auction_price: order.auctionPrice||0, note: order.note||'', session_date: order.sessionDate||'', session_anchor: order.sessionAnchor||'', created_at: new Date().toISOString().slice(0,19).replace("T"," ") }).then(function(){}, function(e){ console.error('☁️ 订单保存失败:', e); });
+            orders.unshift(order);
+            // 异步写入 BaaS，静默处理
+            client.db.from("orders").insert().values({ round: order.round, title: order.title, skus_json: JSON.stringify(order.skus||[]), session_id: order.sessionId||0, auction_price: order.auctionPrice||0, note: order.note||'', session_date: order.sessionDate||'', session_anchor: order.sessionAnchor||'', created_at: new Date().toISOString().slice(0,19).replace("T"," ") }).then(function(){}, function(e){ console.error('☁️ 订单保存失败:', e); });
+            // 虚拟扣减库存
+            for (const sku of skuKeys) {
+                const product = products.find(p => p.sku === sku);
+                if (product) {
+                    product.stock -= currentSkus[sku];
+                }
+            }
             updateOrderList();
             updateRealTimeOrderList();
             saveToLocalStorage();
@@ -203,6 +215,7 @@
             }, 2000);
             
             currentSkus = {};
+            _savingOrder = false;
             currentRound++;
             updateCurrentRoundDisplay();
             updateSkuList();
