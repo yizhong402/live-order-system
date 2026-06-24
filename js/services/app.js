@@ -394,6 +394,9 @@
             originalShowPage(pageId);
             if (pageId === 'data') {
                 updateDataStats();
+                if (typeof renderBackupList === 'function') {
+                    setTimeout(renderBackupList, 100);
+                }
             }
             if (pageId === 'product') {
                 if (typeof updateCalibrateTimeDisplay === 'function') {

@@ -723,23 +723,35 @@
                 <div id="page-data" class="page">
                     <div class="panel">
                         <div class="panel-title">💾 数据管理</div>
-                        
-                        <div style="margin-bottom:20px;padding:15px;background:rgba(0,0,0,0.2);border-radius:8px;">
-                            <h4 style="margin-bottom:10px;color:#667eea;">📤 导出全部数据</h4>
-                            <p margin-bottom:10px;">将所有数据（商品、订单、组合、历史记录等）导出到JSON文件，可在另一台电脑导入</p>
-                            <button class="btn btn-success" style="width:100%;" onclick="exportAllData()">📤 导出数据</button>
+
+                        <!-- 云端备份 -->
+                        <div style="margin-bottom:20px;padding:15px;background:rgba(102,126,234,0.15);border:1px solid rgba(102,126,234,0.3);border-radius:8px;">
+                            <h4 style="margin-bottom:10px;color:#667eea;">☁️ 云端备份（推荐）</h4>
+                            <p style="margin-bottom:10px;font-size:13px;color:var(--text-muted);">将全部数据备份到云端，出现问题可一键恢复</p>
+                            <div style="display:flex;gap:10px;margin-bottom:10px;">
+                                <button class="btn btn-primary" style="flex:1;" onclick="createCloudBackup()">☁️ 创建备份</button>
+                            </div>
+                            <div id="backupStatus" style="font-size:13px;color:var(--text-muted);margin-bottom:8px;"></div>
+                            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">📋 已有备份：</div>
+                            <div id="backupList"></div>
                         </div>
                         
                         <div style="margin-bottom:20px;padding:15px;background:rgba(0,0,0,0.2);border-radius:8px;">
-                            <h4 style="margin-bottom:10px;color:#667eea;">📥 导入数据</h4>
-                            <p margin-bottom:10px;">选择之前导出的JSON文件，将数据导入到当前浏览器</p>
+                            <h4 style="margin-bottom:10px;color:#667eea;">📤 导出全部数据（JSON文件）</h4>
+                            <p style="margin-bottom:10px;font-size:13px;color:var(--text-muted);">导出到本地JSON文件，可下载备份或迁移到其他电脑</p>
+                            <button class="btn btn-success" style="width:100%;" onclick="exportAllData()">📤 导出到文件</button>
+                        </div>
+                        
+                        <div style="margin-bottom:20px;padding:15px;background:rgba(0,0,0,0.2);border-radius:8px;">
+                            <h4 style="margin-bottom:10px;color:#667eea;">📥 从文件导入</h4>
+                            <p style="margin-bottom:10px;font-size:13px;color:var(--text-muted);">选择之前导出的JSON文件恢复数据</p>
                             <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importAllData(event)">
                             <button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('importFileInput').click()">📥 导入数据</button>
                         </div>
                         
                         <div style="padding:15px;background:rgba(0,0,0,0.2);border-radius:8px;">
                             <h4 style="margin-bottom:10px;color:#667eea;">📊 当前数据统计</h4>
-                            <div id="dataStats" "></div>
+                            <div id="dataStats"></div>
                         </div>
                     </div>
                 </div>
@@ -945,6 +957,7 @@
     <script src="js/services/profit.js"></script>
     <script src="js/services/settings.js"></script>
     <script src="js/services/oms-sync.js"></script>
+    <script src="js/services/backup.js"></script>
     <script src="js/services/product.js"></script>
     <script src="js/services/combo.js"></script>
     <script src="js/services/app.js"></script>
