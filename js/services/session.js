@@ -277,8 +277,12 @@
             document.getElementById('topbarTitle').textContent = title;
             
             if (pageId === 'product') {
-                updateProductList();
-                updateProductStats();
+                // 先更新校准时间显示，避免updateProductList/updateProductStats异常影响
+                if (typeof updateCalibrateTimeDisplay === 'function') {
+                    try { updateCalibrateTimeDisplay(); } catch(e) { console.warn('updateCalibrateTimeDisplay error:', e); }
+                }
+                try { updateProductList(); } catch(e) { console.warn('updateProductList error:', e); }
+                try { updateProductStats(); } catch(e) { console.warn('updateProductStats error:', e); }
                 // 重置库存筛选为全部
                 currentStockFilter = 'all';
                 document.querySelectorAll('[id^="filter"]').forEach(btn => btn.classList.remove('active'));

@@ -57,12 +57,19 @@
         // 保存设置到云端
         async function saveSettings() {
             try {
+                // BaaS 将 JSON 对象存为字符串，保存前需先序列化
+                const data = JSON.parse(JSON.stringify(systemSettings));
+                if (data.omsSync && typeof data.omsSync === 'object') data.omsSync = JSON.stringify(data.omsSync);
+                if (data.platformFees && typeof data.platformFees === 'object') data.platformFees = JSON.stringify(data.platformFees);
+                if (data.shippingTemplates && typeof data.shippingTemplates === 'object') data.shippingTemplates = JSON.stringify(data.shippingTemplates);
+
                 const res = await client.db.from('settings').list();
                 if (res.success && res.data && res.data.length > 0) {
                     const existing = res.data[0];
-                    await client.db.from('settings').update(existing.id, systemSettings);
+                    // 注意: BaaS API 使用链式调用 .update().eq('id', id).values(data)
+                    await client.db.from('settings').update().eq('id', existing.id).values(data);
                 } else {
-                    await client.db.from('settings').save(systemSettings);
+                    await client.db.from('settings').save(data);
                 }
                 console.log('⚙️ 系统设置已保存');
                 return true;

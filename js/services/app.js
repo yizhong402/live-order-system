@@ -660,4 +660,9 @@
             } else if (pageId === 'settings') {
                 setTimeout(renderSettingsPage, 100);
             }
+            if (pageId === 'product') {
+                if (typeof updateCalibrateTimeDisplay === 'function') {
+                    setTimeout(updateCalibrateTimeDisplay, 100);
+                }
+            }
         };
