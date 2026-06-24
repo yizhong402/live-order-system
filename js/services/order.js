@@ -131,7 +131,7 @@
         
         let _savingOrder = false;
         function saveOrder() {
-            if (_savingOrder) { console.warn('⚠️ 订单保存中，请勿重复点击'); return; }
+            if (_savingOrder) { return; }
             const baseTitle = document.getElementById('baseTitle').value.trim();
             if (!currentSession) {
                 alert('请先创建直播场次！');
@@ -141,85 +141,98 @@
                 alert('请先输入竞拍链接名称！');
                 return;
             }
-            
-            // 保存当前链接到历史记录（只有真正保存订单时才添加）
-            addToTitleHistory(baseTitle);
             const skuKeys = Object.keys(currentSkus);
             if (skuKeys.length === 0) {
                 alert('请先扫描至少一个SKU！');
                 return;
             }
-            _savingOrder = true;
             
-            const auctionPrice = parseFloat(document.getElementById('auctionPrice').value) || 0;
-            const orderNote = document.getElementById('orderNote').value.trim();
-            
-            const skuItems = skuKeys.map(sku => ({
-                sku: sku,
-                quantity: currentSkus[sku]
-            }));
-            
-            // 检查是否有零库存商品，如果有则弹出警告
-            const zeroStockSkus = [];
-            for (const sku of skuKeys) {
-                const product = products.find(p => p.sku === sku);
-                if (product && product.stock < 0) {
-                    zeroStockSkus.push(sku);
+            try {
+                _savingOrder = true;
+                addToTitleHistory(baseTitle);
+                
+                const auctionPrice = parseFloat(document.getElementById('auctionPrice').value) || 0;
+                const orderNote = document.getElementById('orderNote').value.trim();
+                
+                const skuItems = skuKeys.map(sku => ({
+                    sku: sku,
+                    quantity: currentSkus[sku]
+                }));
+                
+                // 超卖警告
+                const zeroStockSkus = [];
+                for (const sku of skuKeys) {
+                    const product = products.find(p => p.sku === sku);
+                    if (product && product.stock < 0) {
+                        zeroStockSkus.push(sku);
+                    }
                 }
-            }
-            if (zeroStockSkus.length > 0) {
-                alert(`⚠️ 以下商品已超卖（库存为负数）：\n${zeroStockSkus.join('、')}\n\n请确认是否继续保存！`);
-            }
-            
-            const order = {
-                id: Date.now(),
-                round: currentRound,
-                title: `${baseTitle} ${currentRound}#`,
-                skus: skuItems,
-                auctionPrice: auctionPrice,
-                note: orderNote,
-                timestamp: new Date().toLocaleString('zh-CN'),
-                sessionId: currentSession.id,
-                sessionDate: currentSession.date,
-                sessionTime: currentSession.time,
-                sessionAnchor: currentSession.anchor,
-                isOverSold: false
-            };
-            console.log('保存订单:', order);
-            
-            checkOverSold(order);
-            
-            orders.unshift(order);
-            // 异步写入 BaaS，静默处理
-            client.db.from("orders").insert().values({ round: order.round, title: order.title, skus_json: JSON.stringify(order.skus||[]), session_id: order.sessionId||0, auction_price: order.auctionPrice||0, note: order.note||'', session_date: order.sessionDate||'', session_anchor: order.sessionAnchor||'', created_at: new Date().toISOString().slice(0,19).replace("T"," ") }).then(function(){}, function(e){ console.error('☁️ 订单保存失败:', e); });
-            // 虚拟扣减库存
-            for (const sku of skuKeys) {
-                const product = products.find(p => p.sku === sku);
-                if (product) {
-                    product.stock -= currentSkus[sku];
+                if (zeroStockSkus.length > 0) {
+                    alert('⚠️ 以下商品已超卖（库存为负数）：\n' + zeroStockSkus.join('、') + '\n\n请确认是否继续保存！');
                 }
+                
+                const order = {
+                    id: Date.now(),
+                    round: currentRound,
+                    title: baseTitle + ' ' + currentRound + '#',
+                    skus: skuItems,
+                    auctionPrice: auctionPrice,
+                    note: orderNote,
+                    timestamp: new Date().toLocaleString('zh-CN'),
+                    sessionId: currentSession.id,
+                    sessionDate: currentSession.date,
+                    sessionTime: currentSession.time,
+                    sessionAnchor: currentSession.anchor,
+                    isOverSold: false
+                };
+                
+                checkOverSold(order);
+                orders.unshift(order);
+                
+                // 异步写 BaaS，不阻塞
+                client.db.from('orders').insert().values({
+                    round: order.round, title: order.title,
+                    skus_json: JSON.stringify(order.skus||[]),
+                    session_id: order.sessionId||0,
+                    auction_price: order.auctionPrice||0,
+                    note: order.note||'',
+                    session_date: order.sessionDate||'',
+                    session_anchor: order.sessionAnchor||'',
+                    created_at: new Date().toISOString().slice(0,19).replace('T',' ')
+                }).then(function(){}, function(e){ console.error('☁️ 订单保存失败:', e); });
+                
+                // 虚拟扣库存
+                for (const sku of skuKeys) {
+                    const product = products.find(p => p.sku === sku);
+                    if (product) product.stock -= currentSkus[sku];
+                }
+                
+                // 立即刷新 UI（同步操作，不依赖 BaaS）
+                updateOrderList();
+                updateRealTimeOrderList();
+                saveToLocalStorage();
+                
+                // 清空输入
+                document.getElementById('auctionPrice').value = '';
+                document.getElementById('orderNote').value = '';
+                
+                // 显示提示
+                const indicator = document.getElementById('scanIndicator');
+                indicator.innerHTML = '<p style="color:#10b981;">✅ ' + order.title + ' 已保存！</p>';
+                indicator.classList.add('active');
+                setTimeout(function(){
+                    indicator.classList.remove('active');
+                    indicator.innerHTML = '<p>🎯 准备好扫码枪，将光标放在输入框中扫描</p>';
+                }, 2000);
+                
+                currentSkus = {};
+                currentRound++;
+                updateCurrentRoundDisplay();
+                updateSkuList();
+                document.getElementById('skuInput').focus();
+            } finally {
+                _savingOrder = false;
             }
-            updateOrderList();
-            updateRealTimeOrderList();
-            saveToLocalStorage();
-            
-            document.getElementById('auctionPrice').value = '';
-            document.getElementById('orderNote').value = '';
-            
-            const indicator = document.getElementById('scanIndicator');
-            indicator.innerHTML = `<p style="color:#10b981;">✅ ${order.title} 已保存！</p>`;
-            indicator.classList.add('active');
-            setTimeout(() => {
-                indicator.classList.remove('active');
-                indicator.innerHTML = '<p>🎯 准备好扫码枪，将光标放在输入框中扫描</p>';
-            }, 2000);
-            
-            currentSkus = {};
-            _savingOrder = false;
-            currentRound++;
-            updateCurrentRoundDisplay();
-            updateSkuList();
-            document.getElementById('skuInput').focus();
         }
         
         function updateOrderList(filteredOrders = null) {

@@ -703,7 +703,7 @@
                         sessionAnchor: currentSession ? currentSession.anchor : null
                     };
                     
-                    orders.unshift(order); client.db.from("orders").insert().values({ round: order.round, title: order.title, skus_json: JSON.stringify(order.skus||[]), session_id: order.sessionId||0, created_at: new Date().toISOString().slice(0,19).replace("T"," ") }).catch(e=>{});
+                    orders.unshift(order); client.db.from("orders").insert().values({ round: order.round, title: order.title, skus_json: JSON.stringify(order.skus||[]), session_id: order.sessionId||0, created_at: new Date().toISOString().slice(0,19).replace("T"," ") }).then(function(){}, function(e){ console.error('☁️ nextRound保存失败:', e); });
                     const indicator = document.getElementById('scanIndicator');
                     indicator.innerHTML = `<p style="color:#10b981;">✅ ${order.title} 已自动保存！</p>`;
                     indicator.classList.add('active');
