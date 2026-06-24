@@ -165,6 +165,7 @@
                 updateOrderList();
                 updateRealTimeOrderList();
                 saveToLocalStorage();
+                if (typeof updateDashboard === 'function') updateDashboard();
                 
                 // 清空输入
                 document.getElementById('auctionPrice').value = '';

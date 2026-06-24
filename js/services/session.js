@@ -732,6 +732,7 @@
             document.getElementById('orderNote').value = '';
             updateOrderList();
             updateRealTimeOrderList();  // 更新实时订单记录面板
+            if (typeof updateDashboard === 'function') updateDashboard();
             document.getElementById('skuInput').focus();
         }
         
@@ -769,7 +770,8 @@
                     }
                     saveToLocalStorage();
                     updateOrderList();
-                    updateRealTimeOrderList();  // 更新实时订单记录面板
+                    updateRealTimeOrderList();
+                    if (typeof updateDashboard === 'function') updateDashboard();
                 }
                 
                 currentRound--;
