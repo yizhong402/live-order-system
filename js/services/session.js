@@ -676,6 +676,9 @@
                         } else {
                             existingOrder.skus.push({ sku: sku, quantity: currentSkus[sku] });
                         }
+                        // 虚拟扣库存
+                        var p = products.find(function(x){ return x.sku === sku; });
+                        if (p) p.stock -= currentSkus[sku];
                     });
                     existingOrder.timestamp = new Date().toLocaleString('zh-CN');
                     const indicator = document.getElementById('scanIndicator');
@@ -704,6 +707,11 @@
                     };
                     
                     orders.unshift(order); client.db.from("orders").insert().values({ round: order.round, title: order.title, skus_json: JSON.stringify(order.skus||[]), session_id: order.sessionId||0, created_at: new Date().toISOString().slice(0,19).replace("T"," ") }).then(function(){}, function(e){ console.error('☁️ nextRound保存失败:', e); });
+                    // 虚拟扣库存
+                    skuKeys.forEach(function(sku){
+                        var p = products.find(function(x){ return x.sku === sku; });
+                        if (p) p.stock -= currentSkus[sku];
+                    });
                     const indicator = document.getElementById('scanIndicator');
                     indicator.innerHTML = `<p style="color:#10b981;">✅ ${order.title} 已自动保存！</p>`;
                     indicator.classList.add('active');
