@@ -419,8 +419,15 @@
             const totalOrders = orders.length || 0;
             document.getElementById('dashTotalOrders').textContent = totalOrders;
             
-            const today = new Date().toISOString().substring(0, 10);
-            const todayOrders = orders.filter(o => o.timestamp && o.timestamp.substring(0, 10) === today).length;
+            const todayDate = new Date();
+            const todayStr = todayDate.toISOString().substring(0, 10); // 2026-06-24
+            // 兼容两种 timestamp 格式: ISO日期开头 或 本地日期开头(2026/6/24)
+            function isToday(timestamp) {
+                if (!timestamp) return false;
+                return timestamp.substring(0, 10) === todayStr ||
+                       timestamp.replace(/\//g, '-').substring(0, 10) === todayStr;
+            }
+            const todayOrders = orders.filter(o => isToday(o.timestamp)).length;
             document.getElementById('dashTodayOrders').textContent = todayOrders;
             
             const totalSessions = (liveHistory && liveHistory.length) || 0;
@@ -432,7 +439,7 @@
             // GMV
             const totalGMV = orders.reduce((s, o) => s + (parseFloat(o.auctionPrice) || 0), 0);
             document.getElementById('dashTotalGMV').textContent = '$' + totalGMV.toFixed(2);
-            const todayGMV = orders.filter(o => o.timestamp && o.timestamp.substring(0, 10) === today)
+            const todayGMV = orders.filter(o => isToday(o.timestamp))
                 .reduce((s, o) => s + (parseFloat(o.auctionPrice) || 0), 0);
             document.getElementById('dashTodayGMV').textContent = '$' + todayGMV.toFixed(2);
             
@@ -479,7 +486,7 @@
                 <div style="padding:12px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:3px solid #4CAF50;">
                     <div style="font-weight:500;color:#fff;font-size:13px;">${s.title || '未命名场次'}</div>
                     <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-                        🎤 ${s.anchor || '未知'} | 🕐 ${s.time || ''} | 📦 ${s.selectedOrders ? s.selectedOrders.length : 0} 单
+                        🎤 ${s.anchor || '未知'} | 🕐 ${s.time || ''} | 📦 ${(typeof orders !== 'undefined' ? orders.filter(function(o){ return o.sessionId == s.id; }).length : 0)} 单
                     </div>
                 </div>
             `).join('');
@@ -500,7 +507,7 @@
                     <div style="color:#fff;">${o.title || '未命名'} <span style="color:var(--text-muted);font-size:11px;">${o.round ? 'R' + o.round : ''}</span></div>
                     <div>
                         <span style="color:#FFD700;">$${(parseFloat(o.auctionPrice) || 0).toFixed(2)}</span>
-                        <span style="color:var(--text-muted);font-size:10px;margin-left:6px;">${o.timestamp ? o.timestamp.substring(5, 16) : ''}</span>
+                        <span style="color:var(--text-muted);font-size:10px;margin-left:6px;">${o.timestamp ? (o.timestamp.indexOf('/')>0 ? o.timestamp.substring(5, 10) + ' ' + o.timestamp.substring(11, 16) : o.timestamp.substring(5, 16)) : ''}</span>
                     </div>
                 </div>
             `).join('');
@@ -570,9 +577,13 @@
                 cursor.setDate(cursor.getDate() + 1);
             }
             
+            function normDate(ts) {
+                if (!ts) return '';
+                return ts.replace(/\//g, '-').substring(0, 10);
+            }
             orders.forEach(o => {
                 if (!o.timestamp) return;
-                const day = o.timestamp.substring(0, 10);
+                const day = normDate(o.timestamp);
                 if (dayMap[day]) {
                     dayMap[day].gmv += parseFloat(o.auctionPrice) || 0;
                     dayMap[day].count += 1;
