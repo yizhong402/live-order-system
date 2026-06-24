@@ -664,103 +664,101 @@
         async function nextRound() {
             if (window._nextRoundBusy) { return; }
             window._nextRoundBusy = true;
-            
-            const baseTitle = document.getElementById('baseTitle').value.trim();
-            const skuKeys = Object.keys(currentSkus);
-            
-            if (baseTitle && skuKeys.length > 0) {
-                const existingOrder = orders.find(o => o.round === currentRound && o.title.startsWith(baseTitle));
+            try {
+                const baseTitle = document.getElementById('baseTitle').value.trim();
+                const skuKeys = Object.keys(currentSkus);
                 
-                if (existingOrder) {
-                    var auctionPrice = parseFloat(document.getElementById('auctionPrice').value) || 0;
-                    var orderNote = document.getElementById('orderNote').value.trim();
-                    if (auctionPrice > 0) existingOrder.auctionPrice = auctionPrice;
-                    if (orderNote) existingOrder.note = orderNote;
-                    skuKeys.forEach(function(sku){
-                        var existing = existingOrder.skus.find(function(item){ return item.sku === sku; });
-                        if (existing) {
-                            existing.quantity += currentSkus[sku];
-                        } else {
-                            existingOrder.skus.push({ sku: sku, quantity: currentSkus[sku] });
-                        }
-                        // 虚拟扣库存
-                        var p = products.find(function(x){ return x.sku === sku; });
-                        if (p) p.stock -= currentSkus[sku];
-                    });
-                    existingOrder.timestamp = new Date().toLocaleString('zh-CN');
-                    // 等待 BaaS 写入完成
-                    try {
-                        await client.db.from('orders').update(existingOrder.id, {
-                            skus_json: JSON.stringify({skus: existingOrder.skus || [], auctionPrice: existingOrder.auctionPrice || 0, note: existingOrder.note || ''})
-                        });
-                    } catch(e) { console.error('☁️ 合并更新失败:', e); }
-                    const indicator = document.getElementById('scanIndicator');
-                    indicator.innerHTML = `<p style="color:#10b981;">✅ ${existingOrder.title} 已合并保存！</p>`;
-                    indicator.classList.add('active');
-                    setTimeout(() => {
-                        indicator.classList.remove('active');
-                        indicator.innerHTML = '<p>🎯 准备好扫码枪，将光标放在输入框中扫描</p>';
-                    }, 2000);
-                } else {
-                    var auctionPrice = parseFloat(document.getElementById('auctionPrice').value) || 0;
-                    var orderNote = document.getElementById('orderNote').value.trim();
-                    var skuItems = skuKeys.map(function(sku){ return { sku: sku, quantity: currentSkus[sku] }; });
+                if (baseTitle && skuKeys.length > 0) {
+                    const existingOrder = orders.find(o => o.round === currentRound && o.title.startsWith(baseTitle));
                     
-                    var order = {
-                        id: Date.now(),
-                        round: currentRound,
-                        title: baseTitle + ' ' + currentRound + '#',
-                        skus: skuItems,
-                        auctionPrice: auctionPrice,
-                        note: orderNote,
-                        timestamp: new Date().toLocaleString('zh-CN'),
-                        sessionId: currentSession ? currentSession.id : null,
-                        sessionDate: currentSession ? currentSession.date : null,
-                        sessionTime: currentSession ? currentSession.time : null,
-                        sessionAnchor: currentSession ? currentSession.anchor : null
-                    };
-                    
-                    orders.unshift(order);
-                    // 等待 BaaS 写入完成
-                    try {
-                        var insResult = await client.db.from('orders').insert().values({
-                            round: order.round, title: order.title,
-                            skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''}),
-                            session_id: order.sessionId||0,
-                            created_at: new Date().toISOString().slice(0,19).replace('T',' ')
+                    if (existingOrder) {
+                        var auctionPrice = parseFloat(document.getElementById('auctionPrice').value) || 0;
+                        var orderNote = document.getElementById('orderNote').value.trim();
+                        if (auctionPrice > 0) existingOrder.auctionPrice = auctionPrice;
+                        if (orderNote) existingOrder.note = orderNote;
+                        skuKeys.forEach(function(sku){
+                            var existing = existingOrder.skus.find(function(item){ return item.sku === sku; });
+                            if (existing) {
+                                existing.quantity += currentSkus[sku];
+                            } else {
+                                existingOrder.skus.push({ sku: sku, quantity: currentSkus[sku] });
+                            }
+                            var p = products.find(function(x){ return x.sku === sku; });
+                            if (p) p.stock -= currentSkus[sku];
                         });
-                        if (insResult && insResult.data && insResult.data.id) {
-                            order.id = insResult.data.id;
-                        }
-                    } catch(e) { console.error('☁️ nextRound保存失败:', e); }
-                    // 虚拟扣库存
-                    skuKeys.forEach(function(sku){
-                        var p = products.find(function(x){ return x.sku === sku; });
-                        if (p) p.stock -= currentSkus[sku];
-                    });
-                    const indicator = document.getElementById('scanIndicator');
-                    indicator.innerHTML = `<p style="color:#10b981;">✅ ${order.title} 已自动保存！</p>`;
-                    indicator.classList.add('active');
-                    setTimeout(() => {
-                        indicator.classList.remove('active');
-                        indicator.innerHTML = '<p>🎯 准备好扫码枪，将光标放在输入框中扫描</p>';
-                    }, 2000);
+                        existingOrder.timestamp = new Date().toLocaleString('zh-CN');
+                        try {
+                            await client.db.from('orders').update(existingOrder.id, {
+                                skus_json: JSON.stringify({skus: existingOrder.skus || [], auctionPrice: existingOrder.auctionPrice || 0, note: existingOrder.note || ''})
+                            });
+                        } catch(e) { console.error('☁️ 合并更新失败:', e); }
+                        const indicator = document.getElementById('scanIndicator');
+                        indicator.innerHTML = `<p style="color:#10b981;">✅ ${existingOrder.title} 已合并保存！</p>`;
+                        indicator.classList.add('active');
+                        setTimeout(() => {
+                            indicator.classList.remove('active');
+                            indicator.innerHTML = '<p>🎯 准备好扫码枪，将光标放在输入框中扫描</p>';
+                        }, 2000);
+                    } else {
+                        var auctionPrice = parseFloat(document.getElementById('auctionPrice').value) || 0;
+                        var orderNote = document.getElementById('orderNote').value.trim();
+                        var skuItems = skuKeys.map(function(sku){ return { sku: sku, quantity: currentSkus[sku] }; });
+                        
+                        var order = {
+                            id: Date.now(),
+                            round: currentRound,
+                            title: baseTitle + ' ' + currentRound + '#',
+                            skus: skuItems,
+                            auctionPrice: auctionPrice,
+                            note: orderNote,
+                            timestamp: new Date().toLocaleString('zh-CN'),
+                            sessionId: currentSession ? currentSession.id : null,
+                            sessionDate: currentSession ? currentSession.date : null,
+                            sessionTime: currentSession ? currentSession.time : null,
+                            sessionAnchor: currentSession ? currentSession.anchor : null
+                        };
+                        
+                        orders.unshift(order);
+                        try {
+                            var insResult = await client.db.from('orders').insert().values({
+                                round: order.round, title: order.title,
+                                skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''}),
+                                session_id: order.sessionId||0,
+                                created_at: new Date().toISOString().slice(0,19).replace('T',' ')
+                            });
+                            if (insResult && insResult.data && insResult.data.id) {
+                                order.id = insResult.data.id;
+                            }
+                        } catch(e) { console.error('☁️ nextRound保存失败:', e); }
+                        skuKeys.forEach(function(sku){
+                            var p = products.find(function(x){ return x.sku === sku; });
+                            if (p) p.stock -= currentSkus[sku];
+                        });
+                        const indicator = document.getElementById('scanIndicator');
+                        indicator.innerHTML = `<p style="color:#10b981;">✅ ${order.title} 已自动保存！</p>`;
+                        indicator.classList.add('active');
+                        setTimeout(() => {
+                            indicator.classList.remove('active');
+                            indicator.innerHTML = '<p>🎯 准备好扫码枪，将光标放在输入框中扫描</p>';
+                        }, 2000);
+                    }
+                    
+                    saveToLocalStorage();
                 }
                 
-                saveToLocalStorage();
+                currentRound++;
+                saveCurrentTitleRound();
+                updateCurrentRoundDisplay();
+                clearSkus();
+                document.getElementById('auctionPrice').value = '';
+                document.getElementById('orderNote').value = '';
+                updateOrderList();
+                updateRealTimeOrderList();
+                if (typeof renderDashboard === 'function') renderDashboard();
+                document.getElementById('skuInput').focus();
+            } finally {
+                window._nextRoundBusy = false;
             }
-            
-            currentRound++;
-            saveCurrentTitleRound();
-            updateCurrentRoundDisplay();
-            clearSkus();
-            window._nextRoundBusy = false;
-            document.getElementById('auctionPrice').value = '';
-            document.getElementById('orderNote').value = '';
-            updateOrderList();
-            updateRealTimeOrderList();  // 更新实时订单记录面板
-            if (typeof renderDashboard === 'function') renderDashboard();
-            document.getElementById('skuInput').focus();
         }
         
         function prevRound() {
