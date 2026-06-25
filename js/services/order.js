@@ -199,11 +199,9 @@
                 // 默认只显示当前场次的订单（活跃场次或历史场次）
                 displayOrders = orders.filter(order => order.sessionId === currentSession.id);
             } else {
-                displayOrders = orders;
-                if (displayOrders.length === 0) {
-                    orderListEl.innerHTML = '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.4);">暂无订单记录</div>';
-                    return;
-                }
+                // 无当前场次时，提示用户创建或选择场次，不展示全量订单
+                orderListEl.innerHTML = '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.4);">请先选择或创建直播场次</div>';
+                return;
             }
             
             if (displayOrders.length === 0) {
@@ -327,7 +325,7 @@
             }
             
             // 仅在当前场次范围内按轮次过滤
-            const baseOrders = currentSession ? orders.filter(order => order.sessionId === currentSession.id) : orders;
+            const baseOrders = currentSession ? orders.filter(order => order.sessionId === currentSession.id) : [];
             const filtered = baseOrders.filter(order => order.round === round);
             updateOrderList(filtered);
         }
