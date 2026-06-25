@@ -379,15 +379,25 @@ def calibrate(fresh_token=None):
         prod_existing[item["sku"]] = item
     print(f"(共{len(prod_existing)}条)", flush=True)
 
-    prod_add, prod_upd = 0, 0
+    prod_add, prod_upd, prod_skip = 0, 0, 0
     for sku, data in merged.items():
         if sku in prod_existing:
             old = prod_existing[sku]
+            # 差异对比：库存/名称/图片任一变了才更新
+            old_stock = int(old.get("stock", 0) or 0)
+            new_stock = data["availableStock"]
+            old_name = str(old.get("name", "") or "")
+            new_name = data["name"]
+            old_img = str(old.get("image_url", "") or "")
+            new_img = data["imgUrl"]
+            if old_stock == new_stock and old_name == new_name and old_img == new_img:
+                prod_skip += 1
+                continue
             _baas_req("products", "update", {
                 "id": old["id"],
-                "stock": data["availableStock"],
-                "original_stock": data["availableStock"],
-                "name": data["name"], "image_url": data["imgUrl"]
+                "stock": new_stock,
+                "original_stock": new_stock,
+                "name": new_name, "image_url": new_img
             })
             prod_upd += 1
         else:
@@ -399,16 +409,17 @@ def calibrate(fresh_token=None):
                 "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
             prod_add += 1
-        if (prod_add + prod_upd) % 30 == 0:
+        writes = prod_add + prod_upd
+        if writes > 0 and writes % 30 == 0:
             time.sleep(1)
 
-    print(f"    ➕ 新增 {prod_add} / ✏️ 更新 {prod_upd}", flush=True)
+    print(f"    ➕ 新增 {prod_add} / ✏️ 更新 {prod_upd} / ⏭️ 跳过 {prod_skip}", flush=True)
 
     # 5. 日志
     elapsed = time.time() - start
     log_entry = {"time": datetime.now().isoformat(timespec="seconds"),
                  "success": True, "total": len(merged),
-                 "added": prod_add, "updated": prod_upd, "elapsed": f"{elapsed:.0f}s",
+                 "added": prod_add, "updated": prod_upd, "skipped": prod_skip, "elapsed": f"{elapsed:.0f}s",
                  "type": "calibrate"}
     s = load_settings()
     logs = s.get("syncLog", []) if s else []
@@ -422,7 +433,7 @@ def calibrate(fresh_token=None):
     save_oms_field("lastError", None)
 
     print(f"  ✅ 校准完成 ({elapsed:.0f}s): {len(merged)} SKU")
-    return {"success": True, "total": len(merged), "added": prod_add, "updated": prod_upd, "elapsed": f"{elapsed:.0f}s"}
+    return {"success": True, "total": len(merged), "added": prod_add, "updated": prod_upd, "skipped": prod_skip, "elapsed": f"{elapsed:.0f}s"}
 
 # ==================== 守护进程 ====================
 

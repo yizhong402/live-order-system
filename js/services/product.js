@@ -178,42 +178,97 @@
                 btn.disabled = true;
             }
             
-            // 触发校准标记（守护进程会执行全量覆盖同步）
+            // 触发校准标记（守护进程会执行覆盖同步）
             systemSettings.omsSync.calibrateTrigger = true;
             debouncedSaveSettings();
             
-            showToast('📊 库存校准信号已发送，服务端执行中...', 'warning');
+            var pollStart = Date.now();
+            var pollCount = 0;
+            showToast('📊 库存校准已启动，正在轮询进度...', 'warning');
             
-            // 等几秒后刷新商品列表
-            setTimeout(function() {
-                // 先更新 settings（包含 lastError）
+            // 轮询检测校准完成
+            function pollCalibrate() {
+                pollCount++;
+                var elapsed = Math.floor((Date.now() - pollStart) / 1000);
+                var minutes = Math.floor(elapsed / 60);
+                var seconds = elapsed % 60;
+                var timeStr = minutes > 0 ? minutes + '分' + seconds + '秒' : seconds + '秒';
+                
+                if (btn) {
+                    btn.textContent = '⏳ 校准中 (' + timeStr + ')';
+                }
+                
                 client.db.from('settings').list().then(function(sr) {
-                    if (sr.success && sr.data && sr.data[0]) {
-                        var rawOms = sr.data[0].omsSync || '{}';
-                        try { systemSettings.omsSync = typeof rawOms === 'string' ? JSON.parse(rawOms) : rawOms; } catch(e) {}
-                        if (typeof updateCalibrateTimeDisplay === 'function') updateCalibrateTimeDisplay();
+                    if (!sr.success || !sr.data || !sr.data[0]) {
+                        scheduleNextPoll();
+                        return;
                     }
-                }).catch(function(){});
-                client.db.from('products').list().then(function(res) {
-                    if (res.success && res.data) {
-                        products = res.data.map(function(p) { return {
-                            sku: p.sku, name: p.name || '', stock: p.stock || 0,
-                            priceCny: p.price_cny || 0, priceUsd: p.price_usd || 0,
-                            originalStock: p.original_stock || p.stock || 0, 
-                            image: p.image_url || '',
-                            image_url: p.image_url || ''
-                        }; });
-                        updateProductList();
-                        updateProductListDisplay();
-                        updateProductStats();
-                        showToast('✅ 库存校准完成，已刷新: ' + products.length + ' 条', 'success');
+                    var rawOms = sr.data[0].omsSync || '{}';
+                    try {
+                        systemSettings.omsSync = typeof rawOms === 'string' ? JSON.parse(rawOms) : rawOms;
+                    } catch(e) {}
+                    if (typeof updateCalibrateTimeDisplay === 'function') updateCalibrateTimeDisplay();
+                    
+                    var oms = systemSettings.omsSync || {};
+                    // 校准已经执行完毕（标记被清除）
+                    if (oms.calibrateTrigger === false || oms.calibrateTrigger === undefined || oms.calibrateTrigger === null) {
+                        var lastLog = (oms.syncLog || [])[0];
+                        if (lastLog && lastLog.type === 'calibrate') {
+                            var skipInfo = lastLog.skipped > 0 ? '（跳过' + lastLog.skipped + '条无变化）' : '';
+                            var detail = '新增' + lastLog.added + ' 更新' + lastLog.updated + skipInfo;
+                            showToast('✅ 库存校准完成: ' + detail, 'success');
+                        } else {
+                            showToast('✅ 库存校准已完成', 'success');
+                        }
+                        // 刷新商品列表
+                        client.db.from('products').list().then(function(res) {
+                            if (res.success && res.data) {
+                                products = res.data.map(function(p) { return {
+                                    sku: p.sku, name: p.name || '', stock: p.stock || 0,
+                                    priceCny: p.price_cny || 0, priceUsd: p.price_usd || 0,
+                                    originalStock: p.original_stock || p.stock || 0, 
+                                    image: p.image_url || '',
+                                    image_url: p.image_url || ''
+                                }; });
+                                updateProductList();
+                                updateProductListDisplay();
+                                updateProductStats();
+                                showToast('📦 已刷新: ' + products.length + ' 条', 'success');
+                            }
+                            if (btn) { btn.textContent = '📊 库存校准'; btn.disabled = false; }
+                        }).catch(function() {
+                            if (btn) { btn.textContent = '📊 库存校准'; btn.disabled = false; }
+                        });
+                        return;
                     }
-                    if (btn) { btn.textContent = '📊 库存校准'; btn.disabled = false; }
-                }).catch(function(e) {
-                    showToast('❌ 校准刷新失败', 'error');
-                    if (btn) { btn.textContent = '📊 库存校准'; btn.disabled = false; }
+                    
+                    // 检查是否有错误
+                    var lastErr = oms.lastError;
+                    if (lastErr && lastErr.type === 'calibrate') {
+                        showToast('❌ 校准失败: ' + lastErr.message, 'error');
+                        if (btn) { btn.textContent = '📊 库存校准'; btn.disabled = false; }
+                        return;
+                    }
+                    
+                    scheduleNextPoll();
+                }).catch(function() {
+                    scheduleNextPoll();
                 });
-            }, 8000);
+            }
+            
+            function scheduleNextPoll() {
+                var elapsed = Date.now() - pollStart;
+                // 超过5分钟还没完成 → 超时恢复按钮
+                if (elapsed > 300000) {
+                    showToast('⚠️ 校准超时，请检查 OMS 连接状态', 'warning');
+                    if (btn) { btn.textContent = '📊 库存校准'; btn.disabled = false; }
+                    return;
+                }
+                setTimeout(pollCalibrate, 15000);
+            }
+            
+            // 首次轮询等3秒（给守护进程响应时间），之后每15秒
+            setTimeout(pollCalibrate, 3000);
         }
 
         // 商品管理页显示校准时间
