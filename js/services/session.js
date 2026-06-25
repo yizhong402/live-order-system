@@ -43,10 +43,13 @@
         function switchSession(id) {
             // 先保存当前场次状态
             syncGlobalsToSession();
+            saveTitleHistoryToLocal();
             
             if (id && activeSessions[id]) {
                 currentSessionId = id;
                 syncSessionToGlobals(activeSessions[id]);
+                // 从 localStorage 恢复当前场次的标题历史
+                loadTitleHistoryFromLocal();
             } else {
                 // 切换到空状态（无场次选中）
                 currentSessionId = null;
@@ -85,6 +88,7 @@
             if (!confirm(`确定要结束场次「${session.sessionTitle}」吗？\n开始时间：${session.startTime}\n当前轮次：${session.currentRound || 1}`)) return;
             
             syncGlobalsToSession();
+            saveTitleHistoryToLocal();
             session.endTime = new Date().toLocaleString('zh-CN');
             session.totalRounds = session.currentRound || 1;
             session.isActive = false;
@@ -456,6 +460,28 @@
             updateCurrentTitle();
         }
         
+        // 将当前场次的 titleHistory/titleRoundMap 持久化到 localStorage
+        function saveTitleHistoryToLocal() {
+            const session = getCurrentSession();
+            if (!session || !session.id) return;
+            try {
+                localStorage.setItem('xh_titleHistory_' + session.id, JSON.stringify(titleHistory));
+                localStorage.setItem('xh_titleRoundMap_' + session.id, JSON.stringify(titleRoundMap));
+            } catch(e) { console.error('保存历史链接到localStorage失败:', e); }
+        }
+        
+        // 从 localStorage 恢复当前场次的 titleHistory/titleRoundMap
+        function loadTitleHistoryFromLocal() {
+            const session = getCurrentSession();
+            if (!session || !session.id) return;
+            try {
+                const h = localStorage.getItem('xh_titleHistory_' + session.id);
+                const m = localStorage.getItem('xh_titleRoundMap_' + session.id);
+                if (h) titleHistory = JSON.parse(h);
+                if (m) titleRoundMap = JSON.parse(m);
+            } catch(e) {}
+        }
+        
         // 保存当前链接名称的轮次
         function saveCurrentTitleRound() {
             const baseTitle = document.getElementById('baseTitle').value.trim();
@@ -468,7 +494,8 @@
         // 保存会话数据
         function saveSessionData() {
             saveCurrentTitleRound();
-            
+            syncGlobalsToSession();
+            saveTitleHistoryToLocal();
         }
         
         // 添加标题到历史记录
