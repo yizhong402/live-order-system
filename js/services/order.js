@@ -356,7 +356,9 @@
                 return;
             }
             
-            const filtered = orders.filter(order => order.round === round);
+            // 仅在当前场次范围内按轮次过滤
+            const baseOrders = currentSession ? orders.filter(order => order.sessionId === currentSession.id) : [];
+            const filtered = baseOrders.filter(order => order.round === round);
             updateRealTimeOrderList(filtered);
         }
         
@@ -370,11 +372,13 @@
             let displayOrders = filteredOrders;
             
             if (!displayOrders) {
-                // 默认显示当前直播场次的订单
                 if (currentSession) {
+                    // 默认只显示当前场次的订单
                     displayOrders = orders.filter(order => order.sessionId === currentSession.id);
                 } else {
-                    displayOrders = orders;
+                    // 无当前场次时，不展示全量订单
+                    orderList.innerHTML = '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.4);">请先选择或创建直播场次</div>';
+                    return;
                 }
                 // 按轮次倒序排序
                 displayOrders = [...displayOrders].sort((a, b) => b.round - a.round);
