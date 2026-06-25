@@ -65,12 +65,17 @@
                 const sessionAnchor = sessionData.anchor || '未知主播';
                 const sessionStartTime = sessionData.startTime || sessionData.createdAt || '未知时间';
                 const sessionEndTime = sessionData.endTime || '进行中';
-                const sessionTotalRounds = sessionData.totalRounds || '0';
-                
-                // 计算订单数量
+                // 计算该场次的有效订单和实际轮次数
                 const sessionOrders = session.orders && session.orders.length > 0 
                     ? session.orders 
                     : orders.filter(o => o.sessionId == sessionId);
+                // 实际轮次数：取该场次所有订单的 round 去重
+                var actualRounds = 0;
+                if (sessionOrders.length > 0) {
+                    var roundSet = new Set();
+                    sessionOrders.forEach(function(o) { roundSet.add(o.round); });
+                    actualRounds = roundSet.size;
+                }
                 
                 const totalSkus = sessionOrders.reduce((acc, o) => {
                     const skuList = o.skus || [];
@@ -85,7 +90,7 @@
                         <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px;">
                             <span style="color:#FF9800;">🎤 ${sessionAnchor}</span><br>
                             🕐 ${sessionStartTime} - ${sessionEndTime}<br>
-                            📊 ${sessionTotalRounds} 轮 | 📦 ${sessionOrders.length} 订单 | 🛒 ${totalSkus} SKU
+                            📊 ${actualRounds} 轮 | 📦 ${sessionOrders.length} 订单 | 🛒 ${totalSkus} SKU
                         </div>
                         <div style="margin-top:8px;color:#10b981;font-size:12px;text-align:right;">点击查看订单 →</div>
                     </div>
@@ -177,12 +182,18 @@
                 const sessionAnchor = sessionData.anchor || '未知主播';
                 const sessionStartTime = sessionData.startTime || sessionData.createdAt || '未知时间';
                 const sessionEndTime = sessionData.endTime || '进行中';
-                const sessionTotalRounds = sessionData.totalRounds || '0';
-                
                 // 获取场次订单：先从场次内部的orders数组获取（旧格式），如果没有则从全局orders数组获取（新格式）
                 const internalOrders = session.orders || [];
                 const globalOrders = orders.filter(o => o.sessionId === sessionId);
                 const sessionOrders = internalOrders.length > 0 ? internalOrders : globalOrders;
+                
+                // 实际轮次数：取该场次所有订单的 round 去重
+                var actualRounds = 0;
+                if (sessionOrders.length > 0) {
+                    var roundSet = new Set();
+                    sessionOrders.forEach(function(o) { roundSet.add(o.round); });
+                    actualRounds = roundSet.size;
+                }
                 
                 const totalSkus = sessionOrders.reduce((acc, o) => {
                     // 兼容两种订单格式
@@ -198,7 +209,7 @@
                         <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px;">
                             <span style="color:#FF9800;">🎤 ${sessionAnchor}</span><br>
                             🕐 ${sessionStartTime} - ${sessionEndTime}<br>
-                            📊 ${sessionTotalRounds} 轮 | 📦 ${sessionOrders.length} 订单 | 🛒 ${totalSkus} SKU
+                            📊 ${actualRounds} 轮 | 📦 ${sessionOrders.length} 订单 | 🛒 ${totalSkus} SKU
                         </div>
                         <div style="display:flex;gap:6px;margin-top:8px;">
                         <button class="btn btn-primary" style="padding:2px 8px;font-size:11px;" onclick="viewSessionOrders('${sessionId}')">查看订单</button>
@@ -262,9 +273,20 @@
                 return;
             }
             
+            // 同步删除 BaaS 中的场次记录
+            client.db.from('live_sessions').delete(parseInt(targetId)).catch(function(e){});
+            // 同时删除该场次关联的订单
+            orders.filter(function(o) { return String(o.sessionId) === targetId; }).forEach(function(o) {
+                if (o.id) client.db.from('orders').delete(o.id).catch(function(e){});
+            });
+            // 内存删除
+            orders = orders.filter(function(o) { return String(o.sessionId) !== targetId; });
+            
             liveHistory.splice(idx, 1);
             saveLiveHistory();
             updateSessionList();
+            updateOrderList();
+            updateRealTimeOrderList();
             if (typeof updateDataStats === 'function') updateDataStats();
             console.log('已删除场次:', targetId);
         }

@@ -390,9 +390,11 @@
             const session = getCurrentSession();
             if (!session) { alert('请先选择场次！'); return; }
             const current = session.anchor || '';
-            const newAnchor = prompt(`当前主播：${current}\n\n输入新主播名字（中途换人，后续订单归属新主播）：`, current);
-            if (newAnchor && newAnchor.trim() && newAnchor.trim() !== current) {
-                session.anchor = newAnchor.trim();
+            const newAnchor = prompt(`当前主播：${current}\n\n输入新主播名字（中途换人，追加到历史主播列表）：`, '');
+            if (newAnchor && newAnchor.trim()) {
+                // 累加主播名（不覆盖），方便历史记录显示完整主播链
+                const anchorChain = current ? current + '/' + newAnchor.trim() : newAnchor.trim();
+                session.anchor = anchorChain;
                 document.getElementById('sessionAnchor').textContent = session.anchor;
                 // 更新场次列表显示
                 updateSessionList();
@@ -405,7 +407,7 @@
                 }
                 syncGlobalsToSession();
                 saveSessionToLocalStorage();
-                showToast(`✅ 主播已切换为 ${session.anchor}`, 'success');
+                showToast(`✅ 主播链已更新: ${anchorChain}`, 'success');
             }
         }
         
@@ -709,6 +711,8 @@
                 const skuKeys = Object.keys(currentSkus);
                 
                 if (baseTitle && skuKeys.length > 0) {
+                    // 自动保存到历史链接
+                    addToTitleHistory(baseTitle);
                     const existingOrder = orders.find(o => o.round === currentRound && o.title.startsWith(baseTitle));
                     
                     if (existingOrder) {
@@ -894,4 +898,115 @@
             clearSkus();
             updateCurrentTitle();
             document.getElementById('skuInput').focus();
+        }
+
+        /* === 半屏面板 === */
+        // ESC 关闭半屏面板
+        document.addEventListener('keydown', function slidePanelEsc(e) {
+            if (e.key === 'Escape') {
+                ['product','combo'].forEach(function(type) {
+                    var p = document.getElementById('slide' + type.charAt(0).toUpperCase() + type.slice(1) + 'Panel');
+                    if (p && p.classList.contains('active')) closeSlidePanel(type);
+                });
+            }
+        });
+        function openSlidePanel(type) {
+            const panel = document.getElementById('slide' + type.charAt(0).toUpperCase() + type.slice(1) + 'Panel');
+            if (!panel) { showPage(type); return; }
+            panel.classList.add('active');
+            if (type === 'product') renderSlideProductList();
+            else renderSlideComboList();
+        }
+
+        function closeSlidePanel(type) {
+            const panel = document.getElementById('slide' + type.charAt(0).toUpperCase() + type.slice(1) + 'Panel');
+            if (!panel) return;
+            panel.classList.remove('active');
+        }
+
+        var _slideSearchTimer = null;
+        function debounceSearchSlideProduct() {
+            clearTimeout(_slideSearchTimer);
+            _slideSearchTimer = setTimeout(renderSlideProductList, 300);
+        }
+        function debounceSearchSlideCombo() {
+            clearTimeout(_slideSearchTimer);
+            _slideSearchTimer = setTimeout(renderSlideComboList, 300);
+        }
+
+        function renderSlideProductList() {
+            const container = document.getElementById('slideProductList');
+            if (!container) return;
+            const q = (document.getElementById('slideProductSearch').value || '').trim().toUpperCase();
+            let filtered = products || [];
+            if (q) {
+                filtered = filtered.filter(p => p.sku.toUpperCase().includes(q) || (p.name || '').toUpperCase().includes(q));
+            }
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:32px;">未找到匹配商品</div>';
+                return;
+            }
+            // 最多显示200个，防止渲染卡顿
+            if (filtered.length > 200) filtered = filtered.slice(0, 200);
+            container.innerHTML = filtered.map(function(p) {
+                var stock = parseInt(p.stock || 0);
+                var stockClass = 'normal';
+                var stockText = '库存: ' + stock;
+                if (stock <= 0) { stockClass = 'out'; stockText = '⚠️ 缺货'; }
+                else if (stock <= 5) { stockClass = 'low'; stockText = '⚠️ 库存: ' + stock; }
+                var imgSrc = p.image || p.image_url || '';
+                return '<div class="slide-product-item">'
+                    + (imgSrc ? '<img src="' + imgSrc + '" alt="" onerror="this.style.display=\'none\'">' : '<div style="width:48px;height:48px;border-radius:6px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:18px;">📦</div>')
+                    + '<div class="slide-product-info">'
+                    + '<div class="sku">' + p.sku + '</div>'
+                    + '<div class="name">' + (p.name || '') + '</div>'
+                    + '<div class="stock ' + stockClass + '">' + stockText + '</div>'
+                    + '</div>'
+                    + '<button class="slide-copy-btn" onclick="copySku(\'' + p.sku + '\')">复制SKU</button>'
+                    + '</div>';
+            }).join('');
+        }
+
+        function renderSlideComboList() {
+            const container = document.getElementById('slideComboList');
+            if (!container) return;
+            const q = (document.getElementById('slideComboSearch').value || '').trim().toUpperCase();
+            let filtered = comboSkus || [];
+            if (q) {
+                filtered = filtered.filter(function(c) {
+                    if (c.code.toUpperCase().includes(q)) return true;
+                    return (c.skus || []).some(function(s) { return s.sku ? s.sku.toUpperCase().includes(q) : String(s).toUpperCase().includes(q); });
+                });
+            }
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:32px;">未找到匹配组合</div>';
+                return;
+            }
+            container.innerHTML = filtered.map(function(c) {
+                var skuTags = (c.skus || []).map(function(s) {
+                    var sku = s.sku || s;
+                    return '<span class="sku-tag" onclick="navigator.clipboard.writeText(\'' + sku + '\');showToast(\'已复制: ' + sku + '\',\'success\')" style="cursor:pointer;">' + sku + '</span>';
+                }).join('');
+                return '<div class="slide-combo-item">'
+                    + '<div class="code">' + c.code + ' <button class="slide-copy-btn" onclick="navigator.clipboard.writeText(\'' + c.code + '\');showToast(\'已复制组合编码\',\'success\')">复制编码</button></div>'
+                    + '<div class="skus">' + skuTags + '</div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        function copySku(sku) {
+            navigator.clipboard.writeText(sku).then(function() {
+                showToast('✅ 已复制: ' + sku, 'success');
+            }, function() {
+                // fallback for non-https
+                var ta = document.createElement('textarea');
+                ta.value = sku;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast('✅ 已复制: ' + sku, 'success');
+            });
         }

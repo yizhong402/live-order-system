@@ -380,8 +380,8 @@
                     orderList.innerHTML = '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.4);">请先选择或创建直播场次</div>';
                     return;
                 }
-                // 按轮次倒序排序
-                displayOrders = [...displayOrders].sort((a, b) => b.round - a.round);
+                // 按保存时间倒序排列（新保存的排最前）
+                displayOrders = [...displayOrders].sort((a, b) => (b.id || 0) - (a.id || 0));
             }
             
             if (displayOrders.length === 0) {
@@ -726,12 +726,36 @@
             
             if (!confirm2) return;
             
+            // 异步删除 BaaS 数据（不阻塞 UI）
+            var orderIds = orders.map(function(o) { return o.id; }).filter(Boolean);
+            orderIds.forEach(function(id) {
+                client.db.from('orders').delete(id).catch(function(e){});
+            });
+            var sessionIds = (liveHistory || []).map(function(s) {
+                var sData = s.session || s;
+                return sData.id;
+            }).filter(Boolean);
+            sessionIds.forEach(function(id) {
+                client.db.from('live_sessions').delete(id).catch(function(e){});
+            });
+            // 如果 activeSessions 中还有未存到 liveHistory 的，一起删
+            var activeIds = Object.keys(activeSessions || {}).filter(function(id) {
+                return id && !sessionIds.includes(parseInt(id));
+            });
+            activeIds.forEach(function(id) {
+                client.db.from('live_sessions').delete(parseInt(id)).catch(function(e){});
+            });
+            
             // 执行删除
             orders = [];
             liveHistory = [];
             currentSession = null;
             currentRound = 1;
             currentSkus = {};
+            // 清空 activeSessions 使下拉框不再展示
+            if (typeof activeSessions === 'object') {
+                Object.keys(activeSessions).forEach(function(k) { delete activeSessions[k]; });
+            }
             
             // 更新显示
             updateOrderList();
@@ -740,6 +764,8 @@
             updateCurrentRoundDisplay();
             updateSkuList();
             updateRealTimeOrderList();
+            // 更新下拉选择框
+            updateSessionSelector();
             
             // 更新筛选后的场次列表
             const filteredSessionListEl = document.getElementById('filteredSessionList');
@@ -785,7 +811,14 @@
                     const orderNum = exportOrdersList.length - index;
                     const totalSkus = order.skus.length;
                     const status = order.isOverSold ? '超卖' : (order.note ? '有备注' : '正常');
-                    csv += `${orderNum},${order.round},${order.title},${totalSkus},${skuItem.sku},${skuItem.quantity},${order.auctionPrice || ''},"${order.note || ''}",${order.sessionAnchor || ''},${order.sessionDate || ''},${order.sessionTime || ''},${order.timestamp},${status}\n`;
+                                        // 主播名：优先从当前场次取，否则从订单的 sessionAnchor 取
+                    var anchorName = '';
+                    if (currentSession && currentSession.anchor) {
+                        anchorName = currentSession.anchor;
+                    } else if (order.sessionAnchor) {
+                        anchorName = order.sessionAnchor;
+                    }
+                    csv += `${orderNum},${order.round},${order.title},${totalSkus},${skuItem.sku},${skuItem.quantity},${order.auctionPrice || ''},"${order.note || ''}",${anchorName},${order.sessionDate || ''},${order.sessionTime || ''},${order.timestamp},${status}\n`;
                 });
             });
             

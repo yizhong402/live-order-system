@@ -460,8 +460,8 @@
                         </div>
                         
                         <div class="btn-group" style="margin-bottom:15px;">
-                            <button class="btn btn-success" onclick="showPage('product')">📦 商品管理</button>
-                            <button class="btn btn-primary" onclick="showPage('combo')">🔗 组合SKU</button>
+                            <button class="btn btn-success" onclick="openSlidePanel('product')">📦 商品管理</button>
+                            <button class="btn btn-primary" onclick="openSlidePanel('combo')">🔗 组合SKU</button>
                             <button class="btn btn-warning" onclick="endLive()">🚫 结束直播</button>
                         </div>
                         
@@ -551,6 +551,45 @@
                         
                         <div class="order-list" id="realTimeOrderList" style="flex:1;overflow-y:auto;"></div>
                     </div>
+                    </div>
+                </div>
+                
+                <!-- 半屏商品管理面板 -->
+                <div id="slideProductPanel" class="slide-panel">
+                    <div class="slide-panel-overlay" onclick="closeSlidePanel('product')"></div>
+                    <div class="slide-panel-content">
+                        <div class="slide-panel-header">
+                            <h3>📦 商品管理</h3>
+                            <button class="slide-panel-close" onclick="closeSlidePanel('product')">&times;</button>
+                        </div>
+                        <div class="slide-panel-body">
+                            <div class="form-group">
+                                <input type="text" id="slideProductSearch" placeholder="扫码或输入SKU搜索..." oninput="debounceSearchSlideProduct()">
+                            </div>
+                            <div id="slideProductList" style="max-height:calc(100vh - 200px);overflow-y:auto;">
+                                <div style="text-align:center;color:var(--text-muted);padding:32px;">正在加载商品数据...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 半屏组合SKU面板 -->
+                <div id="slideComboPanel" class="slide-panel">
+                    <div class="slide-panel-overlay" onclick="closeSlidePanel('combo')"></div>
+                    <div class="slide-panel-content">
+                        <div class="slide-panel-header">
+                            <h3>🔗 组合SKU</h3>
+                            <button class="slide-panel-close" onclick="closeSlidePanel('combo')">&times;</button>
+                        </div>
+                        <div class="slide-panel-body">
+                            <div class="form-group">
+                                <input type="text" id="slideComboSearch" placeholder="搜索组合编码或组合内的 SKU..." oninput="debounceSearchSlideCombo()">
+                            </div>
+                            <div id="slideComboResult" style="margin-bottom:15px;padding:15px;background:rgba(16,185,129,0.1);border-radius:8px;display:none;"></div>
+                            <div id="slideComboList" style="max-height:calc(100vh - 200px);overflow-y:auto;">
+                                <div style="text-align:center;color:var(--text-muted);padding:32px;">正在加载组合数据...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
