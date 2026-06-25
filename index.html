@@ -98,6 +98,22 @@
                     </span>
                 </h2>
                 
+                <!-- 🆕 新上架产品板块 -->
+                <div style="margin-bottom:16px;padding:14px;background:rgba(0,0,0,0.12);border-radius:10px;">
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+                        <span style="font-size:14px;font-weight:500;color:var(--text-primary);">🆕 新上架产品</span>
+                        <select id="newProductDateFilter" style="padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius);background:rgba(0,0,0,0.2);color:#fff;font-size:12px;"></select>
+                        <span style="font-size:12px;color:var(--text-muted);">排序:</span>
+                        <select id="newProductSort" style="padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius);background:rgba(0,0,0,0.2);color:#fff;font-size:12px;">
+                            <option value="desc">库存从多到少</option>
+                            <option value="asc">库存从少到多</option>
+                        </select>
+                    </div>
+                    <div id="newProductList" style="max-height:260px;overflow-y:auto;">
+                        <div style="text-align:center;color:var(--text-muted);padding:32px;font-size:13px;">加载中...</div>
+                    </div>
+                </div>
+
                 <!-- 折叠的添加商品区域 -->
                 <button class="btn btn-success" onclick="toggleAddForm()" id="addProductToggleBtn" style="margin-bottom:12px;">➕ 添加商品</button>
                 <div id="addProductForm" style="display:none;padding:15px;background:rgba(0,0,0,0.12);border-radius:10px;margin-bottom:15px;">

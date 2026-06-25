@@ -409,6 +409,94 @@
         // ====== 数据看板 ======
         let dashChartInstance = null;
 
+        // ===== 库存快照 =====
+        let _stockSnapshotsCache = null;
+
+        async function loadStockSnapshots() {
+            if (_stockSnapshotsCache) return _stockSnapshotsCache;
+            try {
+                const resp = await fetch('/data/stock-snapshots.json');
+                if (!resp.ok) return null;
+                _stockSnapshotsCache = await resp.json();
+                return _stockSnapshotsCache;
+            } catch(e) {
+                console.error('快照加载失败:', e);
+                return null;
+            }
+        }
+
+        function renderHotProducts() {
+            const container = document.getElementById('dashStockOverview');
+            if (!container) return;
+
+            loadStockSnapshots().then(snapshots => {
+                if (!snapshots) {
+                    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:16px;font-size:12px;">⏳ 快照数据准备中，明天08:00后查看</div>';
+                    return;
+                }
+
+                const dates = Object.keys(snapshots).sort();
+                if (dates.length < 2) {
+                    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:16px;font-size:12px;">📸 已有 <strong>' + dates[0] + '</strong> 快照<br>明天08:00后出热销对比结果</div>';
+                    return;
+                }
+
+                const prevDate = dates[dates.length - 2];
+                const currDate = dates[dates.length - 1];
+                const prevSnap = snapshots[prevDate] || {};
+                const currSnap = snapshots[currDate] || {};
+
+                // 计算每个SKU的库存变动
+                const changes = [];
+                for (const sku in prevSnap) {
+                    const prevStock = prevSnap[sku] || 0;
+                    const currStock = currSnap[sku];
+                    if (currStock === undefined) continue;
+                    const diff = prevStock - currStock;
+                    // 只取正数（库存减少=热销）
+                    if (diff > 0) {
+                        changes.push({ sku: sku, prevStock: prevStock, currStock: currStock, diff: diff });
+                    }
+                }
+
+                // 按变动量从大到小排序，取前20
+                changes.sort((a, b) => b.diff - a.diff);
+                const top = changes.slice(0, 20);
+
+                if (top.length === 0) {
+                    container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:16px;">暂无热销品</div>';
+                    return;
+                }
+
+                container.innerHTML = top.map(function(item) {
+                    const product = (typeof products !== 'undefined' ? products.find(function(p) { return p.sku === item.sku; }) : null);
+                    const name = product ? product.name : '';
+                    const imgUrl = product ? (product.image || product.image_url || '') : '';
+                    const pct = item.prevStock > 0 ? Math.round(item.diff / item.prevStock * 100) : 100;
+                    const barColor = pct >= 70 ? '#ef4444' : pct >= 40 ? '#f59e0b' : '#22c55e';
+
+                    return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">'
+                        + '<div style="width:40px;height:40px;flex-shrink:0;border-radius:6px;overflow:hidden;background:rgba(255,255,255,0.05);">'
+                        + (imgUrl ? '<img src="' + imgUrl + '" style="width:40px;height:40px;object-fit:cover;" onerror="this.style.display=\'none\'">' : '')
+                        + '</div>'
+                        + '<div style="flex:1;min-width:0;">'
+                        + '<div style="font-size:12px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + item.sku + '</div>'
+                        + (name ? '<div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + '</div>' : '')
+                        + '<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:3px;">'
+                        + '<span style="color:' + barColor + ';">📉 昨日减 <strong>' + item.diff + '</strong> 件</span>'
+                        + '<span style="color:var(--text-muted);">' + pct + '%</span>'
+                        + '</div>'
+                        + '<div style="height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;margin-top:3px;">'
+                        + '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:2px;"></div>'
+                        + '</div>'
+                        + '</div>'
+                        + '</div>';
+                }).join('') + '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding-top:6px;">共 ' + top.length + ' 款热销品</div>';
+            }).catch(function() {
+                container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:16px;">加载失败</div>';
+            });
+        }
+
         function renderDashboard() {
             if (!products) { setTimeout(renderDashboard, 500); return; }
             
@@ -470,8 +558,8 @@
             // 最近订单
             renderRecentOrders();
             
-            // 库存概览
-            renderStockOverview();
+            // 热销品 Top 20
+            renderHotProducts();
             
             // 图表
             renderDashboardCharts();
@@ -520,6 +608,113 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // ===== 商品管理：新上架产品渲染 =====
+        // 初始化新上架产品的日期筛选下拉
+        function initNewProductFilters() {
+            const filterSelect = document.getElementById('newProductDateFilter');
+            const sortSelect = document.getElementById('newProductSort');
+            if (!filterSelect || filterSelect.options.length > 0) return;
+
+            loadStockSnapshots().then(function(snapshots) {
+                if (!snapshots) return;
+                const dates = Object.keys(snapshots).sort();
+                if (dates.length < 2) return;
+
+                // 只填充一次，默认选最新日期
+                filterSelect.innerHTML = dates.map(function(d) {
+                    return '<option value="' + d + '">' + d + '</option>';
+                }).join('');
+                filterSelect.value = dates[dates.length - 1];
+                filterSelect.onchange = function() { renderNewProducts(); };
+                if (sortSelect) sortSelect.onchange = function() { renderNewProducts(); };
+
+                // 首次自动渲染
+                renderNewProducts();
+            });
+        }
+
+        function renderNewProducts() {
+            const container = document.getElementById('newProductList');
+            const filterSelect = document.getElementById('newProductDateFilter');
+            const sortSelect = document.getElementById('newProductSort');
+            if (!container) return;
+
+            // 如果还没初始化（下拉为空），先初始化
+            if (filterSelect && filterSelect.options.length === 0) {
+                initNewProductFilters();
+                return;
+            }
+
+            loadStockSnapshots().then(function(snapshots) {
+                if (!snapshots) {
+                    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:32px;font-size:13px;">暂无快照数据</div>';
+                    return;
+                }
+
+                const dates = Object.keys(snapshots).sort();
+                if (dates.length < 2) {
+                    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:32px;font-size:13px;">需要两份快照才能对比新上架产品</div>';
+                    return;
+                }
+
+                const selectedDate = filterSelect ? filterSelect.value : dates[dates.length - 1];
+                const selectedIdx = dates.indexOf(selectedDate);
+                if (selectedIdx < 1) {
+                    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:32px;font-size:13px;">选择日期后查看新上架产品</div>';
+                    return;
+                }
+
+                const currSnap = snapshots[selectedDate] || {};
+                const prevSnap = snapshots[dates[selectedIdx - 1]] || {};
+
+                // 新上架 = 前一天无此SKU或库存=0，当天>0
+                const newProducts = [];
+                for (const sku in currSnap) {
+                    const currStock = currSnap[sku] || 0;
+                    if (currStock <= 0) continue;
+                    const prevStock = prevSnap[sku];
+                    if (prevStock === undefined || prevStock <= 0) {
+                        newProducts.push({ sku: sku, stock: currStock });
+                    }
+                }
+
+                // 排序（按库存数量）
+                const sortOrder = sortSelect ? sortSelect.value : 'desc';
+                if (sortOrder === 'desc') {
+                    newProducts.sort(function(a, b) { return b.stock - a.stock; });
+                } else {
+                    newProducts.sort(function(a, b) { return a.stock - b.stock; });
+                }
+
+                if (newProducts.length === 0) {
+                    container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:32px;font-size:13px;">该日期暂无新上架产品</div>';
+                    return;
+                }
+
+                container.innerHTML = newProducts.map(function(item) {
+                    const product = (typeof products !== 'undefined' ? products.find(function(p) { return p.sku === item.sku; }) : null);
+                    const name = product ? product.name : '';
+                    const imgUrl = product ? (product.image || product.image_url || '') : '';
+                    const priceCny = product ? (product.priceCny || 0) : 0;
+                    const priceUsd = product ? (product.priceUsd || 0) : 0;
+
+                    return '<div style="display:flex;gap:10px;align-items:center;padding:10px 12px;margin-bottom:6px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.06);">'
+                        + '<div style="width:48px;height:48px;flex-shrink:0;border-radius:6px;overflow:hidden;background:rgba(255,255,255,0.05);">'
+                        + (imgUrl ? '<img src="' + imgUrl + '" style="width:48px;height:48px;object-fit:cover;" onerror="this.style.display=\'none\'">' : '<div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:20px;">📦</div>')
+                        + '</div>'
+                        + '<div style="flex:1;min-width:0;">'
+                        + '<div style="font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + item.sku + '</div>'
+                        + (name ? '<div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + '</div>' : '')
+                        + '</div>'
+                        + '<div style="text-align:right;flex-shrink:0;">'
+                        + '<div style="font-size:13px;color:#22c55e;font-weight:500;">库存: ' + item.stock + '</div>'
+                        + '<div style="font-size:11px;color:var(--text-muted);">¥' + priceCny.toFixed(2) + ' / $' + priceUsd.toFixed(2) + '</div>'
+                        + '</div>'
+                        + '</div>';
+                }).join('') + '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding-top:8px;">共 ' + newProducts.length + ' 款新上架产品</div>';
+            });
         }
 
         function renderStockOverview() {

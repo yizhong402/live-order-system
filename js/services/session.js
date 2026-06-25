@@ -299,6 +299,7 @@
                 }
                 try { updateProductList(); } catch(e) { console.warn('updateProductList error:', e); }
                 try { updateProductStats(); } catch(e) { console.warn('updateProductStats error:', e); }
+                try { if (typeof renderNewProducts === 'function') renderNewProducts(); } catch(e) { console.warn('renderNewProducts error:', e); }
                 // 重置库存筛选为全部
                 currentStockFilter = 'all';
                 document.querySelectorAll('[id^="filter"]').forEach(btn => btn.classList.remove('active'));
