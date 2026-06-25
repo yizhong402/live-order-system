@@ -186,9 +186,25 @@
             }
         }
         
+        var _filteredOrders = null;
+        
         function updateOrderList(filteredOrders = null) {
             const orderListEl = document.getElementById('orderList');
-            const displayOrders = filteredOrders || orders;
+            _filteredOrders = filteredOrders;
+            let displayOrders;
+            
+            if (filteredOrders) {
+                displayOrders = filteredOrders;
+            } else if (currentSession) {
+                // 默认只显示当前场次的订单（活跃场次或历史场次）
+                displayOrders = orders.filter(order => order.sessionId === currentSession.id);
+            } else {
+                displayOrders = orders;
+                if (displayOrders.length === 0) {
+                    orderListEl.innerHTML = '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.4);">暂无订单记录</div>';
+                    return;
+                }
+            }
             
             if (displayOrders.length === 0) {
                 orderListEl.innerHTML = '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.4);">暂无订单记录</div>';
@@ -200,7 +216,8 @@
             });
             
             orderListEl.innerHTML = displayOrders.map((order, index) => {
-                const actualIndex = filteredOrders ? orders.indexOf(order) : index;
+                // 始终用 orders.indexOf(order) 确保索引正确（过滤场景下displayOrders是子集）
+                const actualIndex = orders.indexOf(order);
                 let orderStyle = '';
                 let warningBadge = '';
                 
@@ -309,7 +326,9 @@
                 return;
             }
             
-            const filtered = orders.filter(order => order.round === round);
+            // 仅在当前场次范围内按轮次过滤
+            const baseOrders = currentSession ? orders.filter(order => order.sessionId === currentSession.id) : orders;
+            const filtered = baseOrders.filter(order => order.round === round);
             updateOrderList(filtered);
         }
         
@@ -327,7 +346,7 @@
             document.getElementById('dateFilter').value = '';
             currentSession = null;  // 重置当前会话
             displayFilteredSessions(liveHistory);
-            updateOrderList();  // 更新订单列表显示所有订单
+            updateOrderList();  // 更新订单列表显示当前场次订单
         }
         
         function filterOrdersRealTime() {
@@ -653,6 +672,14 @@
                 return;
             }
             
+            // 同步到 BaaS
+            if (order.id) {
+                client.db.from('orders').update(order.id, {
+                    round: order.round, title: order.title,
+                    skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''})
+                }).then(function(){}, function(e){ console.error('☁️ 编辑订单保存失败:', e); });
+            }
+            
             updateOrderList();
             saveToLocalStorage();
             closeEditModal();
@@ -664,7 +691,14 @@
         }
         
         function deleteOrder(index) {
+            const deleted = orders[index];
             orders.splice(index, 1);
+            
+            // 同步删除 BaaS
+            if (deleted && deleted.id) {
+                client.db.from('orders').delete(deleted.id).then(function(){}, function(e){ console.error('☁️ 删除订单失败:', e); });
+            }
+            
             updateOrderList();
             updateRealTimeOrderList();
             saveToLocalStorage();

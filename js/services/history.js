@@ -229,24 +229,20 @@
         
         function viewSessionOrders(sessionId) {
             const session = liveHistory.find(s => (s.session || s).id == sessionId);
-            let sessionOrders = [];
             
             if (session) {
-                // 将整个session对象（包含orders）设置为currentSession
-                // 这样exportOrders才能正确访问到订单数据
-                currentSession = session;
+                currentSession = session.session || session;
+                if (typeof currentSession.id === 'string') currentSession.id = parseInt(currentSession.id) || currentSession.id;
                 
-                // 旧格式：订单保存在场次内部的orders数组
+                // 旧格式：订单嵌入在session对象中，传到updateOrderList
                 if (session.orders && session.orders.length > 0) {
-                    sessionOrders = session.orders;
-                } else {
-                    // 新格式：订单保存在全局orders数组
-                    const actualSessionId = (session.session || session).id;
-                    sessionOrders = orders.filter(order => order.sessionId == actualSessionId);
+                    updateOrderList(session.orders);
+                    return;
                 }
             }
             
-            updateOrderList(sessionOrders);
+            // 新格式：订单在全局orders数组，按sessionId过滤
+            updateOrderList();
         }
         
         // 获取时间范围（使用自定义日期选择）
