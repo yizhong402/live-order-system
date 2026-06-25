@@ -856,6 +856,35 @@ let originalImages = [];
         
         // 添加滚动事件监听
         container.addEventListener('scroll', renderVisibleItems);
+        
+        // 图片预加载：后台加载当前不可见区域的图片到缓存
+        function preloadOffscreenImages() {
+            const scrollTop = container.scrollTop;
+            const viewStart = Math.floor(scrollTop / ITEM_HEIGHT);
+            const viewEnd = viewStart + VISIBLE_COUNT;
+            // 预加载当前可见区域上下各 50 个
+            const preloadStart = Math.max(0, viewStart - 50);
+            const preloadEnd = Math.min(filteredProducts.length, viewEnd + 50);
+            for (let i = preloadStart; i < preloadEnd; i++) {
+                const p = filteredProducts[i];
+                if (!p) continue;
+                const imgUrl = p.image_url || p.image || '';
+                if (imgUrl && !productImagesCache[p.sku + '_preloaded']) {
+                    productImagesCache[p.sku + '_preloaded'] = true;
+                    const img = new Image();
+                    img.onload = function() {
+                        // 加载完成后不要额外操作，浏览器会缓存
+                    };
+                    img.src = imgUrl;
+                }
+            }
+        }
+        preloadOffscreenImages();
+        container.addEventListener('scroll', function() {
+            // 滚动停止后预加载（防抖）
+            clearTimeout(container._preloadTimer);
+            container._preloadTimer = setTimeout(preloadOffscreenImages, 500);
+        });
     }
     
     function displayProductList(productsToDisplay, elementId) {
