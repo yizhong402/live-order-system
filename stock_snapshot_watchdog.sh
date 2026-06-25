@@ -27,8 +27,13 @@ while true; do
     if [ "$CURRENT_HOUR" = "08" ] && [ "$CURRENT_MIN" = "00" ] && [ "$CURRENT_DATE" != "$LAST_RUN_DATE" ]; then
         log "⏰ 定时快照触发"
         cd "$SCRIPT_DIR" && python3 "$SNAPSHOT_SCRIPT" 2>&1 | tee -a "$LOG_FILE"
+        
+        # 快照完成后立即跑健康检查
+        log "🔍 运行每日健康巡检..."
+        bash "$SCRIPT_DIR/daily_health_check.sh" 2>&1 | tee -a "$LOG_FILE"
+        
         LAST_RUN_DATE="$CURRENT_DATE"
-        log "✅ 快照完成"
+        log "✅ 快照+巡检完成"
         # 等1分钟避免重复触发
         sleep 60
     fi
