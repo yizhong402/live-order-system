@@ -698,7 +698,7 @@
             
             // 同步删除 BaaS
             if (deleted && deleted.id) {
-                client.db.from('orders').delete(deleted.id).then(function(){}, function(e){ console.error('☁️ 删除订单失败:', e); });
+                client.db.from('orders').delete().eq('id', deleted.id).then(function(){}, function(e){ console.error('☁️ 删除订单失败:', e); });
             }
             
             updateOrderList();
@@ -729,21 +729,21 @@
             // 异步删除 BaaS 数据（不阻塞 UI）
             var orderIds = orders.map(function(o) { return o.id; }).filter(Boolean);
             orderIds.forEach(function(id) {
-                client.db.from('orders').delete(id).catch(function(e){});
+                client.db.from('orders').delete().eq('id', id).catch(function(e){});
             });
             var sessionIds = (liveHistory || []).map(function(s) {
                 var sData = s.session || s;
                 return sData.id;
             }).filter(Boolean);
             sessionIds.forEach(function(id) {
-                client.db.from('live_sessions').delete(id).catch(function(e){});
+                client.db.from('live_sessions').delete().eq('id', id).catch(function(e){});
             });
             // 如果 activeSessions 中还有未存到 liveHistory 的，一起删
             var activeIds = Object.keys(activeSessions || {}).filter(function(id) {
                 return id && !sessionIds.includes(parseInt(id));
             });
             activeIds.forEach(function(id) {
-                client.db.from('live_sessions').delete(parseInt(id)).catch(function(e){});
+                client.db.from('live_sessions').delete().eq('id', parseInt(id)).catch(function(e){});
             });
             
             // 执行删除

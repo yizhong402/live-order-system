@@ -274,10 +274,10 @@
             }
             
             // 同步删除 BaaS 中的场次记录
-            client.db.from('live_sessions').delete(parseInt(targetId)).catch(function(e){});
+            client.db.from('live_sessions').delete().eq('id', parseInt(targetId)).catch(function(e){});
             // 同时删除该场次关联的订单
             orders.filter(function(o) { return String(o.sessionId) === targetId; }).forEach(function(o) {
-                if (o.id) client.db.from('orders').delete(o.id).catch(function(e){});
+                if (o.id) client.db.from('orders').delete().eq('id', o.id).catch(function(e){});
             });
             // 内存删除
             orders = orders.filter(function(o) { return String(o.sessionId) !== targetId; });
