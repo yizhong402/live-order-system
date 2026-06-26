@@ -43,9 +43,11 @@
         let stockPollTimer = null;
         
         function startStockPolling() {
-            console.log('📡 库存轮询已启动 (5秒间隔)');
+            console.log('📡 库存轮询已启动 (每轮完成后等5秒)');
             stopStockPolling();
-            stockPollTimer = setInterval(async () => {
+            
+            async function pollOnce() {
+                stockPollTimer = setTimeout(pollOnce, 5000);
                 try {
                     const res = await client.db.from('products').select('sku,stock').list();
                     if (res.success && res.data) {
@@ -59,9 +61,7 @@
                         });
                         if (changed.length > 0) {
                             console.log('🔄 库存变化:', changed.map(c => `${c.sku}:${c.old}→${c.new}`).join(', '));
-                            // 如果当前在订单录入页，闪烁提示变化
                             if (typeof updateSkuList === 'function') updateSkuList();
-                            // 显示库存变化通知
                             changed.forEach(c => {
                                 showStockFlash(c.sku, c.old, c.new);
                             });
@@ -70,12 +70,14 @@
                 } catch(e) {
                     // 静默失败
                 }
-            }, 5000);
+            }
+            
+            stockPollTimer = setTimeout(pollOnce, 5000);
         }
         
         function stopStockPolling() {
             if (stockPollTimer) {
-                clearInterval(stockPollTimer);
+                clearTimeout(stockPollTimer);
                 stockPollTimer = null;
             }
         }
