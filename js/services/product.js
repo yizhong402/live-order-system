@@ -3608,3 +3608,92 @@ function checkJSZipLibrary() {
 
         // 给每个商品项加 data-sku 属性（修改 displayProductList 中的元素创建）
         // 钩子: 在渲染每个商品项时加 data-sku
+
+
+        // ============ CSV 采购价模板下载 ============
+        function downloadPriceTemplate() {
+            var sampleSku = products.length > 0 ? products[0].sku : 'BA0125111905';
+            var csv = '\uFEFFSKU,\u91C7\u8D2D\u4EF7(\u4EBA\u6C11\u5E01),\u91C7\u8D2D\u4EF7(\u7F8E\u91D1)\n';
+            csv += sampleSku + ',15.50,2.35\n';
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '\u91C7\u8D2D\u4EF7\u6A21\u677F.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+
+        // ============ CSV 采购价上传解析 ============
+        function handlePriceCsvUpload(input) {
+            if (!input.files || !input.files[0]) return;
+            var file = input.files[0];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var text = e.target.result;
+                var lines = text.split(/\r?\n/).filter(function(l) { return l.trim() !== ''; });
+                var updated = 0, skipped = 0, errors = [];
+                var promises = [];
+
+                for (var i = 0; i < lines.length; i++) {
+                    // 跳过表头行（包含 "SKU" 或 "sku" 关键字）
+                    var line = lines[i].replace(/，/g, ','); // 兼容中文逗号
+                    var parts = line.split(',');
+                    if (parts.length < 3) { skipped++; continue; }
+                    var sku = parts[0].trim().toUpperCase();
+                    // 跳过表头
+                    if (sku === 'SKU' || sku.indexOf('SKU') === 0 && isNaN(parseFloat(parts[1]))) { skipped++; continue; }
+                    if (!sku) { skipped++; continue; }
+
+                    var cnyStr = parts[1].trim();
+                    var usdStr = parts[2].trim();
+                    var cny = parseFloat(cnyStr);
+                    var usd = parseFloat(usdStr);
+
+                    // 找到本地商品
+                    var localProduct = products.find(function(p) { return p.sku.toUpperCase() === sku; });
+                    if (!localProduct) { skipped++; continue; }
+
+                    // 有效的数值才更新
+                    if (!isNaN(cny)) localProduct.priceCny = cny;
+                    if (!isNaN(usd)) localProduct.priceUsd = usd;
+
+                    updated++;
+
+                    // 异步更新 BaaS
+                    (function(productSku, priceCny, priceUsd) {
+                        var p = new Promise(function(resolve) {
+                            client.db.from('products').list().then(function(r) {
+                                if (r.success && r.data) {
+                                    var found = r.data.find(function(x) { return x.sku === productSku; });
+                                    if (found) {
+                                        client.db.from('products').update(found.id, {
+                                            price_cny: priceCny,
+                                            price_usd: priceUsd
+                                        }).then(function() { resolve(true); })
+                                          .catch(function(e) {
+                                              errors.push(productSku + ': BaaS\u66F4\u65B0\u5931\u8D25');
+                                              resolve(false);
+                                          });
+                                    } else { resolve(false); }
+                                } else { resolve(false); }
+                            }).catch(function() { resolve(false); });
+                        });
+                        promises.push(p);
+                    })(localProduct.sku, localProduct.priceCny, localProduct.priceUsd);
+                }
+
+                // 等所有 BaaS 写完后刷新
+                Promise.all(promises).then(function() {
+                    updateProductList();
+                    saveProducts();
+                    var msg = '\u2705 \u6210\u529F\u66F4\u65B0 ' + updated + ' \u6761';
+                    if (skipped > 0) msg += ' | \u23ED \u8DF3\u8FC7 ' + skipped + ' \u6761';
+                    if (errors.length > 0) msg += ' | \u274C \u5931\u8D25 ' + errors.length + ' \u6761';
+                    alert(msg);
+                    input.value = '';
+                });
+            };
+            reader.readAsText(file);
+        }
