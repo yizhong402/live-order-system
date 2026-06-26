@@ -209,7 +209,7 @@ async function restoreFromBackup(backupId, backupName) {
             await Promise.all(batch.map(function(p){
                 return client.db.from('products').insert().values({
                     sku: p.sku, name: p.name || '', stock: p.stock || 0,
-                    price_cny: p.priceCny || 0, price_usd: p.priceUsd || 0,
+                    price_cny: Math.round((p.priceCny || 0) * 100), price_usd: Math.round((p.priceUsd || 0) * 100),
                     image_url: p.image || '',
                     original_stock: p.originalStock || p.stock || 0
                 });

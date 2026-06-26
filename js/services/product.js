@@ -43,9 +43,11 @@
         let stockPollTimer = null;
         
         function startStockPolling() {
-            console.log('📡 库存轮询已启动 (5秒间隔)');
+            console.log('📡 库存轮询已启动 (每轮完成后等5秒)');
             stopStockPolling();
-            stockPollTimer = setInterval(async () => {
+            
+            async function pollOnce() {
+                stockPollTimer = setTimeout(pollOnce, 5000);
                 try {
                     const res = await client.db.from('products').select('sku,stock').list();
                     if (res.success && res.data) {
@@ -59,9 +61,7 @@
                         });
                         if (changed.length > 0) {
                             console.log('🔄 库存变化:', changed.map(c => `${c.sku}:${c.old}→${c.new}`).join(', '));
-                            // 如果当前在订单录入页，闪烁提示变化
                             if (typeof updateSkuList === 'function') updateSkuList();
-                            // 显示库存变化通知
                             changed.forEach(c => {
                                 showStockFlash(c.sku, c.old, c.new);
                             });
@@ -70,12 +70,14 @@
                 } catch(e) {
                     // 静默失败
                 }
-            }, 5000);
+            }
+            
+            stockPollTimer = setTimeout(pollOnce, 5000);
         }
         
         function stopStockPolling() {
             if (stockPollTimer) {
-                clearInterval(stockPollTimer);
+                clearTimeout(stockPollTimer);
                 stockPollTimer = null;
             }
         }
@@ -225,7 +227,7 @@
                             if (res.success && res.data) {
                                 products = res.data.map(function(p) { return {
                                     sku: p.sku, name: p.name || '', stock: p.stock || 0,
-                                    priceCny: p.price_cny || 0, priceUsd: p.price_usd || 0,
+                                    priceCny: Number(p.price_cny) / 100 || 0, priceUsd: Number(p.price_usd) / 100 || 0,
                                     originalStock: p.original_stock || p.stock || 0, 
                                     image: p.image_url || '',
                                     image_url: p.image_url || ''
@@ -560,7 +562,7 @@ let originalImages = [];
                         var f = r.data.find(function(x) { return x.sku === sku; });
                         if (f) {
                             client.db.from('products').update(f.id, {
-                                price_cny: priceCny, price_usd: priceUsd,
+                                price_cny: Math.round(priceCny * 100), price_usd: Math.round(priceUsd * 100),
                                 name: name || existing.name,
                                 stock: stock, original_stock: stock
                             }).catch(function(e) { console.error('BaaS update err:', e); });
@@ -577,7 +579,7 @@ let originalImages = [];
                     originalStock: stock
                 });
                 if (image) {
-                    const imgUrl = await uploadImageBase64(image); if (imgUrl) { products[products.length-1].image = imgUrl; } var pdata = { sku: sku, name: name || '', stock: stock, price_cny: priceCny, price_usd: priceUsd, image_url: imgUrl || '', original_stock: stock }; await client.db.from('products').save(pdata);
+                    const imgUrl = await uploadImageBase64(image); if (imgUrl) { products[products.length-1].image = imgUrl; } var pdata = { sku: sku, name: name || '', stock: stock, price_cny: Math.round(priceCny * 100), price_usd: Math.round(priceUsd * 100), image_url: imgUrl || '', original_stock: stock }; await client.db.from('products').save(pdata);
                     productImagesCache[sku] = image;
                 }
             }
@@ -805,7 +807,7 @@ let originalImages = [];
                 const priceDiv = document.createElement('div');
                 priceDiv.style.fontSize = '12px';
                 priceDiv.style.color = 'rgba(255,255,255,0.6)';
-                priceDiv.textContent = `库存: ${product.stock} | ¥${product.priceCny} / $${product.priceUsd}`;
+                priceDiv.textContent = `库存: ${product.stock} | ¥${Number(product.priceCny).toFixed(2)} / $${Number(product.priceUsd).toFixed(2)}`;
                 infoDiv.appendChild(priceDiv);
                 
                 itemDiv.appendChild(infoDiv);
@@ -975,7 +977,7 @@ let originalImages = [];
             const priceDiv = document.createElement('div');
             priceDiv.style.fontSize = '12px';
             priceDiv.style.color = 'rgba(255,255,255,0.6)';
-            priceDiv.textContent = `库存：${product.stock} | 采购价：¥${product.priceCny} / $${product.priceUsd}`;
+            priceDiv.textContent = `库存：${product.stock} | 采购价：¥${Number(product.priceCny).toFixed(2)} / $${Number(product.priceUsd).toFixed(2)}`;
             infoDiv.appendChild(priceDiv);
             
             itemDiv.appendChild(infoDiv);
@@ -1102,10 +1104,11 @@ let originalImages = [];
                 const product = products.find(p => p.sku === sku);
                 if (product) {
                     product.stock = newStock;
+                    _dirtyProducts[sku] = true;
                 }
             });
             
-            saveToLocalStorage();
+            saveProducts();
             filterProductList();
             alert(`已更新 ${skus.length} 个商品的库存`);
         }
@@ -1504,7 +1507,7 @@ let originalImages = [];
             <div class="product-name">${p.name || '无名称'}</div>
             <div class="product-info">
                 <div>📦 库存: ${p.stock || 0}</div>
-                <div>💰 采购价(CNY): ¥${p.priceCny || 0}</div>
+                <div>💰 采购价(CNY): ¥${Number(p.priceCny || 0).toFixed(2)}</div>
                 <div>💵 采购价(USD): $${p.priceUsd || 0}</div>
                 <div>📅 创建时间: ${p.createdAt || '-'}</div>
             </div>
@@ -1781,8 +1784,8 @@ let originalImages = [];
                             var found = res.data.find(function(r) { return r.sku === sku; });
                             if (found) {
                                 client.db.from('products').update(found.id, {
-                                    price_cny: ppriceCny,
-                                    price_usd: ppriceUsd,
+                                    price_cny: Math.round(ppriceCny * 100),
+                                    price_usd: Math.round(ppriceUsd * 100),
                                     name: pname,
                                     stock: pstock,
                                     original_stock: pstock,
@@ -3608,3 +3611,84 @@ function checkJSZipLibrary() {
 
         // 给每个商品项加 data-sku 属性（修改 displayProductList 中的元素创建）
         // 钩子: 在渲染每个商品项时加 data-sku
+
+
+// ============ 采购价快捷更新（粘贴录入） ============
+function quickUpdatePrices() {
+    var textarea = document.getElementById('pricePasteArea');
+    if (!textarea) return;
+    var text = textarea.value.trim();
+    if (!text) { alert('请先粘贴数据，格式：SKU,采购价(\u00a5),采购价($)'); return; }
+    
+    var lines = text.split(/\r?\n/).filter(function(l) { return l.trim() !== ''; });
+    var updated = 0, skipped = 0, notFound = 0;
+    var details = [];
+    var syncList = [];  // 待同步到BaaS的列表
+    
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].replace(/\uff0c/g, ',');
+        if (line.indexOf(',') === -1) { skipped++; continue; }
+        var parts = line.split(',');
+        
+        var sku = parts[0].trim().toUpperCase();
+        if (!sku || sku === 'SKU') { skipped++; continue; }
+        
+        var hasPrice = false;
+        var cny = NaN, usd = NaN;
+        
+        for (var j = 1; j < parts.length; j++) {
+            var val = parseFloat(parts[j].trim());
+            if (!isNaN(val)) {
+                if (isNaN(cny)) { cny = val; hasPrice = true; }
+                else if (isNaN(usd)) { usd = val; }
+            }
+        }
+        
+        if (!hasPrice) { skipped++; continue; }
+        
+        var localProduct = products.find(function(p) { return p.sku.toUpperCase() === sku; });
+        if (!localProduct) { notFound++; continue; }
+        
+        if (!isNaN(cny)) localProduct.priceCny = cny;
+        if (!isNaN(usd)) localProduct.priceUsd = usd;
+        updated++;
+        details.push(sku + ' \u00a5' + (isNaN(cny) ? '-' : cny.toFixed(2)) + ' $' + (isNaN(usd) ? '-' : usd.toFixed(2)));
+        syncList.push({ sku: localProduct.sku, priceCny: localProduct.priceCny, priceUsd: localProduct.priceUsd });
+    }
+    
+    if (updated > 0) {
+        updateProductList();
+        
+        // 后台同步到BaaS（不阻塞UI）
+        setTimeout(function() {
+            syncList.forEach(function(item) {
+                (function(sku, cny, usd) {
+                    client.db.from('products').list().then(function(r) {
+                        if (r.success && r.data) {
+                            var found = r.data.find(function(x) { return x.sku === sku; });
+                            if (found) {
+                                var updates = {};
+                                if (cny > 0) updates.price_cny = Math.round(cny * 100);
+                                if (usd > 0) updates.price_usd = Math.round(usd * 100);
+                                if (Object.keys(updates).length > 0) {
+                                    client.db.from('products').update(found.id, updates).then(function() {
+                                        console.log('\u2601\ufe0f BaaS同步成功:', sku);
+                                    }).catch(function(e) {
+                                        console.error('\u2601\ufe0f BaaS同步失败:', sku, e);
+                                    });
+                                }
+                            }
+                        }
+                    }).catch(function(e) {
+                        console.error('\u2601\ufe0f BaaS查询失败:', sku, e);
+                    });
+                })(item.sku, item.priceCny, item.priceUsd);
+            });
+        }, 100);
+    }
+    
+    var msg = '\u2705 \u6210\u529f\u66f4\u65b0 ' + updated + ' \u6761';
+    if (notFound > 0) msg += ' | \u672a\u627e\u5230 ' + notFound + ' \u6761';
+    if (skipped > 0) msg += ' | \u8df3\u8fc7 ' + skipped + ' \u6761';
+    alert(msg + '\n\n' + details.join('\n'));
+}

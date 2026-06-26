@@ -131,7 +131,20 @@
                 </div>
 
                 <!-- 折叠的添加商品区域 -->
-                <button class="btn btn-success" onclick="toggleAddForm()" id="addProductToggleBtn" style="margin-bottom:12px;">➕ 添加商品</button>
+                <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-success" onclick="toggleAddForm()" id="addProductToggleBtn">➕ 添加商品</button>
+                <button class="btn btn-primary" onclick="var el=document.getElementById('pricePasteRow');el.style.display=el.style.display==='none'?'flex':'none'">💰 快捷更新采购价</button>
+            </div>
+                <!-- 采购价快捷更新（粘贴） -->
+                <div id="pricePasteRow" style="display:none;margin-bottom:12px;padding:12px;background:rgba(102,126,234,0.1);border:1px solid rgba(102,126,234,0.3);border-radius:10px;flex-direction:column;gap:8px;">
+                    <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:4px;">📋 粘贴数据，每行一个商品，格式：<code style="background:rgba(0,0,0,0.3);padding:1px 6px;border-radius:4px;font-size:12px;">SKU,采购价(¥),采购价($)</code></div>
+                    <textarea id="pricePasteArea" rows="4" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.3);color:#fff;font-size:13px;font-family:monospace;resize:vertical;" placeholder="BA0125111905,25.50,3.80
+BA0125111903,18.00,2.60"></textarea>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-success" onclick="quickUpdatePrices()" style="padding:8px 20px;">✅ 立即更新</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('pricePasteArea').value='';alert('已清空')" style="padding:8px 16px;">🗑 清空</button>
+                    </div>
+                </div>
                 <div id="addProductForm" style="display:none;padding:15px;background:rgba(0,0,0,0.12);border-radius:10px;margin-bottom:15px;">
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                         <div class="form-group" style="margin-bottom:0;">
@@ -452,7 +465,7 @@
                         <div class="session-panel" id="sessionPanel" style="margin-bottom:15px;padding:15px;background:rgba(255,255,255,0.05);border-radius:10px;">
                             <div id="noSession" style="display:flex;justify-content:space-between;align-items:center;">
                                 <h3>📅 还没有创建直播场次</h3>
-                                <button class="create-session-btn" onclick="openSessionModal()">创建直播场次</button>
+                                <button class="btn btn-outline" onclick="openSessionModal()" style="padding:6px 16px;font-size:13px;">创建直播场次</button>
                             </div>
                             <div id="activeSession" style="display:none;">
                                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -470,7 +483,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <button class="create-session-btn" onclick="openSessionModal()">更换场次</button>
+                                    <button class="btn btn-outline" onclick="openSessionModal()" style="padding:6px 16px;font-size:13px;">更换场次</button>
                                 </div>
                             </div>
                         </div>
@@ -1004,6 +1017,7 @@
         let products = [];
         let comboSkus = [];
         let liveHistory = [];
+        var _dirtyProducts = {};
         let productImagesCache = {};
         let titleRoundMap = {};  // 存储每个竞拍链接名称对应的最后一轮次
         let lastBaseTitle = '';  // 记录上一次的竞拍链接名称

@@ -293,7 +293,7 @@
             if (existing) {
                 existing.skus = [...tempComboSkus]; // 创建副本，避免引用问题
             } else {
-                comboSkus.push({ code: code, skus: [...tempComboSkus] }); client.db.from("combo_skus").insert().values({ code: code, skus_json: JSON.stringify(tempComboSkus) }).catch(e=>{}); // 创建副本
+                comboSkus.push({ code: code, skus: [...tempComboSkus] });
             }
             
             saveCombos();
@@ -347,7 +347,30 @@
             saveCombos();
         }
         
-        function saveCombos() { /* 云端自动保存 */ }
+        function saveCombos() {
+            // 同步组合数据到BaaS（异步，不阻塞UI）
+            // 先查出云端已有的组合记录ID，再逐个同步
+            client.db.from('combo_skus').list().then(function(r) {
+                if (!r.success || !r.data) return;
+                var cloudIds = {};
+                r.data.forEach(function(c) { cloudIds[c.code] = c.id; });
+                // 更新或插入每个组合
+                (comboSkus || []).forEach(function(c) {
+                    var data = { code: c.code, skus_json: JSON.stringify(c.skus) };
+                    if (cloudIds[c.code]) {
+                        client.db.from('combo_skus').update(cloudIds[c.code], data).catch(function(e){});
+                    } else {
+                        client.db.from('combo_skus').insert().values(data).catch(function(e){});
+                    }
+                });
+                // 删除云端中已不在本地的组合
+                r.data.forEach(function(c) {
+                    if (!(comboSkus || []).some(function(lc) { return lc.code === c.code; })) {
+                        client.db.from('combo_skus').delete().eq('id', c.id).then(function(){}, function(e){});
+                    }
+                });
+            }).catch(function(e){});
+        }
         
         function loadCombos() {
         }

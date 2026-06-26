@@ -154,13 +154,17 @@
                 // 虚拟扣库存
                 for (const sku of skuKeys) {
                     const product = products.find(p => p.sku === sku);
-                    if (product) product.stock -= currentSkus[sku];
+                    if (product) {
+                        product.stock -= currentSkus[sku];
+                        _dirtyProducts[sku] = true;
+                    }
                 }
                 
                 // 立即刷新 UI（同步操作，不依赖 BaaS）
                 updateOrderList();
                 updateRealTimeOrderList();
                 saveToLocalStorage();
+                saveProducts();  // 异步同步库存扣减到BaaS
                 if (typeof renderDashboard === 'function') renderDashboard();
                 
                 // 清空输入
