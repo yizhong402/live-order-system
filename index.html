@@ -1023,6 +1023,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 页面加载完成，开始初始化...');
     await initApp();
     console.log('✅ 初始化完成');
+    // 初始化完成后按 URL hash 跳转到对应页面
+    var hashPage = window.location.hash.replace('#', '');
+    if (hashPage && typeof showPage === 'function') {
+        console.log('🔀 hash路由跳转到:', hashPage);
+        showPage(hashPage);
+        if (hashPage === 'product' && typeof initNewProductFilters === 'function') {
+            setTimeout(initNewProductFilters, 200);
+        }
+    }
+});
+window.addEventListener('hashchange', function() {
+    var pageId = window.location.hash.replace('#', '');
+    if (pageId && typeof showPage === 'function') {
+        showPage(pageId);
+        if (pageId === 'product' && typeof initNewProductFilters === 'function') {
+            setTimeout(initNewProductFilters, 200);
+        }
+    }
 });
     </script>
     

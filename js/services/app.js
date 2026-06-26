@@ -415,7 +415,7 @@
         async function loadStockSnapshots() {
             if (_stockSnapshotsCache) return _stockSnapshotsCache;
             try {
-                const resp = await fetch('/data/stock-snapshots.json');
+                const resp = await fetch('data/stock-snapshots.json');
                 if (!resp.ok) return null;
                 _stockSnapshotsCache = await resp.json();
                 return _stockSnapshotsCache;
@@ -901,6 +901,9 @@
             if (pageId === 'product') {
                 if (typeof updateCalibrateTimeDisplay === 'function') {
                     setTimeout(updateCalibrateTimeDisplay, 100);
+                }
+                if (typeof initNewProductFilters === 'function') {
+                    setTimeout(initNewProductFilters, 200);
                 }
             }
         };
