@@ -227,7 +227,7 @@
                             if (res.success && res.data) {
                                 products = res.data.map(function(p) { return {
                                     sku: p.sku, name: p.name || '', stock: p.stock || 0,
-                                    priceCny: p.price_cny || 0, priceUsd: p.price_usd || 0,
+                                    priceCny: Number(p.price_cny) / 100 || 0, priceUsd: Number(p.price_usd) / 100 || 0,
                                     originalStock: p.original_stock || p.stock || 0, 
                                     image: p.image_url || '',
                                     image_url: p.image_url || ''
@@ -562,7 +562,7 @@ let originalImages = [];
                         var f = r.data.find(function(x) { return x.sku === sku; });
                         if (f) {
                             client.db.from('products').update(f.id, {
-                                price_cny: priceCny, price_usd: priceUsd,
+                                price_cny: Math.round(priceCny * 100), price_usd: Math.round(priceUsd * 100),
                                 name: name || existing.name,
                                 stock: stock, original_stock: stock
                             }).catch(function(e) { console.error('BaaS update err:', e); });
@@ -579,7 +579,7 @@ let originalImages = [];
                     originalStock: stock
                 });
                 if (image) {
-                    const imgUrl = await uploadImageBase64(image); if (imgUrl) { products[products.length-1].image = imgUrl; } var pdata = { sku: sku, name: name || '', stock: stock, price_cny: priceCny, price_usd: priceUsd, image_url: imgUrl || '', original_stock: stock }; await client.db.from('products').save(pdata);
+                    const imgUrl = await uploadImageBase64(image); if (imgUrl) { products[products.length-1].image = imgUrl; } var pdata = { sku: sku, name: name || '', stock: stock, price_cny: Math.round(priceCny * 100), price_usd: Math.round(priceUsd * 100), image_url: imgUrl || '', original_stock: stock }; await client.db.from('products').save(pdata);
                     productImagesCache[sku] = image;
                 }
             }
@@ -807,7 +807,7 @@ let originalImages = [];
                 const priceDiv = document.createElement('div');
                 priceDiv.style.fontSize = '12px';
                 priceDiv.style.color = 'rgba(255,255,255,0.6)';
-                priceDiv.textContent = `库存: ${product.stock} | ¥${product.priceCny} / $${product.priceUsd}`;
+                priceDiv.textContent = `库存: ${product.stock} | ¥${Number(product.priceCny).toFixed(2)} / $${Number(product.priceUsd).toFixed(2)}`;
                 infoDiv.appendChild(priceDiv);
                 
                 itemDiv.appendChild(infoDiv);
@@ -977,7 +977,7 @@ let originalImages = [];
             const priceDiv = document.createElement('div');
             priceDiv.style.fontSize = '12px';
             priceDiv.style.color = 'rgba(255,255,255,0.6)';
-            priceDiv.textContent = `库存：${product.stock} | 采购价：¥${product.priceCny} / $${product.priceUsd}`;
+            priceDiv.textContent = `库存：${product.stock} | 采购价：¥${Number(product.priceCny).toFixed(2)} / $${Number(product.priceUsd).toFixed(2)}`;
             infoDiv.appendChild(priceDiv);
             
             itemDiv.appendChild(infoDiv);
@@ -1506,7 +1506,7 @@ let originalImages = [];
             <div class="product-name">${p.name || '无名称'}</div>
             <div class="product-info">
                 <div>📦 库存: ${p.stock || 0}</div>
-                <div>💰 采购价(CNY): ¥${p.priceCny || 0}</div>
+                <div>💰 采购价(CNY): ¥${Number(p.priceCny || 0).toFixed(2)}</div>
                 <div>💵 采购价(USD): $${p.priceUsd || 0}</div>
                 <div>📅 创建时间: ${p.createdAt || '-'}</div>
             </div>
@@ -1783,8 +1783,8 @@ let originalImages = [];
                             var found = res.data.find(function(r) { return r.sku === sku; });
                             if (found) {
                                 client.db.from('products').update(found.id, {
-                                    price_cny: ppriceCny,
-                                    price_usd: ppriceUsd,
+                                    price_cny: Math.round(ppriceCny * 100),
+                                    price_usd: Math.round(ppriceUsd * 100),
                                     name: pname,
                                     stock: pstock,
                                     original_stock: pstock,
@@ -3667,8 +3667,8 @@ function quickUpdatePrices() {
                             var found = r.data.find(function(x) { return x.sku === sku; });
                             if (found) {
                                 var updates = {};
-                                if (cny > 0) updates.price_cny = cny;
-                                if (usd > 0) updates.price_usd = usd;
+                                if (cny > 0) updates.price_cny = Math.round(cny * 100);
+                                if (usd > 0) updates.price_usd = Math.round(usd * 100);
                                 if (Object.keys(updates).length > 0) {
                                     client.db.from('products').update(found.id, updates).then(function() {
                                         console.log('\u2601\ufe0f BaaS同步成功:', sku);

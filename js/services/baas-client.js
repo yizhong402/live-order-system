@@ -47,7 +47,7 @@
                 const pRes = await client.db.from('products').list();
                 if (pRes.success) products = (pRes.data || []).map(p => ({
                     sku: p.sku, name: p.name || '', stock: p.stock || 0,
-                    priceCny: p.price_cny || 0, priceUsd: p.price_usd || 0,
+                    priceCny: Number(p.price_cny) / 100 || 0, priceUsd: Number(p.price_usd) / 100 || 0,
                     originalStock: p.original_stock || p.stock || 0, image: p.image_url || '', image_url: p.image_url || ''
                 }));
 

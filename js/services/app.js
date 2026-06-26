@@ -63,7 +63,7 @@
                 const res = await client.db.from('products').list();
                 if (res.success) products = (res.data || []).map(p => ({
                     sku: p.sku, name: p.name || '', stock: p.stock || 0,
-                    priceCny: p.price_cny || 0, priceUsd: p.price_usd || 0,
+                    priceCny: Number(p.price_cny) / 100 || 0, priceUsd: Number(p.price_usd) / 100 || 0,
                     originalStock: p.original_stock || p.stock || 0, image: p.image_url || '', image_url: p.image_url || ''
                 }));
             } catch(e) { products = []; }
@@ -346,7 +346,7 @@
                     let savedCount = 0;
                     for (const [sku, image] of Object.entries(productImagesCache)) {
                         try {
-                            const imgUrl = await uploadImageBase64(image); if (imgUrl) { products[products.length-1].image = imgUrl; await client.db.from("products").insert().values({ sku, name, stock, price_cny: priceCny, price_usd: priceUsd, image_url: imgUrl, original_stock: stock }); } else { await client.db.from("products").insert().values({ sku, name, stock, price_cny: priceCny, price_usd: priceUsd, image_url: "", original_stock: stock }); }
+                            const imgUrl = await uploadImageBase64(image); if (imgUrl) { products[products.length-1].image = imgUrl; await client.db.from("products").insert().values({ sku, name, stock, price_cny: Math.round(priceCny * 100), price_usd: Math.round(priceUsd * 100), image_url: imgUrl, original_stock: stock }); } else { await client.db.from("products").insert().values({ sku, name, stock, price_cny: Math.round(priceCny * 100), price_usd: Math.round(priceUsd * 100), image_url: "", original_stock: stock }); }
                             savedCount++;
                             if (savedCount % 10 === 0) {
                                 console.log(`📥 已保存 ${savedCount}/${imageCount} 张图片`);
