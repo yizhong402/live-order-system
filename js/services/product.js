@@ -3611,76 +3611,83 @@ function checkJSZipLibrary() {
         // 给每个商品项加 data-sku 属性（修改 displayProductList 中的元素创建）
         // 钩子: 在渲染每个商品项时加 data-sku
 
-// ============ CSV 采购价模板下载 ============
-function downloadPriceTemplate() {
-            var sampleSku = products.length > 0 ? products[0].sku : 'BA0125111905';
-            var csv = '\uFEFFSKU,\u91C7\u8D2D\u4EF7(\u4EBA\u6C11\u5E01),\u91C7\u8D2D\u4EF7(\u7F8E\u91D1)\n';
-            csv += sampleSku + ',15.50,2.35\n';
-            console.log('📋 下载CSV模板, 样例SKU:', sampleSku);
-            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            var link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = '\u91C7\u8D2D\u4EF7\u6A21\u677F.csv';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
-            console.log('📋 下载触发成功');
-        }
 
-// ============ CSV 采购价上传解析 ============
-function handlePriceCsvUpload(input) {
-            console.log('📥 handlePriceCsvUpload 触发');
-            if (!input || !input.files || !input.files[0]) {
-                console.log('❌ 没有文件');
-                alert('请选择CSV文件！');
-                return;
+// ============ 采购价快捷更新（粘贴录入） ============
+function quickUpdatePrices() {
+    var textarea = document.getElementById('pricePasteArea');
+    if (!textarea) return;
+    var text = textarea.value.trim();
+    if (!text) { alert('请先粘贴数据，格式：SKU,采购价(\u00a5),采购价($)'); return; }
+    
+    var lines = text.split(/\r?\n/).filter(function(l) { return l.trim() !== ''; });
+    var updated = 0, skipped = 0, notFound = 0;
+    var details = [];
+    var syncList = [];  // 待同步到BaaS的列表
+    
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].replace(/\uff0c/g, ',');
+        if (line.indexOf(',') === -1) { skipped++; continue; }
+        var parts = line.split(',');
+        
+        var sku = parts[0].trim().toUpperCase();
+        if (!sku || sku === 'SKU') { skipped++; continue; }
+        
+        var hasPrice = false;
+        var cny = NaN, usd = NaN;
+        
+        for (var j = 1; j < parts.length; j++) {
+            var val = parseFloat(parts[j].trim());
+            if (!isNaN(val)) {
+                if (isNaN(cny)) { cny = val; hasPrice = true; }
+                else if (isNaN(usd)) { usd = val; }
             }
-            var file = input.files[0];
-            console.log('📄 文件名:', file.name, '大小:', file.size, '类型:', file.type);
-            
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                var text = e.target.result;
-                console.log('📄 CSV内容前100字符:', text.substring(0, 100));
-                
-                var lines = text.split(/\r?\n/).filter(function(l) { return l.trim() !== ''; });
-                console.log('📄 有效行数:', lines.length);
-                
-                var updated = 0, skipped = 0, errors = [];
-
-                for (var i = 0; i < lines.length; i++) {
-                    var line = lines[i].replace(/，/g, ',');
-                    var parts = line.split(',');
-                    if (parts.length < 3) { skipped++; continue; }
-                    
-                    var sku = parts[0].trim().toUpperCase().replace(/^\uFEFF/, '');
-                    if (sku === 'SKU') { skipped++; continue; }
-                    if (!sku) { skipped++; continue; }
-
-                    var cnyStr = parts[1].trim();
-                    var usdStr = parts[2].trim();
-                    var cny = parseFloat(cnyStr);
-                    var usd = parseFloat(usdStr);
-
-                    var localProduct = products.find(function(p) { return p.sku.toUpperCase() === sku; });
-                    if (!localProduct) { skipped++; continue; }
-
-                    if (!isNaN(cny)) localProduct.priceCny = cny;
-                    if (!isNaN(usd)) localProduct.priceUsd = usd;
-                    updated++;
-                }
-
-                updateProductList();
-                saveProducts();
-                var msg = '\u2705 \u6210\u529F\u66F4\u65B0 ' + updated + ' \u6761';
-                if (skipped > 0) msg += ' | \u23ED \u8DF3\u8FC7 ' + skipped + ' \u6761';
-                console.log('📊', msg);
-                alert(msg);
-                input.value = '';
-            };
-            reader.onerror = function() {
-                alert('读取文件失败，请确保是UTF-8编码的CSV文件');
-            };
-            reader.readAsText(file);
         }
+        
+        if (!hasPrice) { skipped++; continue; }
+        
+        var localProduct = products.find(function(p) { return p.sku.toUpperCase() === sku; });
+        if (!localProduct) { notFound++; continue; }
+        
+        if (!isNaN(cny)) localProduct.priceCny = cny;
+        if (!isNaN(usd)) localProduct.priceUsd = usd;
+        updated++;
+        details.push(sku + ' \u00a5' + (isNaN(cny) ? '-' : cny.toFixed(2)) + ' $' + (isNaN(usd) ? '-' : usd.toFixed(2)));
+        syncList.push({ sku: localProduct.sku, priceCny: localProduct.priceCny, priceUsd: localProduct.priceUsd });
+    }
+    
+    if (updated > 0) {
+        updateProductList();
+        
+        // 后台同步到BaaS（不阻塞UI）
+        setTimeout(function() {
+            syncList.forEach(function(item) {
+                (function(sku, cny, usd) {
+                    client.db.from('products').list().then(function(r) {
+                        if (r.success && r.data) {
+                            var found = r.data.find(function(x) { return x.sku === sku; });
+                            if (found) {
+                                var updates = {};
+                                if (cny > 0) updates.price_cny = cny;
+                                if (usd > 0) updates.price_usd = usd;
+                                if (Object.keys(updates).length > 0) {
+                                    client.db.from('products').update(found.id, updates).then(function() {
+                                        console.log('\u2601\ufe0f BaaS同步成功:', sku);
+                                    }).catch(function(e) {
+                                        console.error('\u2601\ufe0f BaaS同步失败:', sku, e);
+                                    });
+                                }
+                            }
+                        }
+                    }).catch(function(e) {
+                        console.error('\u2601\ufe0f BaaS查询失败:', sku, e);
+                    });
+                })(item.sku, item.priceCny, item.priceUsd);
+            });
+        }, 100);
+    }
+    
+    var msg = '\u2705 \u6210\u529f\u66f4\u65b0 ' + updated + ' \u6761';
+    if (notFound > 0) msg += ' | \u672a\u627e\u5230 ' + notFound + ' \u6761';
+    if (skipped > 0) msg += ' | \u8df3\u8fc7 ' + skipped + ' \u6761';
+    alert(msg + '\n\n' + details.join('\n'));
+}
