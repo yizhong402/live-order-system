@@ -193,12 +193,12 @@ async function restoreFromBackup(backupId, backupName) {
         if (loadingEl) loadingEl.textContent = '☁️ 正在清空现有数据...';
 
         // 1. 清空
-        await client.db.from('products').delete().neq('id', 0).catch(function(){});
-        await client.db.from('orders').delete().neq('id', 0).catch(function(){});
-        await client.db.from('combo_skus').delete().neq('id', 0).catch(function(){});
-        await client.db.from('live_sessions').delete().neq('id', 0).catch(function(){});
-        await client.db.from('title_history').delete().neq('id', 0).catch(function(){});
-        await client.db.from('title_round_map').delete().neq('id', 0).catch(function(){});
+        await client.db.from('products').delete().neq('id', 0).then(function(){}, function(){});
+        await client.db.from('orders').delete().neq('id', 0).then(function(){}, function(){});
+        await client.db.from('combo_skus').delete().neq('id', 0).then(function(){}, function(){});
+        await client.db.from('live_sessions').delete().neq('id', 0).then(function(){}, function(){});
+        await client.db.from('title_history').delete().neq('id', 0).then(function(){}, function(){});
+        await client.db.from('title_round_map').delete().neq('id', 0).then(function(){}, function(){});
 
         if (loadingEl) loadingEl.textContent = '☁️ 正在恢复商品 (' + stats.productCount + ' 个)...';
 

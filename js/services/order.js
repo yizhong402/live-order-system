@@ -698,7 +698,11 @@
             
             // 同步删除 BaaS
             if (deleted && deleted.id) {
-                client.db.from('orders').delete().eq('id', deleted.id).then(function(){}, function(e){ console.error('☁️ 删除订单失败:', e); });
+                client.db.from('orders').delete().eq('id', deleted.id).then(function(){
+                    console.log('☁️ 删除订单 ' + deleted.id + ' 成功');
+                }, function(e){
+                    console.error('☁️ 删除订单失败:', e);
+                });
             }
             
             updateOrderList();
@@ -734,7 +738,9 @@
                 var orderIds = orders.map(function(o) { return o.id; }).filter(Boolean);
                 orderIds.forEach(function(id) {
                     deletePromises.push(
-                        client.db.from('orders').delete().eq('id', id).catch(function(e){
+                        client.db.from('orders').delete().eq('id', id).then(function(){
+                            console.log('☁️ 删除订单 ' + id + ' 成功');
+                        }, function(e){
                             console.error('☁️ 删除订单 ' + id + ' 失败:', e);
                         })
                     );
@@ -747,7 +753,9 @@
                 }).filter(Boolean);
                 sessionIds.forEach(function(id) {
                     deletePromises.push(
-                        client.db.from('live_sessions').delete().eq('id', id).catch(function(e){
+                        client.db.from('live_sessions').delete().eq('id', id).then(function(){
+                            console.log('☁️ 删除场次 ' + id + ' 成功');
+                        }, function(e){
                             console.error('☁️ 删除场次 ' + id + ' 失败:', e);
                         })
                     );
@@ -759,7 +767,9 @@
                 });
                 activeIds.forEach(function(id) {
                     deletePromises.push(
-                        client.db.from('live_sessions').delete().eq('id', parseInt(id)).catch(function(e){
+                        client.db.from('live_sessions').delete().eq('id', parseInt(id)).then(function(){
+                            console.log('☁️ 删除活跃场次 ' + id + ' 成功');
+                        }, function(e){
                             console.error('☁️ 删除活跃场次 ' + id + ' 失败:', e);
                         })
                     );
@@ -767,14 +777,18 @@
                 
                 // 删除 title_history
                 deletePromises.push(
-                    client.db.from('title_history').delete().neq('id', 0).catch(function(e){
+                    client.db.from('title_history').delete().neq('id', 0).then(function(){
+                        console.log('☁️ 删除标题历史成功');
+                    }, function(e){
                         console.error('☁️ 删除标题历史失败:', e);
                     })
                 );
                 
                 // 删除 title_round_map
                 deletePromises.push(
-                    client.db.from('title_round_map').delete().neq('id', 0).catch(function(e){
+                    client.db.from('title_round_map').delete().neq('id', 0).then(function(){
+                        console.log('☁️ 删除标题轮次映射成功');
+                    }, function(e){
                         console.error('☁️ 删除标题轮次映射失败:', e);
                     })
                 );

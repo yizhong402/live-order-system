@@ -40,12 +40,12 @@
             
             // 清空云端数据
             Promise.all([
-                client.db.from('products').delete().neq('id', 0).catch(()=>{}),
-                client.db.from('orders').delete().neq('id', 0).catch(()=>{}),
-                client.db.from('combo_skus').delete().neq('id', 0).catch(()=>{}),
-                client.db.from('live_sessions').delete().neq('id', 0).catch(()=>{}),
-                client.db.from('title_history').delete().neq('id', 0).catch(()=>{}),
-                client.db.from('title_round_map').delete().neq('id', 0).catch(()=>{})
+                client.db.from('products').delete().neq('id', 0).then(null, ()=>{}),
+                client.db.from('orders').delete().neq('id', 0).then(null, ()=>{}),
+                client.db.from('combo_skus').delete().neq('id', 0).then(null, ()=>{}),
+                client.db.from('live_sessions').delete().neq('id', 0).then(null, ()=>{}),
+                client.db.from('title_history').delete().neq('id', 0).then(null, ()=>{}),
+                client.db.from('title_round_map').delete().neq('id', 0).then(null, ()=>{})
             ]).then(() => {
                 products = []; orders = []; comboSkus = []; productImagesCache = {};
                 // 纯云端: 无需清理
@@ -321,10 +321,10 @@
                 
                 console.log('📥 数据验证通过，清空现有数据...');
                 // 清空云端数据
-                await client.db.from('products').delete().neq('id', 0).catch(()=>{});
-                await client.db.from('orders').delete().neq('id', 0).catch(()=>{});
-                await client.db.from('combo_skus').delete().neq('id', 0).catch(()=>{});
-                await client.db.from('live_sessions').delete().neq('id', 0).catch(()=>{});
+                await client.db.from('products').delete().neq('id', 0).then(null, ()=>{});
+                await client.db.from('orders').delete().neq('id', 0).then(null, ()=>{});
+                await client.db.from('combo_skus').delete().neq('id', 0).then(null, ()=>{});
+                await client.db.from('live_sessions').delete().neq('id', 0).then(null, ()=>{});
                 
                 // 恢复数据
                 products = data.products || [];
