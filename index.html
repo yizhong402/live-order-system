@@ -5,10 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>直播订单管理系统</title>
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+      /* 加载骨架屏 */
+      #loader { display:flex; height:100vh; align-items:center; justify-content:center; background:linear-gradient(135deg,#1a1a2e,#16213e); flex-direction:column; gap:24px; }
+      #loader .spinner { width:40px; height:40px; border:4px solid rgba(255,255,255,0.1); border-top-color:#667eea; border-radius:50%; animation:spin .8s linear infinite; }
+      @keyframes spin { to{transform:rotate(360deg)} }
+      #loader p { color:rgba(255,255,255,0.5); font-size:14px; }
+      #app { display:none; }
+      #loader.hide { display:none !important; }
+      #loader.hide + #app { display:flex !important; }
+    </style>
 </head>
 <body>
-    <div class="app-shell">
+    <div id="loader">
+        <div class="spinner"></div>
+        <p>加载中 · 正在连接服务...</p>
+    </div>
+    <div class="app-shell" id="app">
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-brand">
@@ -973,9 +986,10 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/aipexbase-js/dist/aipexbase.umd.min.js"></script>
     <!-- Global State -->
     <script>
@@ -1021,6 +1035,8 @@
     <script>
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 页面加载完成，开始初始化...');
+    // 隐藏加载骨架屏
+    document.getElementById('loader').classList.add('hide');
     await initApp();
     console.log('✅ 初始化完成');
     // 初始化完成后按 URL hash 跳转到对应页面
