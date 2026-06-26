@@ -46,6 +46,7 @@
             try {
                 const pRes = await client.db.from('products').list();
                 if (pRes.success) products = (pRes.data || []).map(p => ({
+                    baasId: p.id,
                     sku: p.sku, name: p.name || '', stock: p.stock || 0,
                     priceCny: Number(p.price_cny) / 100 || 0, priceUsd: Number(p.price_usd) / 100 || 0,
                     originalStock: p.original_stock || p.stock || 0, image: p.image_url || '', image_url: p.image_url || ''
@@ -90,14 +91,22 @@
         }
         
         async function saveProductsToCloud() {
-            console.log('☁️ 保存商品到云端...');
-            updateProductListDisplay();
-            return { success: true, message: '保存成功' };
-        }
-        
-        async function saveProductsToCloud() {
             // 纯云端: 直接将商品数据保存到云端 BaaS
             console.log('☁️ 保存商品到云端...');
             updateProductListDisplay();
+            // 同步dirty商品到BaaS
+            var skus = Object.keys(_dirtyProducts);
+            if (skus.length === 0) return { success: true, message: '无变化' };
+            skus.forEach(function(sku) {
+                var p = products.find(function(x) { return x.sku === sku; });
+                if (!p || !p.baasId) return;
+                client.db.from('products').update(p.baasId, {
+                    stock: p.stock,
+                    price_cny: Math.round(p.priceCny * 100),
+                    price_usd: Math.round(p.priceUsd * 100),
+                    original_stock: p.originalStock || p.stock
+                }).catch(function(e) { console.error('☁️ 商品保存失败:', sku, e); });
+            });
+            _dirtyProducts = {};
             return { success: true, message: '保存成功' };
         }

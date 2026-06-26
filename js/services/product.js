@@ -1104,10 +1104,11 @@ let originalImages = [];
                 const product = products.find(p => p.sku === sku);
                 if (product) {
                     product.stock = newStock;
+                    _dirtyProducts[sku] = true;
                 }
             });
             
-            saveToLocalStorage();
+            saveProducts();
             filterProductList();
             alert(`已更新 ${skus.length} 个商品的库存`);
         }

@@ -54,7 +54,36 @@
             });
         }
         
-        async function saveProducts() { updateProductListDisplay(); }
+        function saveProducts() {
+            updateProductListDisplay();
+            // 异步同步dirty商品到BaaS
+            var skus = Object.keys(window._dirtyProducts || {});
+            if (skus.length === 0) return;
+            skus.forEach(function(sku) {
+                var p = products.find(function(x) { return x.sku === sku; });
+                if (!p || !p.baasId) {
+                    // 新建商品（无baasId）: 用save创建
+                    if (p && !p.baasId) {
+                        client.db.from('products').save({
+                            sku: p.sku, name: p.name || '', stock: p.stock || 0,
+                            price_cny: Math.round((p.priceCny || 0) * 100),
+                            price_usd: Math.round((p.priceUsd || 0) * 100),
+                            image_url: p.image || '', original_stock: p.originalStock || p.stock || 0
+                        }).then(function(r) {
+                            if (r && r.id) p.baasId = r.id;
+                        }, function(e){});
+                    }
+                    return;
+                }
+                client.db.from('products').update(p.baasId, {
+                    stock: p.stock,
+                    price_cny: Math.round((p.priceCny || 0) * 100),
+                    price_usd: Math.round((p.priceUsd || 0) * 100),
+                    original_stock: p.originalStock || p.stock || 0
+                }).catch(function(e) { console.error('☁️ 商品保存失败:', sku, e); });
+            });
+            window._dirtyProducts = {};
+        }
         
         async function saveOrders() { /* 云端自动保存 */ }
         
@@ -159,7 +188,48 @@
             document.getElementById('skuInput').focus();
         }
         
-        async function saveLiveHistory() { /* 云端自动保存 */ }
+        function saveLiveHistory() {
+            // 异步同步liveHistory到BaaS（全量刷新）
+            client.db.from('live_sessions').list().then(function(r) {
+                if (!r.success || !r.data) return;
+                var cloudIds = {};
+                r.data.forEach(function(s) {
+                    cloudIds[s.id] = true;
+                });
+                // 更新/插入每个场次
+                (liveHistory || []).forEach(function(h) {
+                    var session = h.session || h;
+                    var data = {
+                        session_title: session.title || session.sessionTitle || '',
+                        anchor: session.anchor || '',
+                        date: session.date || '',
+                        time: session.time || '00:00',
+                        session_number: session.sessionNumber || 1,
+                        total_rounds: session.total_rounds || 0,
+                        total_orders: h.totalOrders || 0,
+                        total_skus: h.totalSkus || 0,
+                        end_time: h.endTime || '',
+                        created_at: new Date().toISOString().slice(0,19).replace('T',' ')
+                    };
+                    if (session.id && cloudIds[session.id]) {
+                        client.db.from('live_sessions').update(session.id, data).catch(function(e){});
+                    } else {
+                        client.db.from('live_sessions').insert().values(data).then(function(res){
+                            if (res && res.data) session.id = res.data.id || res.data;
+                        }, function(e){});
+                    }
+                });
+                // 删除云端中已不在本地的场次
+                r.data.forEach(function(s) {
+                    var stillExists = (liveHistory || []).some(function(h) {
+                        return (h.session || h).id == s.id;
+                    });
+                    if (!stillExists) {
+                        client.db.from('live_sessions').delete().eq('id', s.id).then(function(){}, function(e){});
+                    }
+                });
+            }).catch(function(e){});
+        }
         
         async function loadLiveHistory() {
             try {
