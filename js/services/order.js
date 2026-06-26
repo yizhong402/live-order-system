@@ -851,6 +851,16 @@
                 } else if (currentSession.id) {
                     // 新格式：订单保存在全局orders数组，通过sessionId关联
                     exportOrdersList = orders.filter(order => order.sessionId == currentSession.id);
+                    // 如果全局orders为空（已结束的场次，数据在liveHistory中），从liveHistory回退查找
+                    if (exportOrdersList.length === 0) {
+                        const historyEntry = liveHistory.find(function(h) {
+                            var s = h.session || h;
+                            return s.id == currentSession.id;
+                        });
+                        if (historyEntry && historyEntry.orders && historyEntry.orders.length > 0) {
+                            exportOrdersList = historyEntry.orders;
+                        }
+                    }
                 }
             }
             
