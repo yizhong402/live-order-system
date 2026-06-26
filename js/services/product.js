@@ -3610,8 +3610,8 @@ function checkJSZipLibrary() {
         // 钩子: 在渲染每个商品项时加 data-sku
 
 
-        // ============ CSV 采购价模板下载 ============
-        function downloadPriceTemplate() {
+// ============ CSV 采购价模板下载 ============
+function downloadPriceTemplate() {
             var sampleSku = products.length > 0 ? products[0].sku : 'BA0125111905';
             var csv = '\uFEFFSKU,\u91C7\u8D2D\u4EF7(\u4EBA\u6C11\u5E01),\u91C7\u8D2D\u4EF7(\u7F8E\u91D1)\n';
             csv += sampleSku + ',15.50,2.35\n';
@@ -3625,8 +3625,8 @@ function checkJSZipLibrary() {
             URL.revokeObjectURL(link.href);
         }
 
-        // ============ CSV 采购价上传解析 ============
-        function handlePriceCsvUpload(input) {
+// ============ CSV 采购价上传解析 ============
+function handlePriceCsvUpload(input) {
             if (!input.files || !input.files[0]) return;
             var file = input.files[0];
             var reader = new FileReader();
