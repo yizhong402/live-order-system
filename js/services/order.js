@@ -715,9 +715,9 @@
             }
         }
         
-        function clearAllLiveData() {
+        async function clearAllLiveData() {
             // 强提醒确认
-            const confirm1 = confirm('⚠️ 警告！\n\n您即将删除所有直播数据，包括：\n• 所有直播场次记录\n• 所有订单记录\n• 当前进行中的直播\n\n⚠️ 此操作不可撤销！\n\n但商品信息不会受到影响。\n\n确定继续吗？');
+            const confirm1 = confirm('⚠️ 警告！\n\n您即将删除所有直播数据，包括：\n• 所有直播场次记录\n• 所有订单记录\n• 当前进行中的直播\n• 标题历史记录\n\n⚠️ 此操作不可撤销！\n\n但商品信息不会受到影响。\n\n确定继续吗？');
             
             if (!confirm1) return;
             
@@ -726,32 +726,75 @@
             
             if (!confirm2) return;
             
-            // 异步删除 BaaS 数据（不阻塞 UI）
-            var orderIds = orders.map(function(o) { return o.id; }).filter(Boolean);
-            orderIds.forEach(function(id) {
-                client.db.from('orders').delete().eq('id', id).catch(function(e){});
-            });
-            var sessionIds = (liveHistory || []).map(function(s) {
-                var sData = s.session || s;
-                return sData.id;
-            }).filter(Boolean);
-            sessionIds.forEach(function(id) {
-                client.db.from('live_sessions').delete().eq('id', id).catch(function(e){});
-            });
-            // 如果 activeSessions 中还有未存到 liveHistory 的，一起删
-            var activeIds = Object.keys(activeSessions || {}).filter(function(id) {
-                return id && !sessionIds.includes(parseInt(id));
-            });
-            activeIds.forEach(function(id) {
-                client.db.from('live_sessions').delete().eq('id', parseInt(id)).catch(function(e){});
-            });
+            try {
+                // 批量删除 BaaS 数据（同步等待完成）
+                var deletePromises = [];
+                
+                // 删除所有 orders
+                var orderIds = orders.map(function(o) { return o.id; }).filter(Boolean);
+                orderIds.forEach(function(id) {
+                    deletePromises.push(
+                        client.db.from('orders').delete().eq('id', id).catch(function(e){
+                            console.error('☁️ 删除订单 ' + id + ' 失败:', e);
+                        })
+                    );
+                });
+                
+                // 删除所有 live_sessions
+                var sessionIds = (liveHistory || []).map(function(s) {
+                    var sData = s.session || s;
+                    return sData.id;
+                }).filter(Boolean);
+                sessionIds.forEach(function(id) {
+                    deletePromises.push(
+                        client.db.from('live_sessions').delete().eq('id', id).catch(function(e){
+                            console.error('☁️ 删除场次 ' + id + ' 失败:', e);
+                        })
+                    );
+                });
+                
+                // 删除 activeSessions 中未存到 liveHistory 的
+                var activeIds = Object.keys(activeSessions || {}).filter(function(id) {
+                    return id && !sessionIds.includes(parseInt(id));
+                });
+                activeIds.forEach(function(id) {
+                    deletePromises.push(
+                        client.db.from('live_sessions').delete().eq('id', parseInt(id)).catch(function(e){
+                            console.error('☁️ 删除活跃场次 ' + id + ' 失败:', e);
+                        })
+                    );
+                });
+                
+                // 删除 title_history
+                deletePromises.push(
+                    client.db.from('title_history').delete().neq('id', 0).catch(function(e){
+                        console.error('☁️ 删除标题历史失败:', e);
+                    })
+                );
+                
+                // 删除 title_round_map
+                deletePromises.push(
+                    client.db.from('title_round_map').delete().neq('id', 0).catch(function(e){
+                        console.error('☁️ 删除标题轮次映射失败:', e);
+                    })
+                );
+                
+                // 等待所有删除完成
+                await Promise.all(deletePromises);
+                console.log('☁️ BaaS 数据全部删除完成');
+            } catch(e) {
+                console.error('☁️ 删除 BaaS 数据时出错:', e);
+            }
             
-            // 执行删除
+            // 清空内存数据
             orders = [];
             liveHistory = [];
             currentSession = null;
             currentRound = 1;
             currentSkus = {};
+            titleHistory = [];
+            titleRoundMap = {};
+            
             // 清空 activeSessions 使下拉框不再展示
             if (typeof activeSessions === 'object') {
                 Object.keys(activeSessions).forEach(function(k) { delete activeSessions[k]; });
@@ -764,8 +807,12 @@
             updateCurrentRoundDisplay();
             updateSkuList();
             updateRealTimeOrderList();
-            // 更新下拉选择框
             updateSessionSelector();
+            
+            // 更新首页统计
+            if (typeof renderDashboard === 'function') {
+                renderDashboard();
+            }
             
             // 更新筛选后的场次列表
             const filteredSessionListEl = document.getElementById('filteredSessionList');
