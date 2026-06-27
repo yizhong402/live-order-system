@@ -231,7 +231,7 @@
                     warningBadge = '<span style="background:#f59e0b;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px;">📝 有备注</span>';
                 }
                 
-                var _t = '${order.timestamp || ''}';
+                var _t = order.timestamp || '';
                 var _tm = _t.length > 10 ? _t.slice(-8).replace(/^0/,'') : _t;
                 return `
                 <div class="order-item" style="${orderStyle}">
