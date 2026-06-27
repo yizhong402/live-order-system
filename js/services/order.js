@@ -231,25 +231,24 @@
                     warningBadge = '<span style="background:#f59e0b;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px;">📝 有备注</span>';
                 }
                 
+                var _ts = '${order.timestamp}';
+                var _timeCompact = _ts.length > 16 ? _ts.slice(-5) : _ts;
                 return `
                 <div class="order-item" style="${orderStyle}">
-                    <div class="order-header">
-                        <span>订单 ${order.round}# ${warningBadge}</span>
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <span font-size:13px;">竞拍金额$：</span>
-                            <input type="number" id="auctionPrice_${actualIndex}" value="${order.auctionPrice || ''}" placeholder="金额" style="width:80px;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#10b981;font-weight:bold;font-size:12px;" onchange="saveQuickAuctionPrice(${actualIndex}, this.value)">
-                            <span>${order.timestamp}</span>
-                            <button class="btn-copy" onclick="copyOrderSkus(${actualIndex})">📋 复制</button>
-                            <button class="btn-edit" onclick="editOrder(${actualIndex})">✏️ 编辑</button>
-                            <button class="btn-delete" onclick="deleteOrder(${actualIndex})">🗑️ 删除</button>
+                    <div class="order-header" style="flex-wrap:wrap;gap:6px;">
+                        <span style="font-weight:600;font-size:14px;">订单 ${order.round}# ${warningBadge}</span>
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0;">
+                            <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">💰</span>
+                            <input type="number" id="auctionPrice_${actualIndex}" value="${order.auctionPrice || ''}" placeholder="金额" style="width:76px;padding:3px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.2);color:#34d399;font-weight:600;font-size:13px;text-align:right;" onchange="saveQuickAuctionPrice(${actualIndex}, this.value)">
+                            <span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${_timeCompact}</span>
                         </div>
                     </div>
-                    <div class="order-title">
-                        <strong>${order.title}</strong> (轮次 ${order.round}#)
+                    <div class="order-title" style="margin-top:4px;">
+                        <strong>${order.title}</strong> <span style="color:var(--text-muted);font-size:11px;">R${order.round}</span>
                     </div>
-                    <div style="display:flex;gap:10px;margin-bottom:8px;">
-                        <span font-size:13px;">备注：</span>
-                        <input type="text" id="note_${actualIndex}" value="${order.note || ''}" placeholder="添加备注..." style="flex:1;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#f59e0b;font-size:12px;" onchange="saveQuickNote(${actualIndex}, this.value)">
+                    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+                        <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">📝</span>
+                        <input type="text" id="note_${actualIndex}" value="${order.note || ''}" placeholder="添加备注..." style="flex:1;min-width:0;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.15);color:#fbbf24;font-size:12px;" onchange="saveQuickNote(${actualIndex}, this.value)">
                     </div>
                     ${order.sessionAnchor ? `
                     <div font-size:13px;margin-bottom:10px;">
@@ -274,6 +273,12 @@
                             </div>
                             `;
                         }).join('')}
+                    </div>
+                    <!-- 操作按钮：横排一行 -->
+                    <div style="display:flex;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04);">
+                        <button onclick="copyOrderSkus(${actualIndex})" style="flex:1;padding:6px 4px;border:none;border-radius:6px;background:rgba(129,140,248,0.08);color:#818cf8;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;">📋 复制</button>
+                        <button onclick="editOrder(${actualIndex})" style="flex:1;padding:6px 4px;border:none;border-radius:6px;background:rgba(251,191,36,0.08);color:#fbbf24;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;">✏️ 编辑</button>
+                        <button onclick="deleteOrder(${actualIndex})" style="flex:1;padding:6px 4px;border:none;border-radius:6px;background:rgba(248,113,113,0.08);color:#f87171;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;">🗑️ 删除</button>
                     </div>
                 </div>
             `;

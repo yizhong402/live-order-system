@@ -105,15 +105,15 @@
         
         <div id="page-product" class="page">
             <div class="panel">
-                <h2>📦 商品库存管理
-                    <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(由 OMS 同步)</span>
-                    <span style="float:right;display:flex;gap:6px;">
-                        <button class="btn btn-warning" onclick="calibrateStock()" style="padding:3px 12px;font-size:11px;" title="开播前使用：用 OMS 可用库存覆盖系统库存">📊 库存校准</button>
-                        <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">⏰ 每天 <span id="calibrateTimeDisplay">未设置</span>
-                        <button class="btn btn-secondary" onclick="showCalibrateScheduleDialog()" style="padding:2px 8px;font-size:10px;margin-left:4px;">设置</button></span>
-                        <span id="omsSyncStatus" style="display:inline-block;font-size:11px;"></span>
-                    </span>
-                </h2>
+                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
+                    <h2 style="font-size:16px;font-weight:600;display:flex;align-items:center;gap:6px;margin:0;">📦 商品库存管理 <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(OMS)</span></h2>
+                    <span id="omsSyncStatus" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-secondary);"></span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;">
+                    <button class="btn btn-warning" onclick="calibrateStock()" style="padding:4px 12px;font-size:11px;" title="开播前使用：用 OMS 可用库存覆盖系统库存">📊 库存校准</button>
+                    <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);">⏰ 每天 <span id="calibrateTimeDisplay">未设置</span></span>
+                    <button class="btn btn-secondary" onclick="showCalibrateScheduleDialog()" style="padding:3px 8px;font-size:10px;">设置</button>
+                </div>
                 
                 <!-- 🆕 新上架产品板块 -->
                 <div style="margin-bottom:16px;padding:14px;background:rgba(0,0,0,0.12);border-radius:10px;">
@@ -370,25 +370,25 @@ BA0125111903,18.00,2.60"></textarea>
                         
                         <!-- 统计卡片行 -->
                         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
-                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(102,126,234,0.2),rgba(102,126,234,0.05));border:1px solid rgba(102,126,234,0.3);border-radius:10px;padding:16px;">
+                            <div class="stat-card panel" style="padding:16px;">
                                 <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">📦 商品总数</div>
-                                <div style="font-size:28px;font-weight:700;color:#667eea;" id="dashTotalProducts">-</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">缺图: <span id="dashNoImage" style="color:#FF9800;">-</span> | 缺价: <span id="dashNoPrice" style="color:#f44336;">-</span></div>
+                                <div style="font-size:26px;font-weight:700;color:var(--accent);" id="dashTotalProducts">-</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">缺图 <span id="dashNoImage" style="color:var(--warning);">-</span> · 缺价 <span id="dashNoPrice" style="color:var(--danger);">-</span></div>
                             </div>
-                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(76,175,80,0.2),rgba(76,175,80,0.05));border:1px solid rgba(76,175,80,0.3);border-radius:10px;padding:16px;">
+                            <div class="stat-card panel" style="padding:16px;">
                                 <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">📋 总订单数</div>
-                                <div style="font-size:28px;font-weight:700;color:#4CAF50;" id="dashTotalOrders">-</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">今日: <span id="dashTodayOrders" style="color:#4CAF50;">-</span> 单</div>
+                                <div style="font-size:26px;font-weight:700;color:var(--accent);" id="dashTotalOrders">-</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">今日 <span id="dashTodayOrders" style="color:var(--success);">-</span> 单</div>
                             </div>
-                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,215,0,0.05));border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:16px;">
+                            <div class="stat-card panel" style="padding:16px;">
                                 <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">🎬 历史场次</div>
-                                <div style="font-size:28px;font-weight:700;color:#FFD700;" id="dashTotalSessions">-</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">活跃: <span id="dashActiveSessions" style="color:#4CAF50;">-</span> 场</div>
+                                <div style="font-size:26px;font-weight:700;color:var(--accent);" id="dashTotalSessions">-</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">活跃 <span id="dashActiveSessions" style="color:var(--success);">-</span> 场</div>
                             </div>
-                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(244,67,54,0.2),rgba(244,67,54,0.05));border:1px solid rgba(244,67,54,0.3);border-radius:10px;padding:16px;">
+                            <div class="stat-card panel" style="padding:16px;">
                                 <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">💰 今日GMV</div>
-                                <div style="font-size:28px;font-weight:700;color:#ef4444;" id="dashTodayGMV">$0.00</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">总GMV: <span id="dashTotalGMV" style="color:#FFD700;">$0.00</span></div>
+                                <div style="font-size:26px;font-weight:700;color:var(--accent);" id="dashTodayGMV">$0.00</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">总GMV <span id="dashTotalGMV" style="color:var(--warning);">$0.00</span></div>
                             </div>
                         </div>
                         
@@ -403,9 +403,9 @@ BA0125111903,18.00,2.60"></textarea>
                         </div>
                         
                         <!-- 库存预警条 -->
-                        <div id="stockWarningBar" style="display:none;margin-bottom:20px;padding:10px 16px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:8px;">
-                            <span style="color:#f59e0b;font-weight:500;">⚠️ 库存预警</span>
-                            <span id="stockWarningText" style="color:rgba(255,255,255,0.8);margin-left:8px;"></span>
+                        <div id="stockWarningBar" style="display:none;margin-bottom:20px;padding:10px 14px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.18);border-radius:10px;">
+                            <span style="color:var(--warning);font-weight:600;font-size:13px;">⚠️ 库存预警</span>
+                            <span id="stockWarningText" style="color:rgba(255,255,255,0.7);margin-left:6px;font-size:12px;"></span>
                         </div>
                         
                         <!-- 主区域：左图表 + 右活跃场次 -->
