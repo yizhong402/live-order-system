@@ -283,6 +283,13 @@
         };
 
         function showPage(pageId) {
+            // 移动端切换页面时关闭侧边栏
+            var sidebar = document.getElementById('sidebar');
+            var sidebarOverlay = document.querySelector('.sidebar-overlay');
+            if (sidebar && sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+            }
             document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             

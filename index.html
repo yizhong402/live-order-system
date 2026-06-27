@@ -22,8 +22,11 @@
         <p>加载中 · 正在连接服务...</p>
     </div>
     <div class="app-shell" id="app">
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+        
         <!-- Sidebar -->
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-brand">
                 <h1>直播订单管理系统</h1>
                 <p>商品库存 · 订单管理</p>
@@ -45,6 +48,7 @@
         <div class="main-area">
             <div class="topbar">
                 <div class="topbar-left">
+                    <button class="hamburger-btn" onclick="toggleSidebar()" title="菜单">☰</button>
                     <span class="topbar-title" id="topbarTitle">首页</span>
                     <div class="session-selector" style="display:flex;align-items:center;gap:6px;font-size:13px;margin-left:16px;">
                         <span style="color:rgba(255,255,255,0.5);">📌</span>
@@ -849,6 +853,30 @@ BA0125111903,18.00,2.60"></textarea>
         </div>
     </div>
     
+    <!-- Bottom Tab Bar (mobile) -->
+    <div class="bottom-nav" id="bottomNav">
+        <button class="bottom-nav-btn active" onclick="showPageMobile('home')">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span>首页</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="showPageMobile('order')">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <span>订单</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="showPageMobile('product')">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <span>商品</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="showPageMobile('history')">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>记录</span>
+        </button>
+        <button class="bottom-nav-btn" onclick="openMoreMenu()">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <span>更多</span>
+        </button>
+    </div>
+    
     <div class="modal-overlay" id="helpModal">
         <div class="modal" style="max-width:800px;max-height:80vh;overflow-y:auto;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -1004,6 +1032,65 @@ BA0125111903,18.00,2.60"></textarea>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/aipexbase-js/dist/aipexbase.umd.min.js"></script>
+    <!-- Responsive helpers -->
+    <script>
+    // Sidebar toggle for mobile/tablet
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.querySelector('.sidebar-overlay').classList.toggle('active');
+    }
+    
+    // Mobile bottom nav page switcher
+    function showPageMobile(pageId) {
+        if (window.innerWidth < 768) {
+            document.getElementById('sidebar').classList.remove('open');
+            document.querySelector('.sidebar-overlay').classList.remove('active');
+        }
+        // Update bottom nav active
+        document.querySelectorAll('.bottom-nav-btn').forEach(function(btn) {
+            btn.classList.remove('active');
+        });
+        var navBtns = document.querySelectorAll('.bottom-nav-btn');
+        var pageMap = ['home','order','product','history'];
+        var idx = pageMap.indexOf(pageId);
+        if (idx >= 0 && navBtns[idx]) navBtns[idx].classList.add('active');
+        showPage(pageId);
+    }
+    
+    // More menu on mobile (shows remaining pages)
+    function openMoreMenu() {
+        if (window.innerWidth >= 768) return;
+        // Close sidebar
+        document.getElementById('sidebar').classList.remove('open');
+        document.querySelector('.sidebar-overlay').classList.remove('active');
+        // Build quick list of pages not in bottom nav
+        var morePages = [
+            {id:'combo', label:'🔗 组合SKU'},
+            {id:'profit', label:'💰 毛利计算'},
+            {id:'data', label:'💾 数据管理'},
+            {id:'settings', label:'⚙️ 系统设置'}
+        ];
+        var list = morePages.map(function(p) {
+            return '<div style="padding:12px 16px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.06);" onclick="closeMoreMenu();showPageMobile(\''+p.id+'\')">'+p.label+'</div>';
+        }).join('');
+        var overlay = document.createElement('div');
+        overlay.id = 'moreMenuOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:40;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;';
+        overlay.innerHTML = '<div style="width:100%;max-width:400px;margin:16px;border-radius:16px;overflow:hidden;background:rgba(20,20,28,0.95);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);box-shadow:0 16px 48px rgba(0,0,0,0.4);">'
+            + '<div style="padding:16px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);font-size:14px;font-weight:600;color:var(--text-primary);">📋 更多功能</div>'
+            + list
+            + '<div style="padding:12px 16px;text-align:center;cursor:pointer;color:var(--text-muted);font-size:13px;" onclick="closeMoreMenu()">关闭</div>'
+            + '</div>';
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) closeMoreMenu();
+        });
+        document.body.appendChild(overlay);
+    }
+    function closeMoreMenu() {
+        var el = document.getElementById('moreMenuOverlay');
+        if (el) el.remove();
+    }
+    </script>
     <!-- Global State -->
     <script>
 
