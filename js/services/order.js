@@ -231,8 +231,8 @@
                     warningBadge = '<span style="background:#f59e0b;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px;">📝 有备注</span>';
                 }
                 
-                var _ts = '${order.timestamp}';
-                var _timeCompact = _ts.length > 16 ? _ts.slice(-5) : _ts;
+                var _t = '${order.timestamp || ''}';
+                var _tm = _t.length > 10 ? _t.slice(-8).replace(/^0/,'') : _t;
                 return `
                 <div class="order-item" style="${orderStyle}">
                     <div class="order-header" style="flex-wrap:wrap;gap:6px;">
@@ -240,7 +240,7 @@
                         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0;">
                             <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">💰</span>
                             <input type="number" id="auctionPrice_${actualIndex}" value="${order.auctionPrice || ''}" placeholder="金额" style="width:76px;padding:3px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.2);color:#34d399;font-weight:600;font-size:13px;text-align:right;" onchange="saveQuickAuctionPrice(${actualIndex}, this.value)">
-                            <span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${_timeCompact}</span>
+                            <span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${_tm}</span>
                         </div>
                     </div>
                     <div class="order-title" style="margin-top:4px;">
@@ -251,8 +251,8 @@
                         <input type="text" id="note_${actualIndex}" value="${order.note || ''}" placeholder="添加备注..." style="flex:1;min-width:0;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.15);color:#fbbf24;font-size:12px;" onchange="saveQuickNote(${actualIndex}, this.value)">
                     </div>
                     ${order.sessionAnchor ? `
-                    <div font-size:13px;margin-bottom:10px;">
-                        主播: ${order.sessionAnchor} | 场次: ${order.sessionDate} ${order.sessionTime}
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">
+                        🎤 ${order.sessionAnchor} · ${order.sessionDate} ${order.sessionTime}
                     </div>
                     ` : ''}
                     <div class="order-skus" style="max-height:150px;overflow-y:auto;">

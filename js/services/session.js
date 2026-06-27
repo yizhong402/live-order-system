@@ -368,10 +368,10 @@
                         <span style="color:#667eea;font-weight:600;">🎬 ${s.sessionTitle}</span>
                         <span style="font-size:12px;color:rgba(255,255,255,0.4);padding:2px 8px;background:rgba(16,185,129,0.2);border-radius:4px;">进行中</span>
                     </div>
-                    <div style="font-size:13px;color:rgba(255,255,255,0.7);">
-                        <div>🎤 ${s.anchor}</div>
-                        <div>🕐 ${s.date || ''} ${s.time || ''}</div>
-                        <div style="margin-top:6px;">轮次: ${s.currentRound || 1} | 订单: ${(typeof orders !== 'undefined' ? orders.filter(function(o){ return o.sessionId == s.id; }).length : 0)}</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.7);display:flex;flex-wrap:wrap;gap:4px 10px;">
+                        <span>🎤 ${s.anchor}</span>
+                        <span>🕐 ${s.date || ''} ${s.time || ''}</span>
+                        <span>R${s.currentRound || 1} · ${(typeof orders !== 'undefined' ? orders.filter(function(o){ return o.sessionId == s.id; }).length : 0)}单</span>
                     </div>
                 </div>
             `).join('');
