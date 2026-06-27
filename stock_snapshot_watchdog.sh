@@ -32,8 +32,22 @@ while true; do
         log "🔍 运行每日健康巡检..."
         bash "$SCRIPT_DIR/daily_health_check.sh" 2>&1 | tee -a "$LOG_FILE"
         
+        # 自动推送快照到 GitHub Pages（线上热销品+新上架依赖此数据）
+        log "🚀 推送快照到 GitHub..."
+        cd "$SCRIPT_DIR"
+        git add data/stock-snapshots.json
+        if git diff --cached --quiet 2>/dev/null; then
+            log "   快照数据无变化，跳过推送"
+        else
+            git commit -m "chore: daily stock snapshot $CURRENT_DATE"
+            git push origin master 2>&1 | tee -a "$LOG_FILE"
+            # 同步到 main 分支（GitHub Pages 使用 main 部署）
+            git push origin master:main --force 2>&1 | tee -a "$LOG_FILE"
+            log "✅ 快照已推送到 GitHub（master + main），线上页面约1-2分钟后更新"
+        fi
+        
         LAST_RUN_DATE="$CURRENT_DATE"
-        log "✅ 快照+巡检完成"
+        log "✅ 快照+巡检+推送完成"
         # 等1分钟避免重复触发
         sleep 60
     fi
