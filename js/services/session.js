@@ -360,7 +360,7 @@
                 return;
             }
             container.innerHTML = active.map(s => `
-                <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s;" 
+                <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;cursor:pointer;transition:all 0.2s;overflow:hidden;" 
                      onclick="switchSession(${s.id})"
                      onmouseenter="this.style.borderColor='rgba(102,126,234,0.5)'" 
                      onmouseleave="this.style.borderColor='rgba(255,255,255,0.1)'">
@@ -368,7 +368,7 @@
                         <span style="color:#667eea;font-weight:600;">🎬 ${s.sessionTitle}</span>
                         <span style="font-size:12px;color:rgba(255,255,255,0.4);padding:2px 8px;background:rgba(16,185,129,0.2);border-radius:4px;">进行中</span>
                     </div>
-                    <div style="font-size:12px;color:rgba(255,255,255,0.7);display:flex;flex-wrap:wrap;gap:4px 10px;">
+                    <div style="font-size:12px;color:rgba(255,255,255,0.7);display:flex;flex-wrap:wrap;gap:4px 8px;word-break:break-all;max-width:100%;">
                         <span>🎤 ${s.anchor}</span>
                         <span>🕐 ${s.date || ''} ${s.time || ''}</span>
                         <span>R${s.currentRound || 1} · ${(typeof orders !== 'undefined' ? orders.filter(function(o){ return o.sessionId == s.id; }).length : 0)}单</span>

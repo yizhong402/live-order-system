@@ -774,7 +774,7 @@ let originalImages = [];
                     img.style.height = '40px';
                     img.style.objectFit = 'cover';
                     img.style.borderRadius = '4px';
-                    img.style.cursor = 'pointer';
+                    img.style.flexShrink = '0';
                     img.onclick = () => showImageFullscreen(product.sku);
                     img.title = '点击查看大图';
                     itemDiv.appendChild(img);
@@ -784,12 +784,13 @@ let originalImages = [];
                     placeholder.style.height = '40px';
                     placeholder.style.background = 'rgba(255,255,255,0.1)';
                     placeholder.style.borderRadius = '4px';
+                    placeholder.style.flexShrink = '0';
                     itemDiv.appendChild(placeholder);
                 }
                 
                 // 商品信息
                 const infoDiv = document.createElement('div');
-                infoDiv.style.flex = '1';
+                infoDiv.style.cssText = 'flex:1;min-width:0;overflow:hidden;';
                 
                 const skuDiv = document.createElement('div');
                 skuDiv.style.fontWeight = 'bold';
@@ -798,15 +799,13 @@ let originalImages = [];
                 
                 if (product.name) {
                     const nameDiv = document.createElement('div');
-                    nameDiv.style.fontSize = '12px';
-                    nameDiv.style.color = 'rgba(255,255,255,0.8)';
+                    nameDiv.style.cssText = 'font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
                     nameDiv.textContent = product.name;
                     infoDiv.appendChild(nameDiv);
                 }
                 
                 const priceDiv = document.createElement('div');
-                priceDiv.style.fontSize = '12px';
-                priceDiv.style.color = 'rgba(255,255,255,0.6)';
+                priceDiv.style.cssText = 'font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
                 priceDiv.textContent = `库存: ${product.stock} | ¥${Number(product.priceCny).toFixed(2)} / $${Number(product.priceUsd).toFixed(2)}`;
                 infoDiv.appendChild(priceDiv);
                 
@@ -814,8 +813,7 @@ let originalImages = [];
                 
                 // 按钮组
                 const btnGroup = document.createElement('div');
-                btnGroup.style.display = 'flex';
-                btnGroup.style.gap = '3px';
+                btnGroup.style.cssText = 'display:flex;gap:3px;flex-shrink:0;';
                 
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'btn btn-success';
@@ -984,8 +982,7 @@ let originalImages = [];
             
             // 按钮组
             const btnGroup = document.createElement('div');
-            btnGroup.style.display = 'flex';
-            btnGroup.style.gap = '3px';
+            btnGroup.style.cssText = 'display:flex;gap:3px;flex-shrink:0;';
             
             // 复制按钮
             const copyBtn = document.createElement('button');

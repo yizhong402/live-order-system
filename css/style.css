@@ -245,7 +245,12 @@ tr:hover td { background:rgba(255,255,255,0.03); }
 .order-item, .sku-item, .product-item {
     padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.04);
     transition:background 0.12s;
+    display:flex; align-items:center; gap:8px;
+    overflow:hidden;
 }
+.product-item .product-info { flex:1; min-width:0; overflow:hidden; }
+.product-item .product-info .product-desc { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.product-item .product-actions { flex-shrink:0; display:flex; gap:3px; }
 .order-item:last-child, .sku-item:last-child, .product-item:last-child { border-bottom:none; }
 .order-item:hover, .sku-item:hover, .product-item:hover { background:rgba(255,255,255,0.02); }
 .sku-code {
