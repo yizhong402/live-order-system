@@ -93,18 +93,15 @@
             session.totalRounds = session.currentRound || 1;
             session.isActive = false;
             
-            // 存入live_history
+            // 存入live_history（用原有ID，不新建）
             liveHistory.push({ ...session });
+            // UPDATE 已有的BaaS记录为ended，而非INSERT新的
             try {
-                client.db.from("live_sessions").insert().values({
-                    session_no: session.sessionNumber || "",
-                    title: session.sessionTitle || "",
-                    date: session.date || "",
-                    time: session.time || "",
-                    anchor: session.anchor || "",
-                    platform: session.platform || "",
-                    status: "ended"
-                }).catch(e => {});
+                client.db.from("live_sessions").update(id, {
+                    status: "ended",
+                    end_time: session.endTime,
+                    total_rounds: session.totalRounds || 1
+                }).catch(function(e){});
             } catch(e) {}
             
             delete activeSessions[id];

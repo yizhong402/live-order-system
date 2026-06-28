@@ -84,6 +84,28 @@
                 const mRes = await client.db.from('title_round_map').list();
                 if (mRes.success) { mRes.data.forEach(m => { titleRoundMap[m.title] = m.round_value; }); }
 
+                // 修复历史数据：将orders中时间戳sessionId映射到BaaS的session.id
+                (hRes.data || []).forEach(function(s) {
+                    if (s.client_id) {
+                        orders.forEach(function(o) {
+                            if (o.sessionId == s.client_id) {
+                                o.sessionId = s.id;
+                            }
+                        });
+                    }
+                });
+                // 再修复没有client_id的老数据：按title+date+anchor匹配
+                (hRes.data || []).forEach(function(s) {
+                    orders.forEach(function(o) {
+                        if (o.sessionId && typeof o.sessionId !== 'number' && o.sessionId > 1000000000000) {
+                            // 仍然是大时间戳，尝试复合匹配
+                            if (o.sessionDate === s.date && o.sessionAnchor === s.anchor && s.title && s.title.includes(o.sessionAnchor || '')) {
+                                o.sessionId = s.id;
+                            }
+                        }
+                    });
+                });
+
                 console.log('☁️ 云端数据加载完成');
             } catch(e) {
                 console.error('☁️ 云端加载失败:', e);

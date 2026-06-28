@@ -192,34 +192,58 @@
             // 异步同步liveHistory到BaaS（全量刷新）
             client.db.from('live_sessions').list().then(function(r) {
                 if (!r.success || !r.data) return;
-                var cloudIds = {};
+                // 构建云端记录的复合索引: title+date+anchor → id
+                var cloudIndex = {}; // 'title|date|anchor' => [BaaS ids]
+                var cloudById = {};  // BaaS id => record
                 r.data.forEach(function(s) {
-                    cloudIds[s.id] = true;
+                    cloudById[s.id] = s;
+                    var key = (s.title||'') + '|' + (s.date||'') + '|' + (s.anchor||'');
+                    if (!cloudIndex[key]) cloudIndex[key] = [];
+                    cloudIndex[key].push(s.id);
                 });
+                
                 // 更新/插入每个场次
                 (liveHistory || []).forEach(function(h) {
                     var session = h.session || h;
+                    var title = session.title || session.sessionTitle || '';
+                    var anchor = session.anchor || '';
+                    var date = session.date || '';
+                    var time = session.time || '00:00';
+                    var endTime = h.endTime || session.endTime || '';
+                    
                     var data = {
-                        session_title: session.title || session.sessionTitle || '',
-                        anchor: session.anchor || '',
-                        date: session.date || '',
-                        time: session.time || '00:00',
-                        session_number: session.sessionNumber || 1,
-                        total_rounds: session.total_rounds || 0,
-                        total_orders: h.totalOrders || 0,
-                        total_skus: h.totalSkus || 0,
-                        end_time: h.endTime || '',
-                        created_at: new Date().toISOString().slice(0,19).replace('T',' ')
+                        title: title,
+                        anchor: anchor,
+                        date: date,
+                        time: time,
+                        session_no: session.sessionNumber || 1,
+                        status: 'ended',
+                        total_rounds: h.totalRounds || session.totalRounds || 0,
+                        end_time: endTime
                     };
-                    if (session.id && cloudIds[session.id]) {
+                    
+                    // 优先用 session.id 匹配云端
+                    if (session.id && cloudById[session.id]) {
                         client.db.from('live_sessions').update(session.id, data).catch(function(e){});
-                    } else {
-                        client.db.from('live_sessions').insert().values(data).then(function(res){
-                            if (res && res.data) session.id = res.data.id || res.data;
-                        }, function(e){});
+                        return;
                     }
+                    
+                    // 用复合键匹配（title+date+anchor）
+                    var matchKey = title + '|' + date + '|' + anchor;
+                    var matched = matchKey && cloudIndex[matchKey];
+                    if (matched && matched.length > 0) {
+                        var cid = matched[0];
+                        session.id = cid;
+                        client.db.from('live_sessions').update(cid, data).catch(function(e){});
+                        return;
+                    }
+                    
+                    // 完全没匹配到，才INSERT新记录
+                    client.db.from('live_sessions').insert().values(data).then(function(res){
+                        if (res && res.data) session.id = res.data.id || res.data;
+                    }, function(e){});
                 });
-                // 删除云端中已不在本地的场次
+                // 删除云端中已不在本地的场次（仅删除完全匹配的）
                 r.data.forEach(function(s) {
                     var stillExists = (liveHistory || []).some(function(h) {
                         return (h.session || h).id == s.id;
