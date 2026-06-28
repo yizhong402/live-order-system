@@ -128,7 +128,15 @@
                 if (!liveHistory) {
                     liveHistory = [];
                 }
-                liveHistory.push({ ...currentSession }); client.db.from("live_sessions").insert().values({ session_no: currentSession.sessionNo||"", title: currentSession.title||"", date: currentSession.date||"", time: currentSession.time||"", anchor: currentSession.anchor||"", platform: currentSession.platform||"", status: "ended" }).catch(e=>{});
+                liveHistory.push({ ...currentSession });
+                // UPDATE已有的BaaS记录为ended（createSession已插入），不再INSERT新记录
+                if (currentSession.id) {
+                    client.db.from("live_sessions").update(currentSession.id, {
+                        status: "ended",
+                        end_time: currentSession.endTime,
+                        total_rounds: currentSession.totalRounds || currentRound
+                    }).catch(function(e){});
+                }
                 
                 await saveToLocalStorage();
                 
@@ -273,21 +281,31 @@
                 return;
             }
             
-            // 同步删除 BaaS 中的场次记录
-            client.db.from('live_sessions').delete().eq('id', parseInt(targetId)).then(function(){}, function(){});
-            // 同时删除该场次关联的订单
+            // 先删除关联的订单
+            var orderPromises = [];
             orders.filter(function(o) { return String(o.sessionId) === targetId; }).forEach(function(o) {
-                if (o.id) client.db.from('orders').delete().eq('id', o.id).then(function(){}, function(){});
+                if (o.id) {
+                    orderPromises.push(new Promise(function(resolve) {
+                        client.db.from('orders').delete().eq('id', o.id).then(function(){ resolve(); }, function(){ resolve(); });
+                    }));
+                }
             });
-            // 内存删除
-            orders = orders.filter(function(o) { return String(o.sessionId) !== targetId; });
             
-            liveHistory.splice(idx, 1);
-            // 不调用 saveLiveHistory()（BaaS 已直接 delete，本地已 splice），
-            // 避免竞态：saveLiveHistory 先 list() BaaS 时删除可能未生效，导致重新 insert
-            updateSessionList();
-            updateOrderList();
-            updateRealTimeOrderList();
-            if (typeof updateDataStats === 'function') updateDataStats();
-            console.log('已删除场次:', targetId);
+            // 再删除场次本身
+            var sessionPromise = new Promise(function(resolve) {
+                client.db.from('live_sessions').delete().eq('id', parseInt(targetId)).then(function(){ resolve(); }, function(){ resolve(); });
+            });
+            
+            Promise.all(orderPromises).then(function() {
+                return sessionPromise;
+            }).then(function() {
+                // BaaS删除完成后再操作内存
+                orders = orders.filter(function(o) { return String(o.sessionId) !== targetId; });
+                liveHistory.splice(idx, 1);
+                updateSessionList();
+                updateOrderList();
+                updateRealTimeOrderList();
+                if (typeof updateDataStats === 'function') updateDataStats();
+                console.log('已删除场次:', targetId);
+            });
         }
