@@ -246,12 +246,16 @@
                         res.data.forEach(s => {
                             if (s.status === 'active' && !activeSessions[s.id]) {
                                 // 直接用BaaS的ID作为session.id，确保与订单的sessionId一致
+                                const rawAnchor = s.anchor || '';
+                                // 从 BaaS 全链中提取单人 currentAnchor
+                                const currentSingle = rawAnchor.indexOf('/') >= 0 ? rawAnchor.split('/').pop() : rawAnchor;
                                 activeSessions[s.id] = {
                                     id: s.id,
                                     sessionTitle: s.title || '',
                                     date: s.date || '',
                                     time: s.time || '',
-                                    anchor: s.anchor || '',
+                                    anchor: rawAnchor,
+                                    currentAnchor: currentSingle,
                                     sessionNumber: s.session_no || 1,
                                     title: `${s.title || ''} | 第${s.session_no || 1}场 | ${s.date || ''} ${s.time || ''} | ${s.anchor || ''}`,
                                     startTime: s.created_at || '',
@@ -420,7 +424,7 @@
                 // 更新订单录入页头顶的场次标签（显示单人）
                 const lbl = document.getElementById('currentSessionLabel');
                 if (lbl) lbl.textContent = `${session.sessionTitle} (${session.currentAnchor})`;
-                // 同步到 BaaS
+                // 同步到 BaaS（存全链 + 当前单人）
                 if (session.id) {
                     client.db.from('live_sessions').update(session.id, { anchor: session.anchor }).catch(()=>{});
                 }
