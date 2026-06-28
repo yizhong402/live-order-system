@@ -443,7 +443,7 @@
                 
                 const titleOnly = order.title ? order.title.replace(/\s+\d+#$/, '') : '无标题';
                 return `
-                    <div class="order-item" style="padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:12px;border-left:4px solid #667eea;">
+                    <div style="padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:12px;border-left:4px solid #667eea;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                             <div>
                                 <span style="font-weight:bold;color:#f093fb;">${titleOnly}</span>
