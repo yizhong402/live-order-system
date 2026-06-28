@@ -150,6 +150,7 @@
                 date: date,
                 time: time || '00:00',
                 anchor: anchor,
+                currentAnchor: anchor,
                 sessionNumber: sessionNumber,
                 title: `${sessionTitle} | 第${sessionNumber}场 | ${date} ${time || '00:00'} | ${anchor}`,
                 startTime: startTime,
@@ -283,6 +284,13 @@
         };
 
         function showPage(pageId) {
+            // 移动端切换页面时关闭侧边栏
+            var sidebar = document.getElementById('sidebar');
+            var sidebarOverlay = document.querySelector('.sidebar-overlay');
+            if (sidebar && sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+            }
             document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             
@@ -353,7 +361,7 @@
                 return;
             }
             container.innerHTML = active.map(s => `
-                <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;cursor:pointer;transition:all 0.2s;" 
+                <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;cursor:pointer;transition:all 0.2s;overflow:hidden;" 
                      onclick="switchSession(${s.id})"
                      onmouseenter="this.style.borderColor='rgba(102,126,234,0.5)'" 
                      onmouseleave="this.style.borderColor='rgba(255,255,255,0.1)'">
@@ -361,10 +369,10 @@
                         <span style="color:#667eea;font-weight:600;">🎬 ${s.sessionTitle}</span>
                         <span style="font-size:12px;color:rgba(255,255,255,0.4);padding:2px 8px;background:rgba(16,185,129,0.2);border-radius:4px;">进行中</span>
                     </div>
-                    <div style="font-size:13px;color:rgba(255,255,255,0.7);">
-                        <div>🎤 ${s.anchor}</div>
-                        <div>🕐 ${s.date || ''} ${s.time || ''}</div>
-                        <div style="margin-top:6px;">轮次: ${s.currentRound || 1} | 订单: ${(typeof orders !== 'undefined' ? orders.filter(function(o){ return o.sessionId == s.id; }).length : 0)}</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.7);display:flex;flex-wrap:wrap;gap:4px 8px;word-break:break-all;max-width:100%;">
+                        <span>🎤 ${s.anchor}</span>
+                        <span>🕐 ${s.date || ''} ${s.time || ''}</span>
+                        <span>R${s.currentRound || 1} · ${(typeof orders !== 'undefined' ? orders.filter(function(o){ return o.sessionId == s.id; }).length : 0)}单</span>
                     </div>
                 </div>
             `).join('');
@@ -379,7 +387,15 @@
                 noSession.style.display = 'none';
                 activeSession.style.display = 'block';
                 document.getElementById('sessionTime').textContent = `${session.date} ${session.time}`;
-                document.getElementById('sessionAnchor').textContent = session.anchor;
+                const displayAnchor = session.currentAnchor || session.anchor || '-';
+                document.getElementById('sessionAnchor').textContent = displayAnchor;
+                // 更新"当前在播主播"指示
+                const indicator = document.getElementById('currentAnchorIndicator');
+                const nameEl = document.getElementById('currentAnchorName');
+                if (indicator && nameEl) {
+                    indicator.style.display = 'block';
+                    nameEl.textContent = displayAnchor;
+                }
             } else {
                 noSession.style.display = 'block';
                 activeSession.style.display = 'none';
@@ -390,24 +406,27 @@
             const session = getCurrentSession();
             if (!session) { alert('请先选择场次！'); return; }
             const current = session.anchor || '';
-            const newAnchor = prompt(`当前主播：${current}\n\n输入新主播名字（中途换人，追加到历史主播列表）：`, '');
+            const currentSingle = session.currentAnchor || session.anchor || '';
+            const newAnchor = prompt(`当前主播：${currentSingle}\n\n输入新主播名字（中途换人，追加到历史主播列表）：`, '');
             if (newAnchor && newAnchor.trim()) {
                 // 累加主播名（不覆盖），方便历史记录显示完整主播链
                 const anchorChain = current ? current + '/' + newAnchor.trim() : newAnchor.trim();
                 session.anchor = anchorChain;
-                document.getElementById('sessionAnchor').textContent = session.anchor;
+                // 单人主播（订单归属用）
+                session.currentAnchor = newAnchor.trim();
+                document.getElementById('sessionAnchor').textContent = session.currentAnchor;
                 // 更新场次列表显示
                 updateSessionList();
-                // 更新订单录入页头顶的场次标签
+                // 更新订单录入页头顶的场次标签（显示单人）
                 const lbl = document.getElementById('currentSessionLabel');
-                if (lbl) lbl.textContent = `${session.sessionTitle} (${session.anchor})`;
+                if (lbl) lbl.textContent = `${session.sessionTitle} (${session.currentAnchor})`;
                 // 同步到 BaaS
                 if (session.id) {
                     client.db.from('live_sessions').update(session.id, { anchor: session.anchor }).catch(()=>{});
                 }
                 syncGlobalsToSession();
                 saveSessionToLocalStorage();
-                showToast(`✅ 主播链已更新: ${anchorChain}`, 'success');
+                showToast(`✅ 已切换主播: ${newAnchor.trim()}`, 'success');
             }
         }
         
@@ -680,7 +699,7 @@
                         sessionId: currentSession ? currentSession.id : null,
                         sessionDate: currentSession ? currentSession.date : null,
                         sessionTime: currentSession ? currentSession.time : null,
-                        sessionAnchor: currentSession ? currentSession.anchor : null
+                        sessionAnchor: currentSession ? (currentSession.currentAnchor || currentSession.anchor) : null
                     });
                 }
                 saveToLocalStorage();
@@ -758,7 +777,7 @@
                             sessionId: currentSession ? currentSession.id : null,
                             sessionDate: currentSession ? currentSession.date : null,
                             sessionTime: currentSession ? currentSession.time : null,
-                            sessionAnchor: currentSession ? currentSession.anchor : null
+                            sessionAnchor: currentSession ? (currentSession.currentAnchor || currentSession.anchor) : null
                         };
                         
                         orders.unshift(order);
@@ -841,7 +860,7 @@
                             sessionId: currentSession ? currentSession.id : null,
                             sessionDate: currentSession ? currentSession.date : null,
                             sessionTime: currentSession ? currentSession.time : null,
-                            sessionAnchor: currentSession ? currentSession.anchor : null
+                            sessionAnchor: currentSession ? (currentSession.currentAnchor || currentSession.anchor) : null
                         };
                         orders.unshift(newOrder);
                         client.db.from('orders').insert().values({

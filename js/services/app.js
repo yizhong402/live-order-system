@@ -473,6 +473,11 @@
                     setTimeout(updateCalibrateTimeDisplay, 100);
                 }
             }
+            if (pageId === 'order') {
+                if (typeof initExportAnchorFilter === 'function') {
+                    setTimeout(initExportAnchorFilter, 100);
+                }
+            }
         };
 
 
@@ -650,10 +655,12 @@
             }
             
             container.innerHTML = entries.map(([id, s]) => `
-                <div style="padding:12px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:3px solid #4CAF50;">
-                    <div style="font-weight:500;color:#fff;font-size:13px;">${s.title || '未命名场次'}</div>
-                    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-                        🎤 ${s.anchor || '未知'} | 🕐 ${s.time || ''} | 📦 ${(typeof orders !== 'undefined' ? orders.filter(function(o){ return o.sessionId == s.id; }).length : 0)} 单
+                <div style="padding:12px;margin-bottom:6px;background:rgba(255,255,255,0.05);border-radius:8px;border-left:3px solid #4CAF50;overflow:hidden;">
+                    <div style="font-weight:500;color:#fff;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.title || '未命名场次'}</div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:2px 8px;word-break:break-all;">
+                        <span>🎤 ${s.anchor || '未知'}</span>
+                        <span>🕐 ${s.time || ''}</span>
+                        <span>📦 ${(typeof orders !== 'undefined' ? orders.filter(function(o){ return o.sessionId == s.id; }).length : 0)}单</span>
                     </div>
                 </div>
             `).join('');

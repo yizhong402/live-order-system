@@ -136,7 +136,7 @@
                     sessionId: currentSession.id,
                     sessionDate: currentSession.date,
                     sessionTime: currentSession.time,
-                    sessionAnchor: currentSession.anchor,
+                    sessionAnchor: currentSession.currentAnchor || currentSession.anchor,
                     isOverSold: false
                 };
                 
@@ -231,29 +231,28 @@
                     warningBadge = '<span style="background:#f59e0b;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px;">📝 有备注</span>';
                 }
                 
+                var _t = order.timestamp || '';
+                var _tm = _t.length > 10 ? _t.slice(-8).replace(/^0/,'') : _t;
                 return `
                 <div class="order-item" style="${orderStyle}">
-                    <div class="order-header">
-                        <span>订单 ${order.round}# ${warningBadge}</span>
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <span font-size:13px;">竞拍金额$：</span>
-                            <input type="number" id="auctionPrice_${actualIndex}" value="${order.auctionPrice || ''}" placeholder="金额" style="width:80px;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#10b981;font-weight:bold;font-size:12px;" onchange="saveQuickAuctionPrice(${actualIndex}, this.value)">
-                            <span>${order.timestamp}</span>
-                            <button class="btn-copy" onclick="copyOrderSkus(${actualIndex})">📋 复制</button>
-                            <button class="btn-edit" onclick="editOrder(${actualIndex})">✏️ 编辑</button>
-                            <button class="btn-delete" onclick="deleteOrder(${actualIndex})">🗑️ 删除</button>
+                    <div class="order-header" style="flex-wrap:wrap;gap:6px;">
+                        <span style="font-weight:600;font-size:14px;">订单 ${order.round}# ${warningBadge}</span>
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0;">
+                            <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">💰</span>
+                            <input type="number" id="auctionPrice_${actualIndex}" value="${order.auctionPrice || ''}" placeholder="金额" style="width:76px;padding:3px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.2);color:#34d399;font-weight:600;font-size:13px;text-align:right;" onchange="saveQuickAuctionPrice(${actualIndex}, this.value)">
+                            <span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${_tm}</span>
                         </div>
                     </div>
-                    <div class="order-title">
-                        <strong>${order.title}</strong> (轮次 ${order.round}#)
+                    <div class="order-title" style="margin-top:4px;">
+                        <strong>${order.title}</strong> <span style="color:var(--text-muted);font-size:11px;">R${order.round}</span>
                     </div>
-                    <div style="display:flex;gap:10px;margin-bottom:8px;">
-                        <span font-size:13px;">备注：</span>
-                        <input type="text" id="note_${actualIndex}" value="${order.note || ''}" placeholder="添加备注..." style="flex:1;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#f59e0b;font-size:12px;" onchange="saveQuickNote(${actualIndex}, this.value)">
+                    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+                        <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">📝</span>
+                        <input type="text" id="note_${actualIndex}" value="${order.note || ''}" placeholder="添加备注..." style="flex:1;min-width:0;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.15);color:#fbbf24;font-size:12px;" onchange="saveQuickNote(${actualIndex}, this.value)">
                     </div>
                     ${order.sessionAnchor ? `
-                    <div font-size:13px;margin-bottom:10px;">
-                        主播: ${order.sessionAnchor} | 场次: ${order.sessionDate} ${order.sessionTime}
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">
+                        🎤 ${order.sessionAnchor} · ${order.sessionDate} ${order.sessionTime}
                     </div>
                     ` : ''}
                     <div class="order-skus" style="max-height:150px;overflow-y:auto;">
@@ -274,6 +273,12 @@
                             </div>
                             `;
                         }).join('')}
+                    </div>
+                    <!-- 操作按钮：横排一行 -->
+                    <div style="display:flex;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04);">
+                        <button onclick="copyOrderSkus(${actualIndex})" style="flex:1;padding:6px 4px;border:none;border-radius:6px;background:rgba(129,140,248,0.08);color:#818cf8;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;">📋 复制</button>
+                        <button onclick="editOrder(${actualIndex})" style="flex:1;padding:6px 4px;border:none;border-radius:6px;background:rgba(251,191,36,0.08);color:#fbbf24;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;">✏️ 编辑</button>
+                        <button onclick="deleteOrder(${actualIndex})" style="flex:1;padding:6px 4px;border:none;border-radius:6px;background:rgba(248,113,113,0.08);color:#f87171;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;">🗑️ 删除</button>
                     </div>
                 </div>
             `;
@@ -562,7 +567,7 @@
                     sessionId: currentSession ? currentSession.id : null,
                     sessionDate: currentSession ? currentSession.date : null,
                     sessionTime: currentSession ? currentSession.time : null,
-                    sessionAnchor: currentSession ? currentSession.anchor : null
+                    sessionAnchor: currentSession ? (currentSession.currentAnchor || currentSession.anchor) : null
                 });
             }
             
@@ -599,6 +604,7 @@
             document.getElementById('editTitle').value = order.title;
             document.getElementById('editAuctionPrice').value = order.auctionPrice || '';
             document.getElementById('editOrderNote').value = order.note || '';
+            document.getElementById('editSessionAnchor').value = order.sessionAnchor || '';
             document.getElementById('editIsOverSold').checked = order.isOverSold || false;
             
             updateEditSkuList(order.skus);
@@ -671,6 +677,7 @@
             order.title = document.getElementById('editTitle').value.trim();
             order.auctionPrice = parseFloat(document.getElementById('editAuctionPrice').value) || 0;
             order.note = document.getElementById('editOrderNote').value.trim();
+            order.sessionAnchor = document.getElementById('editSessionAnchor').value.trim();
             order.isOverSold = document.getElementById('editIsOverSold').checked;
             
             if (!order.title) {
@@ -682,7 +689,7 @@
             if (order.id) {
                 client.db.from('orders').update(order.id, {
                     round: order.round, title: order.title,
-                    skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''})
+                    skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||'', sessionAnchor: order.sessionAnchor||''})
                 }).then(function(){}, function(e){ console.error('☁️ 编辑订单保存失败:', e); });
             }
             
@@ -848,14 +855,10 @@
             // 获取当前显示的订单（考虑当前场次过滤）
             let exportOrdersList = orders;
             if (currentSession) {
-                // 判断是旧格式还是新格式
                 if (currentSession.session && currentSession.orders && currentSession.orders.length > 0) {
-                    // 旧格式：订单保存在场次对象内部的orders数组
                     exportOrdersList = currentSession.orders;
                 } else if (currentSession.id) {
-                    // 新格式：订单保存在全局orders数组，通过sessionId关联
                     exportOrdersList = orders.filter(order => order.sessionId == currentSession.id);
-                    // 如果全局orders为空（已结束的场次，数据在liveHistory中），从liveHistory回退查找
                     if (exportOrdersList.length === 0) {
                         const historyEntry = liveHistory.find(function(h) {
                             var s = h.session || h;
@@ -880,31 +883,89 @@
                 return ra - rb;
             });
             
+            // 按主播筛选
+            const filterAnchor = (document.getElementById('exportAnchorFilter') && document.getElementById('exportAnchorFilter').value) || '';
+            let filteredList = exportOrdersList;
+            if (filterAnchor) {
+                filteredList = exportOrdersList.filter(function(o) {
+                    var a = o.sessionAnchor || (currentSession ? (currentSession.currentAnchor || currentSession.anchor) : '') || '';
+                    return a === filterAnchor;
+                });
+            }
+            if (filteredList.length === 0) {
+                alert('没有匹配的订单可导出！');
+                return;
+            }
+            
             let csv = '序号,轮次,标题,商品种类,SKU,数量,竞拍金额,备注,主播,直播日期,直播时间,时间,状态\n';
-            exportOrdersList.forEach((order, index) => {
-                order.skus.forEach((skuItem, skuIndex) => {
-                    const orderNum = exportOrdersList.length - index;
+            var lastAnchor = '';
+            var anchorSubtotalQty = 0;
+            var anchorSubtotalAmount = 0;
+            
+            filteredList.forEach(function(order) {
+                // 取主播名
+                var anchorName = order.sessionAnchor || '';
+                if (!anchorName && currentSession) {
+                    anchorName = currentSession.currentAnchor || currentSession.anchor || '';
+                }
+                
+                // 主播切换时写小计行
+                if (lastAnchor && anchorName !== lastAnchor) {
+                    csv += ',小计,,,,,' + anchorSubtotalAmount + ',,' + lastAnchor + '（' + anchorSubtotalQty + '件）,,,,,\n';
+                    anchorSubtotalQty = 0;
+                    anchorSubtotalAmount = 0;
+                }
+                lastAnchor = anchorName;
+                
+                order.skus.forEach(function(skuItem, skuIndex) {
+                    const orderNum = filteredList.length - filteredList.indexOf(order);
                     const totalSkus = order.skus.length;
                     const status = order.isOverSold ? '超卖' : (order.note ? '有备注' : '正常');
-                                        // 主播名：优先从当前场次取，否则从订单的 sessionAnchor 取
-                    var anchorName = '';
-                    if (currentSession && currentSession.anchor) {
-                        anchorName = currentSession.anchor;
-                    } else if (order.sessionAnchor) {
-                        anchorName = order.sessionAnchor;
-                    }
-                    csv += `${orderNum},${order.round},${order.title},${totalSkus},${skuItem.sku},${skuItem.quantity},${order.auctionPrice || ''},"${order.note || ''}",${anchorName},${order.sessionDate || ''},${order.sessionTime || ''},${order.timestamp},${status}\n`;
+                    csv += orderNum + ',' + order.round + ',' + order.title + ',' + totalSkus + ',' + skuItem.sku + ',' + skuItem.quantity + ',' + (order.auctionPrice || '') + ',"' + (order.note || '') + '",' + anchorName + ',' + (order.sessionDate || '') + ',' + (order.sessionTime || '') + ',' + (order.timestamp || '') + ',' + status + '\n';
+                    anchorSubtotalQty += skuItem.quantity;
                 });
+                anchorSubtotalAmount += (order.auctionPrice || 0);
             });
+            
+            // 最后一个主播的小计
+            if (lastAnchor) {
+                csv += ',小计,,,,,' + anchorSubtotalAmount + ',,' + lastAnchor + '（' + anchorSubtotalQty + '件）,,,,,\n';
+            }
             
             const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
+            const sessionTitle = currentSession ? (currentSession.sessionTitle || '') : '';
             const filename = currentSession 
-                ? `orders_${currentSession.anchor}_${currentSession.date}.csv`
-                : `orders_${new Date().toISOString().slice(0,10)}.csv`;
+                ? 'orders_' + sessionTitle + '_' + currentSession.date + (filterAnchor ? '_' + filterAnchor : '') + '.csv'
+                : 'orders_' + new Date().toISOString().slice(0,10) + '.csv';
             link.download = filename;
             link.click();
+        }
+        
+        // 初始化导出主播筛选下拉
+        function initExportAnchorFilter() {
+            var sel = document.getElementById('exportAnchorFilter');
+            if (!sel) return;
+            var anchors = new Set();
+            var list = orders || [];
+            list.forEach(function(o) {
+                var a = o.sessionAnchor || '';
+                if (a) anchors.add(a);
+            });
+            if (currentSession) {
+                var ca = currentSession.currentAnchor || currentSession.anchor || '';
+                if (ca) anchors.add(ca);
+            }
+            var currentVal = sel.value;
+            sel.innerHTML = '<option value="">全部主播</option>';
+            anchors.forEach(function(a) {
+                var opt = document.createElement('option');
+                opt.value = a;
+                opt.textContent = a;
+                if (a === currentVal) opt.selected = true;
+                sel.appendChild(opt);
+            });
         }
         
         function addSku() {
