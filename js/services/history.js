@@ -245,14 +245,14 @@
                 currentSession = session.session || session;
                 if (typeof currentSession.id === 'string') currentSession.id = parseInt(currentSession.id) || currentSession.id;
                 
-                // 旧格式：订单嵌入在session对象中，传到updateOrderList
-                if (session.orders && session.orders.length > 0) {
-                    updateOrderList(session.orders);
-                    return;
-                }
+                // 统一从全局 orders 按 sessionId 过滤，确保 individual order delete
+                // 使用 orders.indexOf(order) 能找到正确的索引
+                // 不要传入 session.orders（旧格式嵌入式对象副本，indexOf 找不到）
+                updateOrderList();
+                return;
             }
             
-            // 新格式：订单在全局orders数组，按sessionId过滤
+            // 无对应 session 时同样按全局过滤
             updateOrderList();
         }
         
@@ -283,7 +283,8 @@
             orders = orders.filter(function(o) { return String(o.sessionId) !== targetId; });
             
             liveHistory.splice(idx, 1);
-            saveLiveHistory();
+            // 不调用 saveLiveHistory()（BaaS 已直接 delete，本地已 splice），
+            // 避免竞态：saveLiveHistory 先 list() BaaS 时删除可能未生效，导致重新 insert
             updateSessionList();
             updateOrderList();
             updateRealTimeOrderList();

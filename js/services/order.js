@@ -455,19 +455,19 @@
                                 <span style="font-weight:bold;color:#10b981;margin-left:10px;font-size:12px;">🎤 ${orderAnchor}</span>
                             </div>
                             <div style="display:flex;gap:5px;">
-                                <button class="btn btn-success" style="padding:2px 8px;font-size:11px;" onclick="copyOrderSkus(${index})">复制</button>
-                                <button class="btn btn-danger" style="padding:2px 8px;font-size:11px;" onclick="deleteOrder(${index})">删除</button>
+                                <button class="btn btn-success" style="padding:2px 8px;font-size:11px;" onclick="copyOrderSkusById('${order.id || ''}')">复制</button>
+                                <button class="btn btn-danger" style="padding:2px 8px;font-size:11px;" onclick="deleteOrderById('${order.id || ''}')">删除</button>
                             </div>
                         </div>
                         ${skuItems}
                         <div style="margin-top:8px;display:flex;gap:10px;align-items:flex-end;">
                             <div style="flex:1;">
                                 <label style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:3px;display:block;">💰 竞拍金额 ($)</label>
-                                <input type="number" min="0" step="0.01" value="${order.auctionPrice || ''}" placeholder="输入金额" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#f59e0b;font-size:12px;" onchange="saveOrderAmount(${index}, this.value)">
+                                <input type="number" min="0" step="0.01" value="${order.auctionPrice || ''}" placeholder="输入金额" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#f59e0b;font-size:12px;" onchange="saveOrderAmountById('${order.id || ''}', this.value)">
                             </div>
                             <div style="flex:2;">
                                 <label style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:3px;display:block;">📝 备注</label>
-                                <input type="text" value="${order.note || ''}" placeholder="输入备注" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;" onchange="saveOrderNote(${index}, this.value)">
+                                <input type="text" value="${order.note || ''}" placeholder="输入备注" style="width:100%;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;" onchange="saveOrderNoteById('${order.id || ''}', this.value)">
                             </div>
                         </div>
                         <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.5);">${order.timestamp}</div>
@@ -708,11 +708,59 @@
             editingOrderIndex = -1;
         }
         
+
+        function findGlobalOrderIndexById(id) {
+            for (var i = 0; i < orders.length; i++) {
+                if (orders[i].id == id) return i;
+            }
+            return -1;
+        }
+        
+        function deleteOrderById(id) {
+            var idx = findGlobalOrderIndexById(id);
+            if (idx >= 0) {
+                var deleted = orders[idx];
+                orders.splice(idx, 1);
+                if (deleted && deleted.id) {
+                    client.db.from('orders').delete().eq('id', deleted.id).then(function(){
+                        console.log('☁️ 删除订单 ' + deleted.id + ' 成功');
+                    }, function(e){
+                        console.error('☁️ 删除订单失败:', e);
+                    });
+                }
+                updateOrderList();
+                updateRealTimeOrderList();
+                saveToLocalStorage();
+            }
+        }
+        
+        function copyOrderSkusById(id) {
+            var idx = findGlobalOrderIndexById(id);
+            if (idx >= 0) copyOrderSkus(idx);
+        }
+        
+        function saveOrderAmountById(id, value) {
+            var idx = findGlobalOrderIndexById(id);
+            if (idx >= 0) saveOrderAmount(idx, value);
+        }
+        
+        function saveOrderNoteById(id, value) {
+            var idx = findGlobalOrderIndexById(id);
+            if (idx >= 0) saveOrderNote(idx, value);
+        }
+        
         function deleteOrder(index) {
-            const deleted = orders[index];
-            orders.splice(index, 1);
+            var order = orders[index];
+            if (order) {
+                doDeleteOrder(order, index);
+            } else {
+                console.warn('deleteOrder: 无效索引', index);
+            }
+        }
+        
+        function doDeleteOrder(deleted, idx) {
+            orders.splice(idx, 1);
             
-            // 同步删除 BaaS
             if (deleted && deleted.id) {
                 client.db.from('orders').delete().eq('id', deleted.id).then(function(){
                     console.log('☁️ 删除订单 ' + deleted.id + ' 成功');
@@ -725,6 +773,7 @@
             updateRealTimeOrderList();
             saveToLocalStorage();
         }
+
         
         function clearAllOrders() {
             if (confirm('确定要清空所有订单记录吗？')) {
