@@ -83,10 +83,6 @@
                     <input type="text" id="editOrderNote" placeholder="输入备注信息" style="width:100%;">
                 </div>
                 <div class="form-group">
-                    <label for="editSessionAnchor" style="color:#10b981;">🎤 主播</label>
-                    <input type="text" id="editSessionAnchor" placeholder="输入主播名" style="width:200px;">
-                </div>
-                <div class="form-group">
                     <label>
                         <input type="checkbox" id="editIsOverSold" style="width:auto;margin-right:8px;">
                         <span style="color:#ef4444;">⚠️ 标记为超卖订单</span>
@@ -109,15 +105,15 @@
         
         <div id="page-product" class="page">
             <div class="panel">
-                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;">
-                    <h2 style="font-size:16px;font-weight:600;display:flex;align-items:center;gap:6px;margin:0;">📦 商品库存管理 <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(OMS)</span></h2>
-                    <span id="omsSyncStatus" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-secondary);"></span>
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;">
-                    <button class="btn btn-warning" onclick="calibrateStock()" style="padding:4px 12px;font-size:11px;" title="开播前使用：用 OMS 可用库存覆盖系统库存">📊 库存校准</button>
-                    <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);">⏰ 每天 <span id="calibrateTimeDisplay">未设置</span></span>
-                    <button class="btn btn-secondary" onclick="showCalibrateScheduleDialog()" style="padding:3px 8px;font-size:10px;">设置</button>
-                </div>
+                <h2>📦 商品库存管理
+                    <span style="font-size:11px;color:var(--text-muted);font-weight:400;">(由 OMS 同步)</span>
+                    <span style="float:right;display:flex;gap:6px;">
+                        <button class="btn btn-warning" onclick="calibrateStock()" style="padding:3px 12px;font-size:11px;" title="开播前使用：用 OMS 可用库存覆盖系统库存">📊 库存校准</button>
+                        <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">⏰ 每天 <span id="calibrateTimeDisplay">未设置</span>
+                        <button class="btn btn-secondary" onclick="showCalibrateScheduleDialog()" style="padding:2px 8px;font-size:10px;margin-left:4px;">设置</button></span>
+                        <span id="omsSyncStatus" style="display:inline-block;font-size:11px;"></span>
+                    </span>
+                </h2>
                 
                 <!-- 🆕 新上架产品板块 -->
                 <div style="margin-bottom:16px;padding:14px;background:rgba(0,0,0,0.12);border-radius:10px;">
@@ -211,9 +207,9 @@ BA0125111903,18.00,2.60"></textarea>
                 </div>
                 <div id="productStats" style="margin-top:10px;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px;">
                     <div style="display:flex;flex-wrap:wrap;gap:20px;font-size:13px;">
-                        <div><span style="color:var(--text-muted);">📦 商品总数:</span> <strong id="statsTotal" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
-                        <div><span style="color:var(--text-muted);">🖼️ 无图片:</span> <strong id="statsNoImage" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
-                        <div><span style="color:var(--text-muted);">💰 无价格:</span> <strong id="statsNoPrice" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
+                        <div><span style="color:#4CAF50;">📦 商品总数:</span> <strong id="statsTotal" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
+                        <div><span style="color:#FF9800;">🖼️ 无图片:</span> <strong id="statsNoImage" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
+                        <div><span style="color:#f44336;">💰 无价格:</span> <strong id="statsNoPrice" style="color:#ffffff;font-size:16px;font-weight:800;">-</strong></div>
                     </div>
                     <div style="margin-top:10px;">
                         <button class="btn btn-warning" style="padding:4px 12px;font-size:12px;" onclick="downloadProductsWithIssues()">📥 下载问题商品</button>
@@ -374,25 +370,25 @@ BA0125111903,18.00,2.60"></textarea>
                         
                         <!-- 统计卡片行 -->
                         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
-                            <div class="stat-card panel" style="padding:16px;">
+                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(102,126,234,0.2),rgba(102,126,234,0.05));border:1px solid rgba(102,126,234,0.3);border-radius:10px;padding:16px;">
                                 <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">📦 商品总数</div>
-                                <div style="font-size:22px;font-weight:700;color:var(--accent);" id="dashTotalProducts">-</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">缺图 <span id="dashNoImage">-</span> · 缺价 <span id="dashNoPrice">-</span></div>
+                                <div style="font-size:28px;font-weight:700;color:#667eea;" id="dashTotalProducts">-</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">缺图: <span id="dashNoImage" style="color:#FF9800;">-</span> | 缺价: <span id="dashNoPrice" style="color:#f44336;">-</span></div>
                             </div>
-                            <div class="stat-card panel" style="padding:16px;">
+                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(76,175,80,0.2),rgba(76,175,80,0.05));border:1px solid rgba(76,175,80,0.3);border-radius:10px;padding:16px;">
                                 <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">📋 总订单数</div>
-                                <div style="font-size:22px;font-weight:700;color:var(--accent);" id="dashTotalOrders">-</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">今日 <span id="dashTodayOrders">-</span> 单</div>
+                                <div style="font-size:28px;font-weight:700;color:#4CAF50;" id="dashTotalOrders">-</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">今日: <span id="dashTodayOrders" style="color:#4CAF50;">-</span> 单</div>
                             </div>
-                            <div class="stat-card panel" style="padding:16px;">
+                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(255,215,0,0.2),rgba(255,215,0,0.05));border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:16px;">
                                 <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">🎬 历史场次</div>
-                                <div style="font-size:22px;font-weight:700;color:var(--accent);" id="dashTotalSessions">-</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">活跃 <span id="dashActiveSessions">-</span> 场</div>
+                                <div style="font-size:28px;font-weight:700;color:#FFD700;" id="dashTotalSessions">-</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">活跃: <span id="dashActiveSessions" style="color:#4CAF50;">-</span> 场</div>
                             </div>
-                            <div class="stat-card panel" style="padding:16px;">
+                            <div class="stat-card" style="background:linear-gradient(135deg,rgba(244,67,54,0.2),rgba(244,67,54,0.05));border:1px solid rgba(244,67,54,0.3);border-radius:10px;padding:16px;">
                                 <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">💰 今日GMV</div>
-                                <div style="font-size:22px;font-weight:700;color:var(--accent);" id="dashTodayGMV">$0.00</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">总GMV <span id="dashTotalGMV">$0.00</span></div>
+                                <div style="font-size:28px;font-weight:700;color:#ef4444;" id="dashTodayGMV">$0.00</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">总GMV: <span id="dashTotalGMV" style="color:#FFD700;">$0.00</span></div>
                             </div>
                         </div>
                         
@@ -407,9 +403,9 @@ BA0125111903,18.00,2.60"></textarea>
                         </div>
                         
                         <!-- 库存预警条 -->
-                        <div id="stockWarningBar" style="display:none;margin-bottom:20px;padding:10px 14px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.18);border-radius:10px;">
-                            <span style="color:var(--warning);font-weight:600;font-size:13px;">⚠️ 库存预警</span>
-                            <span id="stockWarningText" style="color:rgba(255,255,255,0.7);margin-left:6px;font-size:12px;"></span>
+                        <div id="stockWarningBar" style="display:none;margin-bottom:20px;padding:10px 16px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:8px;">
+                            <span style="color:#f59e0b;font-weight:500;">⚠️ 库存预警</span>
+                            <span id="stockWarningText" style="color:rgba(255,255,255,0.8);margin-left:8px;"></span>
                         </div>
                         
                         <!-- 主区域：左图表 + 右活跃场次 -->
@@ -468,10 +464,6 @@ BA0125111903,18.00,2.60"></textarea>
                         
                         <!-- 场次信息区域 -->
                         <div class="session-panel" id="sessionPanel" style="margin-bottom:15px;padding:15px;background:rgba(255,255,255,0.05);border-radius:10px;">
-                            <!-- 当前在播主播指示 -->
-                            <div id="currentAnchorIndicator" style="display:none;margin-bottom:10px;padding:10px 14px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.4);border-radius:8px;text-align:center;font-size:16px;font-weight:600;transition:all 0.3s;">
-                                🎤 当前在播：<span id="currentAnchorName" style="color:#10b981;"></span>
-                            </div>
                             <div id="noSession" style="display:flex;justify-content:space-between;align-items:center;">
                                 <h3>📅 还没有创建直播场次</h3>
                                 <button class="btn btn-outline" onclick="openSessionModal()" style="padding:6px 16px;font-size:13px;">创建直播场次</button>
@@ -582,10 +574,7 @@ BA0125111903,18.00,2.60"></textarea>
                             </div>
                         </div>
                         
-                        <div class="btn-group" style="flex-wrap:wrap;gap:6px;">
-                            <select id="exportAnchorFilter" style="padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);background:rgba(0,0,0,0.2);color:#fff;font-size:12px;max-width:150px;" onchange="document.getElementById('exportAnchorLabel').textContent=this.value||'全部主播'">
-                                <option value="">全部主播</option>
-                            </select>
+                        <div class="btn-group">
                             <button class="btn btn-success" onclick="exportOrders()">导出CSV</button>
                             <button class="btn btn-danger" onclick="clearAllOrders()">清空所有订单</button>
                         </div>

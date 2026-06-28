@@ -473,6 +473,11 @@
                     setTimeout(updateCalibrateTimeDisplay, 100);
                 }
             }
+            if (pageId === 'order') {
+                if (typeof initExportAnchorFilter === 'function') {
+                    setTimeout(initExportAnchorFilter, 100);
+                }
+            }
         };
 
 

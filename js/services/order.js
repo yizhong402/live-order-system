@@ -136,7 +136,7 @@
                     sessionId: currentSession.id,
                     sessionDate: currentSession.date,
                     sessionTime: currentSession.time,
-                    sessionAnchor: currentSession.anchor,
+                    sessionAnchor: currentSession.currentAnchor || currentSession.anchor,
                     isOverSold: false
                 };
                 
@@ -567,7 +567,7 @@
                     sessionId: currentSession ? currentSession.id : null,
                     sessionDate: currentSession ? currentSession.date : null,
                     sessionTime: currentSession ? currentSession.time : null,
-                    sessionAnchor: currentSession ? currentSession.anchor : null
+                    sessionAnchor: currentSession ? (currentSession.currentAnchor || currentSession.anchor) : null
                 });
             }
             
@@ -604,6 +604,7 @@
             document.getElementById('editTitle').value = order.title;
             document.getElementById('editAuctionPrice').value = order.auctionPrice || '';
             document.getElementById('editOrderNote').value = order.note || '';
+            document.getElementById('editSessionAnchor').value = order.sessionAnchor || '';
             document.getElementById('editIsOverSold').checked = order.isOverSold || false;
             
             updateEditSkuList(order.skus);
@@ -676,6 +677,7 @@
             order.title = document.getElementById('editTitle').value.trim();
             order.auctionPrice = parseFloat(document.getElementById('editAuctionPrice').value) || 0;
             order.note = document.getElementById('editOrderNote').value.trim();
+            order.sessionAnchor = document.getElementById('editSessionAnchor').value.trim();
             order.isOverSold = document.getElementById('editIsOverSold').checked;
             
             if (!order.title) {
@@ -687,7 +689,7 @@
             if (order.id) {
                 client.db.from('orders').update(order.id, {
                     round: order.round, title: order.title,
-                    skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''})
+                    skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||'', sessionAnchor: order.sessionAnchor||''})
                 }).then(function(){}, function(e){ console.error('☁️ 编辑订单保存失败:', e); });
             }
             
@@ -839,14 +841,10 @@
             // 获取当前显示的订单（考虑当前场次过滤）
             let exportOrdersList = orders;
             if (currentSession) {
-                // 判断是旧格式还是新格式
                 if (currentSession.session && currentSession.orders && currentSession.orders.length > 0) {
-                    // 旧格式：订单保存在场次对象内部的orders数组
                     exportOrdersList = currentSession.orders;
                 } else if (currentSession.id) {
-                    // 新格式：订单保存在全局orders数组，通过sessionId关联
                     exportOrdersList = orders.filter(order => order.sessionId == currentSession.id);
-                    // 如果全局orders为空（已结束的场次，数据在liveHistory中），从liveHistory回退查找
                     if (exportOrdersList.length === 0) {
                         const historyEntry = liveHistory.find(function(h) {
                             var s = h.session || h;
@@ -871,31 +869,89 @@
                 return ra - rb;
             });
             
+            // 按主播筛选
+            const filterAnchor = (document.getElementById('exportAnchorFilter') && document.getElementById('exportAnchorFilter').value) || '';
+            let filteredList = exportOrdersList;
+            if (filterAnchor) {
+                filteredList = exportOrdersList.filter(function(o) {
+                    var a = o.sessionAnchor || (currentSession ? (currentSession.currentAnchor || currentSession.anchor) : '') || '';
+                    return a === filterAnchor;
+                });
+            }
+            if (filteredList.length === 0) {
+                alert('没有匹配的订单可导出！');
+                return;
+            }
+            
             let csv = '序号,轮次,标题,商品种类,SKU,数量,竞拍金额,备注,主播,直播日期,直播时间,时间,状态\n';
-            exportOrdersList.forEach((order, index) => {
-                order.skus.forEach((skuItem, skuIndex) => {
-                    const orderNum = exportOrdersList.length - index;
+            var lastAnchor = '';
+            var anchorSubtotalQty = 0;
+            var anchorSubtotalAmount = 0;
+            
+            filteredList.forEach(function(order) {
+                // 取主播名
+                var anchorName = order.sessionAnchor || '';
+                if (!anchorName && currentSession) {
+                    anchorName = currentSession.currentAnchor || currentSession.anchor || '';
+                }
+                
+                // 主播切换时写小计行
+                if (lastAnchor && anchorName !== lastAnchor) {
+                    csv += ',小计,,,,,' + anchorSubtotalAmount + ',,' + lastAnchor + '（' + anchorSubtotalQty + '件）,,,,,\n';
+                    anchorSubtotalQty = 0;
+                    anchorSubtotalAmount = 0;
+                }
+                lastAnchor = anchorName;
+                
+                order.skus.forEach(function(skuItem, skuIndex) {
+                    const orderNum = filteredList.length - filteredList.indexOf(order);
                     const totalSkus = order.skus.length;
                     const status = order.isOverSold ? '超卖' : (order.note ? '有备注' : '正常');
-                                        // 主播名：优先从当前场次取，否则从订单的 sessionAnchor 取
-                    var anchorName = '';
-                    if (currentSession && currentSession.anchor) {
-                        anchorName = currentSession.anchor;
-                    } else if (order.sessionAnchor) {
-                        anchorName = order.sessionAnchor;
-                    }
-                    csv += `${orderNum},${order.round},${order.title},${totalSkus},${skuItem.sku},${skuItem.quantity},${order.auctionPrice || ''},"${order.note || ''}",${anchorName},${order.sessionDate || ''},${order.sessionTime || ''},${order.timestamp},${status}\n`;
+                    csv += orderNum + ',' + order.round + ',' + order.title + ',' + totalSkus + ',' + skuItem.sku + ',' + skuItem.quantity + ',' + (order.auctionPrice || '') + ',"' + (order.note || '') + '",' + anchorName + ',' + (order.sessionDate || '') + ',' + (order.sessionTime || '') + ',' + (order.timestamp || '') + ',' + status + '\n';
+                    anchorSubtotalQty += skuItem.quantity;
                 });
+                anchorSubtotalAmount += (order.auctionPrice || 0);
             });
+            
+            // 最后一个主播的小计
+            if (lastAnchor) {
+                csv += ',小计,,,,,' + anchorSubtotalAmount + ',,' + lastAnchor + '（' + anchorSubtotalQty + '件）,,,,,\n';
+            }
             
             const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
+            const sessionTitle = currentSession ? (currentSession.sessionTitle || '') : '';
             const filename = currentSession 
-                ? `orders_${currentSession.anchor}_${currentSession.date}.csv`
-                : `orders_${new Date().toISOString().slice(0,10)}.csv`;
+                ? 'orders_' + sessionTitle + '_' + currentSession.date + (filterAnchor ? '_' + filterAnchor : '') + '.csv'
+                : 'orders_' + new Date().toISOString().slice(0,10) + '.csv';
             link.download = filename;
             link.click();
+        }
+        
+        // 初始化导出主播筛选下拉
+        function initExportAnchorFilter() {
+            var sel = document.getElementById('exportAnchorFilter');
+            if (!sel) return;
+            var anchors = new Set();
+            var list = orders || [];
+            list.forEach(function(o) {
+                var a = o.sessionAnchor || '';
+                if (a) anchors.add(a);
+            });
+            if (currentSession) {
+                var ca = currentSession.currentAnchor || currentSession.anchor || '';
+                if (ca) anchors.add(ca);
+            }
+            var currentVal = sel.value;
+            sel.innerHTML = '<option value="">全部主播</option>';
+            anchors.forEach(function(a) {
+                var opt = document.createElement('option');
+                opt.value = a;
+                opt.textContent = a;
+                if (a === currentVal) opt.selected = true;
+                sel.appendChild(opt);
+            });
         }
         
         function addSku() {

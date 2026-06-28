@@ -150,6 +150,7 @@
                 date: date,
                 time: time || '00:00',
                 anchor: anchor,
+                currentAnchor: anchor,
                 sessionNumber: sessionNumber,
                 title: `${sessionTitle} | 第${sessionNumber}场 | ${date} ${time || '00:00'} | ${anchor}`,
                 startTime: startTime,
@@ -386,7 +387,15 @@
                 noSession.style.display = 'none';
                 activeSession.style.display = 'block';
                 document.getElementById('sessionTime').textContent = `${session.date} ${session.time}`;
-                document.getElementById('sessionAnchor').textContent = session.anchor;
+                const displayAnchor = session.currentAnchor || session.anchor || '-';
+                document.getElementById('sessionAnchor').textContent = displayAnchor;
+                // 更新"当前在播主播"指示
+                const indicator = document.getElementById('currentAnchorIndicator');
+                const nameEl = document.getElementById('currentAnchorName');
+                if (indicator && nameEl) {
+                    indicator.style.display = 'block';
+                    nameEl.textContent = displayAnchor;
+                }
             } else {
                 noSession.style.display = 'block';
                 activeSession.style.display = 'none';
@@ -397,24 +406,27 @@
             const session = getCurrentSession();
             if (!session) { alert('请先选择场次！'); return; }
             const current = session.anchor || '';
-            const newAnchor = prompt(`当前主播：${current}\n\n输入新主播名字（中途换人，追加到历史主播列表）：`, '');
+            const currentSingle = session.currentAnchor || session.anchor || '';
+            const newAnchor = prompt(`当前主播：${currentSingle}\n\n输入新主播名字（中途换人，追加到历史主播列表）：`, '');
             if (newAnchor && newAnchor.trim()) {
                 // 累加主播名（不覆盖），方便历史记录显示完整主播链
                 const anchorChain = current ? current + '/' + newAnchor.trim() : newAnchor.trim();
                 session.anchor = anchorChain;
-                document.getElementById('sessionAnchor').textContent = session.anchor;
+                // 单人主播（订单归属用）
+                session.currentAnchor = newAnchor.trim();
+                document.getElementById('sessionAnchor').textContent = session.currentAnchor;
                 // 更新场次列表显示
                 updateSessionList();
-                // 更新订单录入页头顶的场次标签
+                // 更新订单录入页头顶的场次标签（显示单人）
                 const lbl = document.getElementById('currentSessionLabel');
-                if (lbl) lbl.textContent = `${session.sessionTitle} (${session.anchor})`;
+                if (lbl) lbl.textContent = `${session.sessionTitle} (${session.currentAnchor})`;
                 // 同步到 BaaS
                 if (session.id) {
                     client.db.from('live_sessions').update(session.id, { anchor: session.anchor }).catch(()=>{});
                 }
                 syncGlobalsToSession();
                 saveSessionToLocalStorage();
-                showToast(`✅ 主播链已更新: ${anchorChain}`, 'success');
+                showToast(`✅ 已切换主播: ${newAnchor.trim()}`, 'success');
             }
         }
         
@@ -687,7 +699,7 @@
                         sessionId: currentSession ? currentSession.id : null,
                         sessionDate: currentSession ? currentSession.date : null,
                         sessionTime: currentSession ? currentSession.time : null,
-                        sessionAnchor: currentSession ? currentSession.anchor : null
+                        sessionAnchor: currentSession ? (currentSession.currentAnchor || currentSession.anchor) : null
                     });
                 }
                 saveToLocalStorage();
@@ -765,7 +777,7 @@
                             sessionId: currentSession ? currentSession.id : null,
                             sessionDate: currentSession ? currentSession.date : null,
                             sessionTime: currentSession ? currentSession.time : null,
-                            sessionAnchor: currentSession ? currentSession.anchor : null
+                            sessionAnchor: currentSession ? (currentSession.currentAnchor || currentSession.anchor) : null
                         };
                         
                         orders.unshift(order);
@@ -848,7 +860,7 @@
                             sessionId: currentSession ? currentSession.id : null,
                             sessionDate: currentSession ? currentSession.date : null,
                             sessionTime: currentSession ? currentSession.time : null,
-                            sessionAnchor: currentSession ? currentSession.anchor : null
+                            sessionAnchor: currentSession ? (currentSession.currentAnchor || currentSession.anchor) : null
                         };
                         orders.unshift(newOrder);
                         client.db.from('orders').insert().values({
