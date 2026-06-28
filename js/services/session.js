@@ -431,6 +431,7 @@
                 syncGlobalsToSession();
                 saveSessionToLocalStorage();
                 updateSessionDisplay();
+                updateActiveSessionsCards();
                 showToast(`✅ 已切换主播: ${newAnchor.trim()}`, 'success');
             }
         }
