@@ -211,9 +211,11 @@
                     var time = session.time || '00:00';
                     var endTime = h.endTime || session.endTime || '';
                     
+                    var curAnchor = session.currentAnchor || '';
                     var data = {
                         title: title,
                         anchor: anchor,
+                        current_anchor: curAnchor,
                         date: date,
                         time: time,
                         session_no: session.sessionNumber || 1,

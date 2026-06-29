@@ -6,9 +6,21 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="/tmp/stock_snapshot.log"
 SNAPSHOT_SCRIPT="$SCRIPT_DIR/stock_snapshot.py"
+# 仓库真实路径（硬编码，避免 /tmp 幽灵仓库）
+REPO_DIR="/home/sandbox/.openclaw/workspace/repo/live-order-system"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+push_fail() {
+    local phase="$1"
+    local detail="$2"
+    log "❌ 推送失败 [$phase]: $detail"
+    # 写入告警文件，供晨检查看
+    echo "{\"time\":\"$(date -Iseconds)\",\"phase\":\"$phase\",\"detail\":\"$detail\"}" > "$REPO_DIR/data/.push_fail_alert.json"
+    # 尝试通知
+    bash "$REPO_DIR/health_alert.sh" "推送失败" "$phase: $detail" 2>/dev/null || true
 }
 
 log "🛡️ 库存快照守护启动"
@@ -34,15 +46,23 @@ while true; do
         
         # 自动推送快照到 GitHub Pages（线上热销品+新上架依赖此数据）
         log "🚀 推送快照到 GitHub..."
-        cd "$SCRIPT_DIR"
+        cd "$REPO_DIR"
+        git pull --rebase origin master 2>&1 | tee -a "$LOG_FILE" || true
+        cp -f "/tmp/live-order-system/data/stock-snapshots.json" "$REPO_DIR/data/stock-snapshots.json"
         git add data/stock-snapshots.json
         if git diff --cached --quiet 2>/dev/null; then
             log "   快照数据无变化，跳过推送"
         else
             git commit -m "chore: daily stock snapshot $CURRENT_DATE"
-            git push origin master 2>&1 | tee -a "$LOG_FILE"
+            if ! git push origin master 2>&1 | tee -a "$LOG_FILE"; then
+                push_fail "master_push" "origin master 推送失败，尝试 pull --rebase 后重试"
+                git pull --rebase origin master 2>&1 | tee -a "$LOG_FILE" || true
+                git push origin master 2>&1 | tee -a "$LOG_FILE" || push_fail "master_push_retry" "重试后仍失败"
+            fi
             # 同步到 main 分支（GitHub Pages 使用 main 部署）
-            git push origin master:main --force 2>&1 | tee -a "$LOG_FILE"
+            if ! git push origin master:main --force 2>&1 | tee -a "$LOG_FILE"; then
+                push_fail "main_sync_force" "master→main force push 失败"
+            fi
             log "✅ 快照已推送到 GitHub（master + main），线上页面约1-2分钟后更新"
         fi
         
