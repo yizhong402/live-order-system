@@ -224,7 +224,7 @@
             active.forEach(s => {
                 const opt = document.createElement('option');
                 opt.value = s.id;
-                opt.textContent = `${s.sessionTitle} (${s.anchor})`;
+                opt.textContent = `${s.sessionTitle} (${s.currentAnchor || s.anchor})`;
                 if (s.id === currentId) opt.selected = true;
                 sel.appendChild(opt);
             });
@@ -232,7 +232,7 @@
             const lbl = document.getElementById('currentSessionLabel');
             if (lbl) {
                 const session = getCurrentSession();
-                lbl.textContent = session ? `${session.sessionTitle} (${session.anchor})` : '未选择';
+                lbl.textContent = session ? `${session.sessionTitle} (${session.currentAnchor || session.anchor})` : '未选择';
             }
         }
         
@@ -252,7 +252,7 @@
                                     date: s.date || '',
                                     time: s.time || '',
                                     anchor: rawAnchor,
-                                    currentAnchor: currentSingle,
+                                    currentAnchor: s.current_anchor || currentSingle,
                                     sessionNumber: s.session_no || 1,
                                     title: `${s.title || ''} | 第${s.session_no || 1}场 | ${s.date || ''} ${s.time || ''} | ${s.anchor || ''}`,
                                     startTime: s.created_at || '',
@@ -371,12 +371,30 @@
                         <span style="font-size:12px;color:rgba(255,255,255,0.4);padding:2px 8px;background:rgba(16,185,129,0.2);border-radius:4px;">进行中</span>
                     </div>
                     <div style="font-size:12px;color:rgba(255,255,255,0.7);display:flex;flex-wrap:wrap;gap:4px 8px;word-break:break-all;max-width:100%;">
-                        <span>🎤 ${s.anchor}</span>
+                        <span>🎤 ${s.currentAnchor || s.anchor}</span>
                         <span>🕐 ${s.date || ''} ${s.time || ''}</span>
                         <span>R${s.currentRound || 1} · ${(typeof orders !== 'undefined' ? orders.filter(function(o){ return o.sessionId == s.id; }).length : 0)}单</span>
                     </div>
                 </div>
             `).join('');
+        }
+        
+        function getSessionAnchor(session) {
+            // 先从 session 对象的 currentAnchor 取
+            if (session && session.currentAnchor) return session.currentAnchor;
+            // 没有 currentAnchor 则从该场次最新订单反推
+            if (session && typeof orders !== 'undefined') {
+                var sessionOrders = orders.filter(function(o){ return o.sessionId == session.id; });
+                if (sessionOrders.length > 0) {
+                    // 取时间最新的订单的 anchor
+                    var latest = sessionOrders.reduce(function(a,b){
+                        return (a.timestamp||'') > (b.timestamp||'') ? a : b;
+                    });
+                    if (latest.sessionAnchor) return latest.sessionAnchor;
+                }
+            }
+            // 最后回退到 anchor 全链
+            return session ? (session.anchor || '-') : '-';
         }
         
         function updateSessionDisplay() {
@@ -388,7 +406,7 @@
                 noSession.style.display = 'none';
                 activeSession.style.display = 'block';
                 document.getElementById('sessionTime').textContent = `${session.date} ${session.time}`;
-                const displayAnchor = session.currentAnchor || session.anchor || '-';
+                const displayAnchor = getSessionAnchor(session);
                 document.getElementById('sessionAnchor').textContent = displayAnchor;
                 // 更新"当前在播主播"指示
                 const indicator = document.getElementById('currentAnchorIndicator');
@@ -423,7 +441,10 @@
                 if (lbl) lbl.textContent = `${session.sessionTitle} (${session.currentAnchor})`;
                 // 同步到 BaaS（存全链 + 当前单人）
                 if (session.id) {
-                    client.db.from('live_sessions').update(session.id, { anchor: session.anchor }).catch(()=>{});
+                    client.db.from('live_sessions').update(session.id, { 
+                        anchor: session.anchor,
+                        current_anchor: session.currentAnchor 
+                    }).catch(()=>{});
                 }
                 syncGlobalsToSession();
                 saveSessionToLocalStorage();
