@@ -6,8 +6,9 @@
 
 REPORT_FILE="/tmp/health-check-report.json"
 TEXT_FILE="/tmp/health-check-report.txt"
-SNAPSHOT_FILE="/tmp/live-order-system/data/stock-snapshots.json"
-SCRIPT_DIR="/tmp/live-order-system"
+SNAPSHOT_FILE="/home/sandbox/.openclaw/workspace/repo/live-order-system/data/stock-snapshots.json"
+SCRIPT_DIR="/home/sandbox/.openclaw/workspace/repo/live-order-system"
+PUSH_ALERT_FILE="$SCRIPT_DIR/data/.push_fail_alert.json"
 BAAS_URL="https://baas.kuafuai.net/baas-api"
 BAAS_KEY="baas_CJbcgwuf"
 NOW=$(date '+%Y-%m-%d %H:%M:%S')
@@ -138,6 +139,35 @@ HTTP_RESULT=$([ "$HTTP_CODE" = "200" ] && echo "✅ HTTP服务(8085) 运行中" 
 RESTART_LOG=$(journalctl --no-pager -n 10 2>/dev/null | grep -i "oom\|killed\|crash\|error\|fail" | tail -3)
 RESTART_RESULT=$([ -z "$RESTART_LOG" ] && echo "✅ 无异常终止" || echo "⚠️ 系统日志异常: $RESTART_LOG")
 
+# ===== 5b. 检查 push 失败告警 =====
+PUSH_ALERT_RESULT=""
+if [ -f "$PUSH_ALERT_FILE" ]; then
+    ALERT_CONTENT=$(cat "$PUSH_ALERT_FILE")
+    ALERT_TIME=$(echo "$ALERT_CONTENT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('time',''))" 2>/dev/null)
+    ALERT_PHASE=$(echo "$ALERT_CONTENT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('phase',''))" 2>/dev/null)
+    ALERT_DETAIL=$(echo "$ALERT_CONTENT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('detail',''))" 2>/dev/null)
+    # 只报当天的告警
+    if echo "$ALERT_TIME" | grep -q "$TODAY"; then
+        PUSH_ALERT_RESULT="❌ Git推送失败 [$ALERT_PHASE] $ALERT_DETAIL ($ALERT_TIME)"
+    fi
+fi
+
+# ===== 5c. 检查守护进程工作目录 =====
+WD_CHECK_RESULT=""
+STOCK_WD=$(readlink -f /proc/$(pgrep -f "stock_snapshot_watchdog" 2>/dev/null | head -1)/cwd 2>/dev/null)
+OMS_WD=$(readlink -f /proc/$(pgrep -f "oms_watchdog" 2>/dev/null | head -1)/cwd 2>/dev/null)
+CORRECT_WD="/home/sandbox/.openclaw/workspace/repo/live-order-system"
+if [ -n "$STOCK_WD" ] && [ "$STOCK_WD" != "$CORRECT_WD" ]; then
+    WD_CHECK_RESULT="⚠️ 快照守护运行目录异常: $STOCK_WD"
+fi
+if [ -n "$OMS_WD" ] && [ "$OMS_WD" != "$CORRECT_WD" ]; then
+    if [ -n "$WD_CHECK_RESULT" ]; then WD_CHECK_RESULT="$WD_CHECK_RESULT；"; fi
+    WD_CHECK_RESULT="${WD_CHECK_RESULT}⚠️ OMS守护运行目录异常: $OMS_WD"
+fi
+if [ -z "$WD_CHECK_RESULT" ]; then
+    WD_CHECK_RESULT="✅ 守护进程工作目录正常"
+fi
+
 # ===== 6. 今日新上架SKU分析（库存比昨天增多的商品，按库存降序）=====
 NEW_PRODUCTS_INFO="[]"
 NEW_PRODUCT_COUNT="0"
@@ -260,6 +290,8 @@ cat > "$TEXT_FILE" << EOF
 $( [ -n "$CALIBRATE_DETAIL" ] && echo "    ➤ $CALIBRATE_DETAIL" )
 🛡️ 快照守护: $WATCHDOG_RESULT
 🛡️ OMS守护: $OMS_WD_RESULT
+📡 守护进程目录: $WD_CHECK_RESULT
+$( [ -n "$PUSH_ALERT_RESULT" ] && echo "📤 $PUSH_ALERT_RESULT" )
 🌐 HTTP服务: $HTTP_RESULT
 🖥️ 系统异常: $RESTART_RESULT
 📊 商品统计: 共${PROD_TOTAL} SKU | 缺图${PROD_NO_IMAGE} | 缺价${PROD_NO_PRICE} | 库存0: ${PROD_ZERO_STOCK}
@@ -284,6 +316,8 @@ report = {
         'calibration_staleness': '$(echo "$CALIBRATE_STALENESS" | sed "s/'/\\\\'/g")',
         'watchdog_stock': '$WATCHDOG_RESULT',
         'watchdog_oms': '$OMS_WD_RESULT',
+        'watchdog_dir': '$WD_CHECK_RESULT',
+        'push_alert': '$PUSH_ALERT_RESULT',
         'http_service': '$HTTP_RESULT',
         'restart_log': '$RESTART_RESULT'
     },
