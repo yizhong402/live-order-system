@@ -312,7 +312,7 @@
                 // 重置库存筛选为全部
                 currentStockFilter = 'all';
                 document.querySelectorAll('[id^="filter"]').forEach(btn => btn.classList.remove('active'));
-                document.getElementById('filterAll').classList.add('active');
+                var fa = document.getElementById('filterAll'); if (fa) fa.classList.add('active');
             } else if (pageId === 'combo') {
                 updateComboList();
             } else if (pageId === 'history') {
