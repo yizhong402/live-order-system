@@ -19,7 +19,8 @@
             // 按直播标题筛选
             if (sessionTitleFilter) {
                 filteredSessions = filteredSessions.filter(session => {
-                    const title = ((session.session || session).sessionTitle || '').toLowerCase();
+                    const s = session.session || session;
+                    const title = (s.sessionTitle || s.title || '').toLowerCase();
                     return title.includes(sessionTitleFilter);
                 });
             }

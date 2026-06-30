@@ -358,9 +358,9 @@
                 (comboSkus || []).forEach(function(c) {
                     var data = { code: c.code, skus_json: JSON.stringify(c.skus) };
                     if (cloudIds[c.code]) {
-                        client.db.from('combo_skus').update(cloudIds[c.code], data).catch(function(e){});
+                        client.db.from('combo_skus').update(cloudIds[c.code], data).then(function(){}, function(e){});
                     } else {
-                        client.db.from('combo_skus').insert().values(data).catch(function(e){});
+                        client.db.from('combo_skus').insert().values(data).then(function(){}, function(e){});
                     }
                 });
                 // 删除云端中已不在本地的组合
@@ -369,7 +369,7 @@
                         client.db.from('combo_skus').delete().eq('id', c.id).then(function(){}, function(e){});
                     }
                 });
-            }).catch(function(e){});
+            }).then(function(){}, function(e){});
         }
         
         function loadCombos() {
