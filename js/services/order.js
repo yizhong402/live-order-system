@@ -146,7 +146,7 @@
                 // 异步写 BaaS
                 client.db.from('orders').insert().values({
                     round: order.round, title: order.title,
-                    skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||''}),
+                    skus_json: JSON.stringify({skus: order.skus||[], auctionPrice: order.auctionPrice||0, note: order.note||'', sessionAnchor: order.sessionAnchor||'', isOverSold: !!order.isOverSold}),
                     session_id: order.sessionId||0,
                     created_at: new Date().toISOString().slice(0,19).replace('T',' ')
                 }).then(function(r){ if(r && r.data) { order.id = typeof r.data === 'number' ? r.data : (r.data.id || r.data); } }, function(e){ console.error('☁️ 订单保存失败:', e); });
@@ -446,6 +446,7 @@
                 if (!orderAnchor && currentSession) {
                     orderAnchor = currentSession.currentAnchor || currentSession.anchor || '';
                 }
+                const oversoldBadge = order.isOverSold ? '<span style="background:#ef4444;color:white;padding:2px 8px;border-radius:10px;font-size:10px;margin-left:8px;">⚠️ 超卖</span>' : '';
                 return `
                     <div style="padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:12px;border-left:4px solid #667eea;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -453,6 +454,7 @@
                                 <span style="font-weight:bold;color:#f093fb;">${titleOnly}</span>
                                 <span style="font-weight:bold;color:#4CAF50;margin-left:10px;">第 ${order.round} 轮</span>
                                 <span style="font-weight:bold;color:#10b981;margin-left:10px;font-size:12px;">🎤 ${orderAnchor}</span>
+                                ${oversoldBadge}
                             </div>
                             <div style="display:flex;gap:5px;">
                                 <button class="btn btn-success" style="padding:2px 8px;font-size:11px;" onclick="copyOrderSkusById('${order.id || ''}')">复制</button>
@@ -486,7 +488,7 @@
             // 同步到 BaaS (嵌入skus_json)
             if (order.id) {
                 client.db.from('orders').update(order.id, {
-                    skus_json: JSON.stringify({skus: order.skus || [], auctionPrice: order.auctionPrice || 0, note: order.note || ''})
+                    skus_json: JSON.stringify({skus: order.skus || [], auctionPrice: order.auctionPrice || 0, note: order.note || '', sessionAnchor: order.sessionAnchor || '', isOverSold: order.isOverSold || false})
                 }).then(function(){}, function(e){ console.error('☁️ 实时订单金额更新失败:', e); });
             }
         }
@@ -500,7 +502,7 @@
             // 同步到 BaaS (嵌入skus_json)
             if (order.id) {
                 client.db.from('orders').update(order.id, {
-                    skus_json: JSON.stringify({skus: order.skus || [], auctionPrice: order.auctionPrice || 0, note: order.note || ''})
+                    skus_json: JSON.stringify({skus: order.skus || [], auctionPrice: order.auctionPrice || 0, note: order.note || '', sessionAnchor: order.sessionAnchor || '', isOverSold: order.isOverSold || false})
                 }).then(function(){}, function(e){ console.error('☁️ 实时订单备注更新失败:', e); });
             }
         }
