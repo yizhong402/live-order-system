@@ -16,9 +16,9 @@
                         sessionId: o.session_id || null,
                         sessionDate: o.session_date || '',
                         sessionTime: o.session_time || '',
-                        sessionAnchor: o.session_anchor || '',
+                        sessionAnchor: (function(){ try { var j = JSON.parse(o.skus_json||'{}'); return Array.isArray(j) ? '' : (j.sessionAnchor||''); } catch(e){ return ''; } })(),
                         timestamp: o.created_at ? o.created_at.replace('T',' ').substring(0,19) : new Date().toLocaleString('zh-CN'),
-                        isOverSold: false
+                        isOverSold: (function(){ try { var j = JSON.parse(o.skus_json||'{}'); return Array.isArray(j) ? false : !!j.isOverSold; } catch(e){ return false; } })()
                     };});
                 }
                 const hRes = await client.db.from('live_sessions').list().order('created_at', 'desc');
