@@ -321,7 +321,7 @@
                     hasOverSold = true;
                 }
             });
-            order.isOverSold = hasOverSold;
+            order.isOverSold = order.isOverSold || hasOverSold;
         }
         
         function filterOrders() {
