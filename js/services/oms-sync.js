@@ -183,7 +183,7 @@ function loadBaaSProducts(page, pageSize, callback) {
       callback(j.message || '查询失败');
     }
   })
-  .catch(function(e) { callback(e.message); });
+  .then(null, function(e) { callback(e.message); });
 }
 
 function triggerOMSSync() {

@@ -127,7 +127,7 @@
                     price_cny: Math.round(p.priceCny * 100),
                     price_usd: Math.round(p.priceUsd * 100),
                     original_stock: p.originalStock || p.stock
-                }).catch(function(e) { console.error('☁️ 商品保存失败:', sku, e); });
+                }).then(null, function(e) { console.error('☁️ 商品保存失败:', sku, e); });
             });
             _dirtyProducts = {};
             return { success: true, message: '保存成功' };

@@ -101,7 +101,7 @@
                     status: "ended",
                     end_time: session.endTime,
                     total_rounds: session.totalRounds || 1
-                }).catch(function(e){});
+                }).then(null, function(e){});
             } catch(e) {}
             
             delete activeSessions[id];
@@ -270,7 +270,7 @@
                         updateSessionSelector();
                         updateActiveSessionsCards();
                     }
-                }).catch(() => {});
+                }).then(null, () => {});
             } catch(e) {}
         }
         
@@ -444,7 +444,7 @@
                     client.db.from('live_sessions').update(session.id, { 
                         anchor: session.anchor,
                         current_anchor: session.currentAnchor 
-                    }).catch(()=>{});
+                    }).then(null, ()=>{});
                 }
                 syncGlobalsToSession();
                 saveSessionToLocalStorage();
@@ -777,7 +777,7 @@
                         // 异步更新BaaS，不阻塞
                         client.db.from('orders').update(existingOrder.id, {
                             skus_json: JSON.stringify({skus: existingOrder.skus || [], auctionPrice: existingOrder.auctionPrice || 0, note: existingOrder.note || ''})
-                        }).catch(function(e){ console.error('☁️ 合并更新失败:', e); });
+                        }).then(null, function(e){ console.error('☁️ 合并更新失败:', e); });
                         const indicator = document.getElementById('scanIndicator');
                         indicator.innerHTML = `<p style="color:#10b981;">✅ ${existingOrder.title} 已合并保存！</p>`;
                         indicator.classList.add('active');

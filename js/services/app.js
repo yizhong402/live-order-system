@@ -80,7 +80,7 @@
                     price_cny: Math.round((p.priceCny || 0) * 100),
                     price_usd: Math.round((p.priceUsd || 0) * 100),
                     original_stock: p.originalStock || p.stock || 0
-                }).catch(function(e) { console.error('☁️ 商品保存失败:', sku, e); });
+                }).then(null, function(e) { console.error('☁️ 商品保存失败:', sku, e); });
             });
             window._dirtyProducts = {};
         }
@@ -226,7 +226,7 @@
                     
                     // 优先用 session.id 匹配云端
                     if (session.id && cloudById[session.id]) {
-                        client.db.from('live_sessions').update(session.id, data).catch(function(e){});
+                        client.db.from('live_sessions').update(session.id, data).then(null, function(e){});
                         return;
                     }
                     
@@ -236,7 +236,7 @@
                     if (matched && matched.length > 0) {
                         var cid = matched[0];
                         session.id = cid;
-                        client.db.from('live_sessions').update(cid, data).catch(function(e){});
+                        client.db.from('live_sessions').update(cid, data).then(null, function(e){});
                         return;
                     }
                     
@@ -254,7 +254,7 @@
                         client.db.from('live_sessions').delete().eq('id', s.id).then(function(){}, function(e){});
                     }
                 });
-            }).catch(function(e){});
+            }).then(null, function(e){});
         }
         
         async function loadLiveHistory() {
@@ -593,7 +593,7 @@
                         + '</div>'
                         + '</div>';
                 }).join('') + '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding-top:6px;">共 ' + top.length + ' 款热销品</div>';
-            }).catch(function() {
+            }).then(null, function() {
                 container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);padding:16px;">加载失败</div>';
             });
         }

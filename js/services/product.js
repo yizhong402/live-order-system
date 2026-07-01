@@ -162,7 +162,7 @@
                             systemSettings.omsSync = raw;
                             if (typeof refreshOMSSyncLog === 'function') refreshOMSSyncLog();
                         }
-                    }).catch(function(){});
+                    }).then(null, function(){});
                 }
                 statusEl.textContent = '✅ OMS 数据已同步（仅刷新参考数据，未覆盖系统库存）';
                 if (btn) { btn.textContent = '🔄 同步 OMS 数据'; btn.disabled = false; }
@@ -238,7 +238,7 @@
                                 showToast('📦 已刷新: ' + products.length + ' 条', 'success');
                             }
                             if (btn) { btn.textContent = '📊 库存校准'; btn.disabled = false; }
-                        }).catch(function() {
+                        }).then(null, function() {
                             if (btn) { btn.textContent = '📊 库存校准'; btn.disabled = false; }
                         });
                         return;
@@ -253,7 +253,7 @@
                     }
                     
                     scheduleNextPoll();
-                }).catch(function() {
+                }).then(null, function() {
                     scheduleNextPoll();
                 });
             }
@@ -565,7 +565,7 @@ let originalImages = [];
                                 price_cny: Math.round(priceCny * 100), price_usd: Math.round(priceUsd * 100),
                                 name: name || existing.name,
                                 stock: stock, original_stock: stock
-                            }).catch(function(e) { console.error('BaaS update err:', e); });
+                            }).then(null, function(e) { console.error('BaaS update err:', e); });
                         }
                     }
                 });
@@ -1536,7 +1536,7 @@ let originalImages = [];
                     indicator.classList.remove('active');
                     indicator.innerHTML = '<p>🎯 准备好扫码枪，将光标放在输入框中扫描</p>';
                 }, 2000);
-            }).catch(err => {
+            }).then(null, err => {
                 alert('复制失败，请手动复制: ' + sku);
             });
         }
@@ -1789,12 +1789,12 @@ let originalImages = [];
                                     image_url: finalImg
                                 }).then(function() {
                                     console.log('✅ BaaS 保存成功:', sku);
-                                }).catch(function(e) {
+                                }).then(null, function(e) {
                                     console.error('❌ BaaS 保存失败:', e);
                                 });
                             }
                         }
-                    }).catch(function(e) {
+                    }).then(null, function(e) {
                         console.error('❌ 查询失败:', e);
                     });
                 });
@@ -2568,7 +2568,7 @@ ABCD001,商品D,15,100,15`;
                     progressMessage.innerHTML = '✅ 文件已上传到云端!<br>把下面这行字发给小艺，我帮你继续处理：<br><code style="background:rgba(0,0,0,0.3);padding:4px 8px;border-radius:4px;font-size:12px;">导入Excel: ' + fileUrl + '</code>';
                     showToast('文件已上传，告诉小艺继续处理');
                     // 复制文件URL到剪贴板方便粘贴
-                    navigator.clipboard.writeText('导入Excel: ' + fileUrl).catch(()=>{});
+                    navigator.clipboard.writeText('导入Excel: ' + fileUrl).then(null, ()=>{});
                 }
                 
                 importBtn.disabled = false;
@@ -3670,13 +3670,13 @@ function quickUpdatePrices() {
                                 if (Object.keys(updates).length > 0) {
                                     client.db.from('products').update(found.id, updates).then(function() {
                                         console.log('\u2601\ufe0f BaaS同步成功:', sku);
-                                    }).catch(function(e) {
+                                    }).then(null, function(e) {
                                         console.error('\u2601\ufe0f BaaS同步失败:', sku, e);
                                     });
                                 }
                             }
                         }
-                    }).catch(function(e) {
+                    }).then(null, function(e) {
                         console.error('\u2601\ufe0f BaaS查询失败:', sku, e);
                     });
                 })(item.sku, item.priceCny, item.priceUsd);

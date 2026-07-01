@@ -136,7 +136,7 @@
                         status: "ended",
                         end_time: currentSession.endTime,
                         total_rounds: currentSession.totalRounds || currentRound
-                    }).catch(function(e){});
+                    }).then(null, function(e){});
                 }
                 
                 await saveToLocalStorage();

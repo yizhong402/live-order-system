@@ -245,7 +245,7 @@ async function restoreFromBackup(backupId, backupName) {
             data.comboSkus.forEach(function(c){
                 promises4.push(client.db.from('combo_skus').insert().values({
                     code: c.code, skus_json: c.skus_json || '[]'
-                }).catch(function(){}));
+                }).then(null, function(){}));
             });
         }
         if (data.liveSessions && data.liveSessions.length > 0) {
@@ -255,14 +255,14 @@ async function restoreFromBackup(backupId, backupName) {
                     anchor: s.anchor || '', platform: s.platform || '',
                     client_id: s.client_id || 0, status: s.status || 'ended',
                     session_no: s.session_no || ''
-                }).catch(function(){}));
+                }).then(null, function(){}));
             });
         }
         if (data.titleHistory && data.titleHistory.length > 0) {
             data.titleHistory.forEach(function(t){
                 promises4.push(client.db.from('title_history').insert().values({
                     title: t.title || ''
-                }).catch(function(){}));
+                }).then(null, function(){}));
             });
         }
         if (data.titleRoundMap) {
@@ -270,7 +270,7 @@ async function restoreFromBackup(backupId, backupName) {
                 if (data.titleRoundMap.hasOwnProperty(key)) {
                     promises4.push(client.db.from('title_round_map').insert().values({
                         title: key, round_value: data.titleRoundMap[key]
-                    }).catch(function(){}));
+                    }).then(null, function(){}));
                 }
             }
         }
